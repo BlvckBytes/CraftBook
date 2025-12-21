@@ -21,6 +21,7 @@ import org.bukkit.block.Chest;
 import org.bukkit.block.data.type.Cocoa;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
@@ -36,6 +37,9 @@ import java.util.List;
  * @authors Drathus, Me4502
  */
 public class Planter extends AbstractSelfTriggeredIC {
+
+    private Block cachedContainerBlock;
+    private Inventory cachedChestInventory;
 
     public Planter(Server server, ChangedSign block, ICFactory factory) {
 
@@ -88,46 +92,109 @@ public class Planter extends AbstractSelfTriggeredIC {
 
         if (item != null && !plantableItem(item)) return false;
 
-        if (getBackBlock().getRelative(0, 1, 0).getType() == Material.CHEST || getBackBlock().getRelative(0, 1, 0).getType() == Material.TRAPPED_CHEST) {
+        if (cachedContainerBlock == null)
+            cachedContainerBlock = getBackBlock().getRelative(0, 1, 0);
 
-            Chest c = (Chest) getBackBlock().getRelative(0, 1, 0).getState();
-            for (ItemStack it : c.getInventory().getContents()) {
+        var containerType = cachedContainerBlock.getType();
 
-                if (!ItemUtil.isStackValid(it)) continue;
-                if (!plantableItem(it)) continue;
+        // Has a chest attached on top of the block where the sign is mounted - take items from its storage
+        if (containerType == Material.CHEST || containerType == Material.TRAPPED_CHEST) {
+            // The inventory is live for as long as the chunk is loaded, and once it unloads, this IC is unloaded
+            // just as well, invalidating the cache again; no need to access the inventory repeatedly.
+            if (cachedChestInventory == null)
+                cachedChestInventory = ((Chest) cachedContainerBlock.getState()).getInventory();
 
-                if (item != null && !ItemUtil.areItemsIdentical(it, item)) continue;
+            // By incrementing chest-slots separately and trying up to as many times as there are slots, we stay
+            // within sane limits but drastically increase the speed of planting, seeing how the chance of planting
+            // is no longer the result of finding a receptive block multiplied by finding a plantable item in the chest,
+            // but rather that we lock into the first matching item and try with that until it has been used up completely.
+            int chestSlot = 0;
 
-                Block b;
+            for (int trialIndex = 0; trialIndex < cachedChestInventory.getSize(); ++trialIndex) {
+                var chestItem = cachedChestInventory.getItem(chestSlot);
 
-                if ((b = searchBlocks(it)) != null) {
-                    if (c.getInventory().removeItem(new ItemStack(it.getType(), 1, it.getDurability())).isEmpty()) {
-                        return plantBlockAt(it, b);
-                    }
+                // Current slot is unusable for planting - skip over
+                if (
+                  chestItem == null
+                    || !ItemUtil.isStackValid(chestItem)
+                    || !plantableItem(chestItem)
+                    || (item != null && !ItemUtil.areItemsIdentical(chestItem, item))
+                ) {
+                    ++chestSlot;
+                    continue;
                 }
+
+                Block targetBlock = searchBlocks(chestItem);
+
+                if (targetBlock == null)
+                    continue;
+
+                boolean plantSuccess = plantBlockAt(chestItem, targetBlock);
+
+                if (!plantSuccess)
+                    continue;
+
+                if (chestItem.getAmount() == 1) {
+                    cachedChestInventory.setItem(chestSlot, null);
+                    return true;
+                }
+
+                chestItem.setAmount(chestItem.getAmount() - 1);
+                return true;
             }
-        } else {
-            for (Entity ent : area.getEntitiesInArea()) {
-                if (!(ent instanceof Item)) continue;
+        }
 
-                Item itemEnt = (Item) ent;
-                ItemStack stack = itemEnt.getItemStack();
+        // Has no container attached - take items from nearby item-entities
+        else {
+            cachedChestInventory = null;
 
-                if (!ItemUtil.isStackValid(stack)) continue;
+            List<Entity> areaEntities = area.getEntitiesInArea();
 
-                if (item == null || ItemUtil.areItemsIdentical(item, stack)) {
+            // Same reasoning holds true here as does for the above.
+            int entityIndex = 0;
 
-                    Block b = null;
-                    if ((b = searchBlocks(stack)) != null) {
-                        if (ItemUtil.takeFromItemEntity(itemEnt, 1)) {
-                            return plantBlockAt(stack, b);
-                        }
-                    }
+            for (int trialIndex = 0; trialIndex < areaEntities.size(); ++trialIndex) {
+                Entity entity = areaEntities.get(entityIndex);
+
+                ItemStack entityStack;
+
+                // Current entity is unusable for planting - skip over
+                if (
+                  !(entity instanceof Item itemEntity)
+                    || !ItemUtil.isStackValid(entityStack = itemEntity.getItemStack())
+                    || (item != null && !ItemUtil.areItemsIdentical(item, entityStack))
+                ) {
+                    ++entityIndex;
+                    continue;
                 }
+
+                Block targetBlock = searchBlocks(entityStack);
+
+                if (targetBlock == null)
+                    continue;
+
+                // First try to plant, then take the item from the entity - this was a long-standing
+                // upstream bug, which made items vanish without being planted on the surrounding field.
+
+                boolean plantSuccess = plantBlockAt(entityStack, targetBlock);
+
+                if (!plantSuccess)
+                    continue;
+
+                ItemUtil.takeFromItemEntity(itemEntity, 1);
+                return true;
             }
         }
 
         return false;
+    }
+
+    @Override
+    public void unload() {
+        super.unload();
+
+        cachedContainerBlock = null;
+        cachedChestInventory = null;
     }
 
     public Block searchBlocks(ItemStack stack) {
