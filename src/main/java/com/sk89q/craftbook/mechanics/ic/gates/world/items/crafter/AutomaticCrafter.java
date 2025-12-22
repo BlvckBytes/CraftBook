@@ -246,34 +246,29 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
             for (int slot = 0; slot < 9; slot++) {
                 ItemStack matrixItem = cachedDispenserOrDropperInventory.getItem(slot);
 
-                try {
-                    if (++columnIndex >= 3) {
-                        columnIndex = 0;
+                if (++columnIndex >= 3) {
+                    columnIndex = 0;
 
-                        if (++rowIndex >= 3)
-                            break;
-                    }
-
-                    String shapeRow = shape.getShapeRow(rowIndex);
-
-                    ItemStack ingredient = null;
-                    char ingredientChar = ' ';
-
-                    if (columnIndex < shapeRow.length())
-                        ingredientChar = shapeRow.charAt(columnIndex);
-
-                    if (ingredientChar != ' ')
-                        ingredient = shape.getIngredient(ingredientChar);
-
-                    if (ingredient != null && ingredient.getType() != Material.AIR)
-                        ++validRecipeItems;
-
-                    if (!ItemUtil.areItemsIdentical(ingredient, matrixItem))
-                        return false;
-                } catch (Exception e) {
-                    CraftBookBukkitUtil.printStacktrace(e);
-                    return false;
+                    if (++rowIndex >= 3)
+                        break;
                 }
+
+                String shapeRow = shape.getShapeRow(rowIndex);
+
+                ItemStack ingredient = null;
+                char ingredientChar = ' ';
+
+                if (columnIndex < shapeRow.length())
+                    ingredientChar = shapeRow.charAt(columnIndex);
+
+                if (ingredientChar != ' ')
+                    ingredient = shape.getIngredient(ingredientChar);
+
+                if (ingredient != null && ingredient.getType() != Material.AIR)
+                    ++validRecipeItems;
+
+                if (!ItemUtil.areItemsIdentical(ingredient, matrixItem))
+                    return false;
             }
 
             if (validRecipeItems == 0) {
