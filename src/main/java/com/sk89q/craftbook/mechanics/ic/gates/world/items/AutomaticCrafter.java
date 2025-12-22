@@ -54,16 +54,13 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
 
     @Override
     public void trigger(ChipState chip) {
-
-        if (chip.getInput(0)) {
-            chip.setOutput(0, doStuff(true, true));
-        }
+        if (chip.getInput(0))
+            chip.setOutput(0, doStuff());
     }
 
     @Override
     public void think(ChipState state) {
-
-        state.setOutput(0, doStuff(true, true));
+        state.setOutput(0, doStuff());
     }
 
     private void computeRecipe() {
@@ -237,23 +234,14 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
         return false;
     }
 
-    /**
-     * @param craft Whether to craft.
-     * @param collect Whether to collect.
-     *
-     * @return If it performed an action
-     */
-    private boolean doStuff(boolean craft, boolean collect) {
+    private boolean doStuff() {
         if (updateCachesAndGetIfIsMalformed())
             return false;
 
         boolean ret = false;
 
-        if (collect)
-            ret |= collect();
-
-        if (craft)
-            ret |= craft();
+        ret |= collect();
+        ret |= craft();
 
         return ret;
     }
