@@ -26,8 +26,8 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
     private static boolean hasWarned = false;
     private static boolean hasWarnedNoResult = false;
 
-    private Block cachedContainerBlock;
-    private InventoryHolder cachedInventoryHolder;
+    private Block cachedDispenserOrDropperBlock;
+    private InventoryHolder cachedDispenserOrDropperHolder;
 
     public AutomaticCrafter(Server server, ChangedSign block, ICFactory factory) {
 
@@ -64,10 +64,10 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
     }
 
     private void computeRecipe() {
-        if (cachedInventoryHolder == null)
+        if (cachedDispenserOrDropperHolder == null)
             return;
 
-        Inventory inv = cachedInventoryHolder.getInventory();
+        Inventory inv = cachedDispenserOrDropperHolder.getInventory();
         Iterator<Recipe> recipes = Bukkit.recipeIterator();
 
         try {
@@ -86,10 +86,10 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
     }
 
     public boolean craft() {
-        if (cachedInventoryHolder == null)
+        if (cachedDispenserOrDropperHolder == null)
             return false;
 
-        Inventory inv = cachedInventoryHolder.getInventory();
+        Inventory inv = cachedDispenserOrDropperHolder.getInventory();
 
         for (ItemStack it : inv.getContents()) {
             if (!ItemUtil.isStackValid(it))
@@ -143,9 +143,9 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
 
         items.add(result);
 
-        Block pipe = cachedContainerBlock.getRelative(((org.bukkit.material.Directional) ((BlockState) cachedInventoryHolder).getData()).getFacing());
+        Block pipe = cachedDispenserOrDropperBlock.getRelative(((org.bukkit.material.Directional) ((BlockState) cachedDispenserOrDropperHolder).getData()).getFacing());
 
-        PipeRequestEvent event = new PipeRequestEvent(pipe, items, cachedContainerBlock);
+        PipeRequestEvent event = new PipeRequestEvent(pipe, items, cachedDispenserOrDropperBlock);
         Bukkit.getPluginManager().callEvent(event);
 
         items = event.getItems();
@@ -155,10 +155,10 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
                 // TODO: Drop remainders - this check really does no good at all
                 if(inv.addItem(stack).isEmpty())
                     for(int i = 0; i < stack.getAmount(); i++)
-                        if(cachedInventoryHolder instanceof Dispenser)
-                            ((Dispenser) cachedInventoryHolder).dispense();
-                        else if(cachedInventoryHolder instanceof Dropper)
-                            ((Dropper) cachedInventoryHolder).drop();
+                        if(cachedDispenserOrDropperHolder instanceof Dispenser)
+                            ((Dispenser) cachedDispenserOrDropperHolder).dispense();
+                        else if(cachedDispenserOrDropperHolder instanceof Dropper)
+                            ((Dropper) cachedDispenserOrDropperHolder).drop();
             }
         }
 
@@ -169,7 +169,7 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
     }
 
     private boolean collect() {
-        if (cachedInventoryHolder == null)
+        if (cachedDispenserOrDropperHolder == null)
             return false;
 
         if (recipe == null) {
@@ -179,7 +179,7 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
             }
         }
 
-        Inventory inv = cachedInventoryHolder.getInventory();
+        Inventory inv = cachedDispenserOrDropperHolder.getInventory();
         ItemStack[] contents = inv.getContents();
 
         for (Item item : ItemUtil.getItemsAtBlock(CraftBookBukkitUtil.toSign(getSign()).getBlock())) {
@@ -219,16 +219,16 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
      * @return If it performed an action
      */
     private boolean doStuff(boolean craft, boolean collect) {
-        if (cachedContainerBlock == null)
-            cachedContainerBlock = getBackBlock().getRelative(0, 1, 0);
+        if (cachedDispenserOrDropperBlock == null)
+            cachedDispenserOrDropperBlock = getBackBlock().getRelative(0, 1, 0);
 
-        if (cachedContainerBlock.getType() != Material.DISPENSER && cachedContainerBlock.getType() != Material.DROPPER) {
-            cachedInventoryHolder = null;
+        if (cachedDispenserOrDropperBlock.getType() != Material.DISPENSER && cachedDispenserOrDropperBlock.getType() != Material.DROPPER) {
+            cachedDispenserOrDropperHolder = null;
             return false;
         }
 
-        if (cachedInventoryHolder == null)
-            cachedInventoryHolder = (InventoryHolder) cachedContainerBlock.getState();
+        if (cachedDispenserOrDropperHolder == null)
+            cachedDispenserOrDropperHolder = (InventoryHolder) cachedDispenserOrDropperBlock.getState();
 
         boolean ret = false;
 
@@ -361,16 +361,16 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
 
     @Override
     public void onPipeTransfer(PipePutEvent event) {
-        if (cachedContainerBlock == null)
-            cachedContainerBlock = getBackBlock().getRelative(0, 1, 0);
+        if (cachedDispenserOrDropperBlock == null)
+            cachedDispenserOrDropperBlock = getBackBlock().getRelative(0, 1, 0);
 
-        if (cachedContainerBlock.getType() != Material.DISPENSER && cachedContainerBlock.getType() != Material.DROPPER) {
-            cachedInventoryHolder = null;
+        if (cachedDispenserOrDropperBlock.getType() != Material.DISPENSER && cachedDispenserOrDropperBlock.getType() != Material.DROPPER) {
+            cachedDispenserOrDropperHolder = null;
             return;
         }
 
-        if (cachedInventoryHolder == null)
-            cachedInventoryHolder = (InventoryHolder) cachedContainerBlock.getState();
+        if (cachedDispenserOrDropperHolder == null)
+            cachedDispenserOrDropperHolder = (InventoryHolder) cachedDispenserOrDropperBlock.getState();
 
         boolean delete = true;
         List<ItemStack> newItems = new ArrayList<>(event.getItems());
@@ -379,7 +379,7 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
             int iteind = newItems.indexOf(ite);
             int newAmount = ite.getAmount();
             for (int i = 0; i < ite.getAmount(); i++) {
-                ItemStack it = ItemUtil.getSmallestStackOfType(cachedInventoryHolder.getInventory().getContents(), ite);
+                ItemStack it = ItemUtil.getSmallestStackOfType(cachedDispenserOrDropperHolder.getInventory().getContents(), ite);
                 if (!ItemUtil.isStackValid(it) || !ItemUtil.areItemsIdentical(ite, it)) continue;
                 if (it.getAmount() < 64) {
                     it.setAmount(it.getAmount() + 1);
@@ -405,7 +405,7 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
     public void unload() {
         super.unload();
 
-        cachedContainerBlock = null;
-        cachedInventoryHolder = null;
+        cachedDispenserOrDropperBlock = null;
+        cachedDispenserOrDropperHolder = null;
     }
 }
