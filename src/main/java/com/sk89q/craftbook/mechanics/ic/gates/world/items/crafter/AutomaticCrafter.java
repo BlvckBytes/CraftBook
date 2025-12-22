@@ -138,6 +138,15 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
 
         List<ItemStack> leftovers = new ArrayList<>();
 
+        // The Pipe will have put remainders back into the dispenser/dropper, so let's also collect them
+        // into the leftovers, as to not override them when setting back the replace-matrix afterward.
+        for (ItemStack item : cachedDispenserOrDropperInventory.getContents()) {
+            if (item != null && !item.getType().isAir() && item.getAmount() > 0)
+                leftovers.add(item);
+        }
+
+        cachedDispenserOrDropperInventory.setContents(replace);
+
         if(!items.isEmpty()) {
             if (InventoryUtil.doesBlockHaveInventory(cachedOutputBlock)) {
                 Inventory outputInventory = ((InventoryHolder) cachedOutputBlock.getState()).getInventory();
@@ -159,7 +168,6 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
             leftovers.clear();
         }
 
-        cachedDispenserOrDropperInventory.setContents(replace);
         return true;
     }
 
