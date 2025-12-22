@@ -54,6 +54,7 @@ import com.sk89q.craftbook.mechanics.drops.CustomDrops;
 import com.sk89q.craftbook.mechanics.drops.legacy.LegacyCustomDrops;
 import com.sk89q.craftbook.mechanics.headdrops.HeadDrops;
 import com.sk89q.craftbook.mechanics.ic.ICMechanic;
+import com.sk89q.craftbook.mechanics.ic.gates.world.items.crafter.RecipeCache;
 import com.sk89q.craftbook.mechanics.items.CommandItemDefinition;
 import com.sk89q.craftbook.mechanics.items.CommandItems;
 import com.sk89q.craftbook.mechanics.minecart.CollisionEntry;
@@ -502,6 +503,8 @@ public class CraftBookPlugin extends JavaPlugin {
         }
 
         PaperLib.suggestPaper(this);
+
+        Bukkit.getScheduler().runTaskLater(this, RecipeCache::update, 20L);
     }
 
     private YAMLProcessor mechanismsConfig;

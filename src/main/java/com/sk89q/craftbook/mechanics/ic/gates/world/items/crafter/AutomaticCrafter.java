@@ -1,4 +1,4 @@
-package com.sk89q.craftbook.mechanics.ic.gates.world.items;
+package com.sk89q.craftbook.mechanics.ic.gates.world.items.crafter;
 
 import com.sk89q.craftbook.ChangedSign;
 import com.sk89q.craftbook.bukkit.CraftBookPlugin;
@@ -9,7 +9,6 @@ import com.sk89q.craftbook.mechanics.pipe.PipePutEvent;
 import com.sk89q.craftbook.mechanics.pipe.PipeRequestEvent;
 import com.sk89q.craftbook.util.InventoryUtil;
 import com.sk89q.craftbook.util.ItemUtil;
-import com.sk89q.craftbook.util.VerifyUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Server;
@@ -18,10 +17,7 @@ import org.bukkit.block.data.Directional;
 import org.bukkit.entity.Item;
 import org.bukkit.inventory.*;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInputIC {
 
@@ -31,6 +27,7 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
     private Block cachedDispenserOrDropperBlock;
     private Inventory cachedDispenserOrDropperInventory;
     private Block cachedOutputBlock;
+    private CachedRecipe cachedRecipe;
 
     public AutomaticCrafter(Server server, ChangedSign block, ICFactory factory) {
 
@@ -49,9 +46,6 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
         return "AUTO CRAFT";
     }
 
-    // Cache the recipe - makes it faster
-    private Recipe recipe;
-
     @Override
     public void trigger(ChipState chip) {
         if (chip.getInput(0))
@@ -66,15 +60,13 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
     private void computeRecipe() {
         // Only called from craft/collect - caches already setup
 
-        Iterator<Recipe> recipes = Bukkit.recipeIterator();
-
         try {
-            while (recipes.hasNext()) {
-                Recipe temprecipe = recipes.next();
-                if (isValidRecipe(temprecipe, cachedDispenserOrDropperInventory)) {
-                    recipe = temprecipe;
-                    break; //There should only be 1 valid recipe.
-                }
+            for (var cachedRecipe : RecipeCache.getRecipes()) {
+                if (!isValidRecipe(cachedRecipe))
+                    continue;
+
+                this.cachedRecipe = cachedRecipe;
+                break;
             }
         } catch (Exception e) {
             CraftBookBukkitUtil.printStacktrace(e);
@@ -94,18 +86,18 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
             if (it.getAmount() < 2) return false;
         }
 
-        if (recipe == null) {
+        if (cachedRecipe == null) {
             computeRecipe();
         }
 
-        if (recipe == null) return false;
+        if (cachedRecipe == null) return false;
 
-        if (!isValidRecipe(recipe, cachedDispenserOrDropperInventory)) {
-            recipe = null;
+        if (!isValidRecipe(cachedRecipe)) {
+            cachedRecipe = null;
             return craft();
         }
 
-        ItemStack result = CustomCrafting.craftItem(recipe);
+        ItemStack result = CustomCrafting.craftItem(cachedRecipe.getHandle());
 
         if(!ItemUtil.isStackValid(result)) {
             if (!hasWarnedNoResult) {
@@ -174,9 +166,9 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
     private boolean collect() {
         // Only called from doStuff - caches already setup
 
-        if (recipe == null) {
+        if (cachedRecipe == null) {
             computeRecipe();
-            if (recipe == null) {
+            if (cachedRecipe == null) {
                 return false; // Only collect items if valid recipe.
             }
         }
@@ -246,16 +238,12 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
         return ret;
     }
 
-    private boolean isValidRecipe(Recipe r, Inventory inv) {
-        if (r instanceof ShapedRecipe && (recipe == null || recipe instanceof ShapedRecipe)) {
-            ShapedRecipe shape = (ShapedRecipe) r;
-            Map<Character, ItemStack> ingredientMap = shape.getIngredientMap();
-            String[] shapeArr = shape.getShape();
-            if (shape.getShape().length != shapeArr.length  || shapeArr[0].length() != shape.getShape()[0].length()) return false;
+    private boolean isValidRecipe(CachedRecipe r) {
+        if (r instanceof CachedShapedRecipe shape && (cachedRecipe == null || cachedRecipe instanceof CachedShapedRecipe)) {
             int c = -1, in = 0;
             int validRecipeItems = 0;
             for (int slot = 0; slot < 9; slot++) {
-                ItemStack stack = inv.getItem(slot);
+                ItemStack stack = cachedDispenserOrDropperInventory.getItem(slot);
                 try {
                     c++;
                     if (c >= 3) {
@@ -266,21 +254,19 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
                         }
                     }
                     String shapeSection;
-                    if(in < shapeArr.length)
-                        shapeSection = shapeArr[in];
+                    if(in < shape.cachedShape.length)
+                        shapeSection = shape.cachedShape[in];
                     else
                         shapeSection = "   ";
                     ItemStack require = null;
                     try {
-                        Character item;
+                        char item;
                         if(c < shapeSection.length())
                             item = shapeSection.charAt(c);
                         else
                             item = ' ';
-                        if(item == ' ')
-                            require = null;
-                        else
-                            require = ingredientMap.get(item);
+                        if(item != ' ')
+                            require = shape.cachedIngredientsMap.get(item);
                     }
                     catch(Exception e){
                         CraftBookBukkitUtil.printStacktrace(e);
@@ -297,23 +283,22 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
             }
             if (validRecipeItems == 0) {
                 if (!hasWarned) {
-                    CraftBookPlugin.logger().warning("Found invalid recipe! This is an issue with Bukkit/Spigot/etc, please report to them. All recipe ingredients are air. Recipe result: " + r.getResult().toString());
+                    CraftBookPlugin.logger().warning("Found invalid recipe! This is an issue with Bukkit/Spigot/etc, please report to them. All recipe ingredients are air. Recipe result: " + shape.cachedResult);
                     hasWarned = true;
                 }
                 return false;
             }
 
             return true;
-        } else if (r instanceof ShapelessRecipe && (recipe == null || recipe instanceof ShapelessRecipe)) {
-            if (((ShapelessRecipe) r).getKey().getKey().equals("shulker_box_coloring")) {
+        } else if (r instanceof CachedShapelessRecipe shape && (cachedRecipe == null || cachedRecipe instanceof CachedShapelessRecipe)) {
+            if (shape.cachedKey.equals("shulker_box_coloring")) {
                 return false;
             }
-            ShapelessRecipe shape = (ShapelessRecipe) r;
-            List<ItemStack> ing = new ArrayList<>(VerifyUtil.withoutNulls(shape.getIngredientList()));
+            List<ItemStack> ing = new ArrayList<>(shape.cachedIngredientList);
             if (ing.isEmpty()) {
                 return false; // If it's empty already, something is wrong with the recipe.
             }
-            for (ItemStack it : inv.getContents()) {
+            for (ItemStack it : cachedDispenserOrDropperInventory.getContents()) {
                 if (!ItemUtil.isStackValid(it)) continue;
                 if(ing.isEmpty())
                     return false;
@@ -407,5 +392,6 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
         cachedDispenserOrDropperBlock = null;
         cachedDispenserOrDropperInventory = null;
         cachedOutputBlock = null;
+        cachedRecipe = null;
     }
 }

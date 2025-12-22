@@ -26,6 +26,7 @@ import com.sk89q.craftbook.mechanics.ic.gates.variables.NumericModifier;
 import com.sk89q.craftbook.mechanics.ic.gates.world.blocks.*;
 import com.sk89q.craftbook.mechanics.ic.gates.world.entity.*;
 import com.sk89q.craftbook.mechanics.ic.gates.world.items.*;
+import com.sk89q.craftbook.mechanics.ic.gates.world.items.crafter.AutomaticCrafter;
 import com.sk89q.craftbook.mechanics.ic.gates.world.miscellaneous.*;
 import com.sk89q.craftbook.mechanics.ic.gates.world.sensors.*;
 import com.sk89q.craftbook.mechanics.ic.gates.world.weather.*;
