@@ -12,10 +12,7 @@ import com.sk89q.craftbook.util.VerifyUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Server;
-import org.bukkit.block.Block;
-import org.bukkit.block.BlockState;
-import org.bukkit.block.Dispenser;
-import org.bukkit.block.Dropper;
+import org.bukkit.block.*;
 import org.bukkit.entity.Item;
 import org.bukkit.inventory.*;
 
@@ -28,6 +25,9 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
 
     private static boolean hasWarned = false;
     private static boolean hasWarnedNoResult = false;
+
+    private Block cachedContainerBlock;
+    private InventoryHolder cachedInventoryHolder;
 
     public AutomaticCrafter(Server server, ChangedSign block, ICFactory factory) {
 
@@ -63,25 +63,34 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
         state.setOutput(0, doStuff(true, true));
     }
 
-    private void computeRecipe(InventoryHolder disp) {
+    private void computeRecipe() {
+        if (cachedInventoryHolder == null)
+            return;
+
+        Inventory inv = cachedInventoryHolder.getInventory();
         Iterator<Recipe> recipes = Bukkit.recipeIterator();
+
         try {
             while (recipes.hasNext()) {
                 Recipe temprecipe = recipes.next();
-                if (isValidRecipe(temprecipe, disp.getInventory())) {
+                if (isValidRecipe(temprecipe, inv)) {
                     recipe = temprecipe;
                     break; //There should only be 1 valid recipe.
                 }
             }
         } catch (Exception e) {
             CraftBookBukkitUtil.printStacktrace(e);
-            disp.getInventory().setContents(disp.getInventory().getContents());
+            // I'm not quite sure why we need this, but let's keep it.
+            inv.setContents(inv.getContents());
         }
     }
 
-    public boolean craft(InventoryHolder disp) {
+    public boolean craft() {
+        if (cachedInventoryHolder == null)
+            return false;
 
-        Inventory inv = disp.getInventory();
+        Inventory inv = cachedInventoryHolder.getInventory();
+
         for (ItemStack it : inv.getContents()) {
             if (!ItemUtil.isStackValid(it))
                 continue;
@@ -89,14 +98,14 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
         }
 
         if (recipe == null) {
-            computeRecipe(disp);
+            computeRecipe();
         }
 
         if (recipe == null) return false;
 
         if (!isValidRecipe(recipe, inv)) {
             recipe = null;
-            return craft(disp);
+            return craft();
         }
 
         ItemStack result = CustomCrafting.craftItem(recipe);
@@ -112,53 +121,66 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
 
         List<ItemStack> items = new ArrayList<>();
 
+        ItemStack[] contents = inv.getContents();
         ItemStack[] replace = new ItemStack[9];
-        for (int i = 0; i < disp.getInventory().getContents().length; i++) {
-            if (disp.getInventory().getContents()[i] == null) {
+
+        for (int i = 0; i < contents.length; i++) {
+            if (contents[i] == null) {
                 continue;
             }
-            replace[i] = new ItemStack(disp.getInventory().getContents()[i]);
+
+            replace[i] = new ItemStack(contents[i]);
 
             if(replace[i].getType() == Material.WATER_BUCKET || replace[i].getType() == Material.LAVA_BUCKET || replace[i].getType() == Material.MILK_BUCKET)
                 items.add(new ItemStack(Material.BUCKET, 1));
 
             replace[i].setAmount(replace[i].getAmount() - 1);
         }
-        disp.getInventory().clear();
+
+        inv.clear();
 
         CraftBookPlugin.logDebugMessage("AutoCrafter is dispensing a " + result.getType().name() + " with data: " + result.getDurability() + " and amount: " + result.getAmount(), "ic-mc1219");
 
         items.add(result);
 
-        Block pipe = ((BlockState) disp).getBlock().getRelative(((org.bukkit.material.Directional) ((BlockState) disp).getData()).getFacing());
-        Block base = ((BlockState) disp).getBlock();
+        Block pipe = cachedContainerBlock.getRelative(((org.bukkit.material.Directional) ((BlockState) cachedInventoryHolder).getData()).getFacing());
 
-        PipeRequestEvent event = new PipeRequestEvent(pipe, items, base);
+        PipeRequestEvent event = new PipeRequestEvent(pipe, items, cachedContainerBlock);
         Bukkit.getPluginManager().callEvent(event);
 
         items = event.getItems();
 
         if(!items.isEmpty()) {
             for(ItemStack stack : items) {
-                if(disp.getInventory().addItem(stack).isEmpty())
+                // TODO: Drop remainders - this check really does no good at all
+                if(inv.addItem(stack).isEmpty())
                     for(int i = 0; i < stack.getAmount(); i++)
-                        if(disp instanceof Dispenser)
-                            ((Dispenser) disp).dispense();
-                        else if(disp instanceof Dropper)
-                            ((Dropper) disp).drop();
+                        if(cachedInventoryHolder instanceof Dispenser)
+                            ((Dispenser) cachedInventoryHolder).dispense();
+                        else if(cachedInventoryHolder instanceof Dropper)
+                            ((Dropper) cachedInventoryHolder).drop();
             }
         }
-        disp.getInventory().setContents(replace);
+
+        // TODO: Drop what's left in the inventory instead of overriding it
+
+        inv.setContents(replace);
         return true;
     }
 
-    private boolean collect(InventoryHolder disp) {
+    private boolean collect() {
+        if (cachedInventoryHolder == null)
+            return false;
+
         if (recipe == null) {
-            computeRecipe(disp);
+            computeRecipe();
             if (recipe == null) {
                 return false; // Only collect items if valid recipe.
             }
         }
+
+        Inventory inv = cachedInventoryHolder.getInventory();
+        ItemStack[] contents = inv.getContents();
 
         for (Item item : ItemUtil.getItemsAtBlock(CraftBookBukkitUtil.toSign(getSign()).getBlock())) {
             boolean delete = true;
@@ -167,7 +189,7 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
 
             int newAmount = stack.getAmount();
             for (int i = 0; i < stack.getAmount(); i++) {
-                ItemStack it = ItemUtil.getSmallestStackOfType(disp.getInventory().getContents(), stack);
+                ItemStack it = ItemUtil.getSmallestStackOfType(contents, stack);
                 if (it == null) break;
                 if (it.getAmount() < 64) {
                     it.setAmount(it.getAmount() + 1);
@@ -197,15 +219,25 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
      * @return If it performed an action
      */
     private boolean doStuff(boolean craft, boolean collect) {
+        if (cachedContainerBlock == null)
+            cachedContainerBlock = getBackBlock().getRelative(0, 1, 0);
+
+        if (cachedContainerBlock.getType() != Material.DISPENSER && cachedContainerBlock.getType() != Material.DROPPER) {
+            cachedInventoryHolder = null;
+            return false;
+        }
+
+        if (cachedInventoryHolder == null)
+            cachedInventoryHolder = (InventoryHolder) cachedContainerBlock.getState();
 
         boolean ret = false;
-        Block crafter = getBackBlock().getRelative(0, 1, 0);
-        if (crafter.getType() == Material.DISPENSER || crafter.getType() == Material.DROPPER) {
-            if (collect)
-                ret = collect((InventoryHolder) crafter.getState());
-            if (craft)
-                ret = craft((InventoryHolder) crafter.getState());
-        }
+
+        if (collect)
+            ret |= collect();
+
+        if (craft)
+            ret |= craft();
+
         return ret;
     }
 
@@ -329,38 +361,51 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
 
     @Override
     public void onPipeTransfer(PipePutEvent event) {
+        if (cachedContainerBlock == null)
+            cachedContainerBlock = getBackBlock().getRelative(0, 1, 0);
 
-        Block crafter = getBackBlock().getRelative(0, 1, 0);
-        if (crafter.getType() == Material.DISPENSER || crafter.getType() == Material.DROPPER) {
-            InventoryHolder disp = (InventoryHolder) crafter.getState();
+        if (cachedContainerBlock.getType() != Material.DISPENSER && cachedContainerBlock.getType() != Material.DROPPER) {
+            cachedInventoryHolder = null;
+            return;
+        }
 
-            boolean delete = true;
-            List<ItemStack> newItems = new ArrayList<>(event.getItems());
-            for (ItemStack ite : event.getItems()) {
-                if (!ItemUtil.isStackValid(ite)) continue;
-                int iteind = newItems.indexOf(ite);
-                int newAmount = ite.getAmount();
-                for (int i = 0; i < ite.getAmount(); i++) {
-                    ItemStack it = ItemUtil.getSmallestStackOfType(disp.getInventory().getContents(), ite);
-                    if (!ItemUtil.isStackValid(it) || !ItemUtil.areItemsIdentical(ite, it)) continue;
-                    if (it.getAmount() < 64) {
-                        it.setAmount(it.getAmount() + 1);
-                        newAmount -= 1;
-                    } else {
-                        if (newAmount > 0) {
-                            delete = false;
-                            break;
-                        }
+        if (cachedInventoryHolder == null)
+            cachedInventoryHolder = (InventoryHolder) cachedContainerBlock.getState();
+
+        boolean delete = true;
+        List<ItemStack> newItems = new ArrayList<>(event.getItems());
+        for (ItemStack ite : event.getItems()) {
+            if (!ItemUtil.isStackValid(ite)) continue;
+            int iteind = newItems.indexOf(ite);
+            int newAmount = ite.getAmount();
+            for (int i = 0; i < ite.getAmount(); i++) {
+                ItemStack it = ItemUtil.getSmallestStackOfType(cachedInventoryHolder.getInventory().getContents(), ite);
+                if (!ItemUtil.isStackValid(it) || !ItemUtil.areItemsIdentical(ite, it)) continue;
+                if (it.getAmount() < 64) {
+                    it.setAmount(it.getAmount() + 1);
+                    newAmount -= 1;
+                } else {
+                    if (newAmount > 0) {
+                        delete = false;
+                        break;
                     }
                 }
-                if (newAmount > 0) delete = false;
-                if(newAmount != ite.getAmount())
-                    ite.setAmount(newAmount);
-                if (delete) newItems.remove(iteind);
-                else newItems.set(iteind, ite);
             }
-            event.getItems().clear();
-            event.setItems(newItems);
+            if (newAmount > 0) delete = false;
+            if(newAmount != ite.getAmount())
+                ite.setAmount(newAmount);
+            if (delete) newItems.remove(iteind);
+            else newItems.set(iteind, ite);
         }
+        event.getItems().clear();
+        event.setItems(newItems);
+    }
+
+    @Override
+    public void unload() {
+        super.unload();
+
+        cachedContainerBlock = null;
+        cachedInventoryHolder = null;
     }
 }
