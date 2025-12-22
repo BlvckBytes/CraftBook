@@ -238,49 +238,44 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
         return ret;
     }
 
-    private boolean isValidRecipe(CachedRecipe r) {
-        if (r instanceof CachedShapedRecipe shape && (cachedRecipe == null || cachedRecipe instanceof CachedShapedRecipe)) {
-            int c = -1, in = 0;
+    private boolean isValidRecipe(CachedRecipe recipe) {
+        if (recipe instanceof CachedShapedRecipe shape && (cachedRecipe == null || cachedRecipe instanceof CachedShapedRecipe)) {
+            int columnIndex = -1, rowIndex = 0;
             int validRecipeItems = 0;
+
             for (int slot = 0; slot < 9; slot++) {
-                ItemStack stack = cachedDispenserOrDropperInventory.getItem(slot);
+                ItemStack matrixItem = cachedDispenserOrDropperInventory.getItem(slot);
+
                 try {
-                    c++;
-                    if (c >= 3) {
-                        c = 0;
-                        in++;
-                        if (in >= 3) {
+                    if (++columnIndex >= 3) {
+                        columnIndex = 0;
+
+                        if (++rowIndex >= 3)
                             break;
-                        }
                     }
-                    String shapeSection;
-                    if(in < shape.cachedShape.length)
-                        shapeSection = shape.cachedShape[in];
-                    else
-                        shapeSection = "   ";
-                    ItemStack require = null;
-                    try {
-                        char item;
-                        if(c < shapeSection.length())
-                            item = shapeSection.charAt(c);
-                        else
-                            item = ' ';
-                        if(item != ' ')
-                            require = shape.cachedIngredientsMap.get(item);
-                    }
-                    catch(Exception e){
-                        CraftBookBukkitUtil.printStacktrace(e);
-                    }
-                    if (require != null && require.getType() != Material.AIR) {
-                        validRecipeItems ++;
-                    }
-                    if (!ItemUtil.areItemsIdentical(require, stack))
+
+                    String shapeRow = shape.getShapeRow(rowIndex);
+
+                    ItemStack ingredient = null;
+                    char ingredientChar = ' ';
+
+                    if (columnIndex < shapeRow.length())
+                        ingredientChar = shapeRow.charAt(columnIndex);
+
+                    if (ingredientChar != ' ')
+                        ingredient = shape.getIngredient(ingredientChar);
+
+                    if (ingredient != null && ingredient.getType() != Material.AIR)
+                        ++validRecipeItems;
+
+                    if (!ItemUtil.areItemsIdentical(ingredient, matrixItem))
                         return false;
                 } catch (Exception e) {
                     CraftBookBukkitUtil.printStacktrace(e);
                     return false;
                 }
             }
+
             if (validRecipeItems == 0) {
                 if (!hasWarned) {
                     CraftBookPlugin.logger().warning("Found invalid recipe! This is an issue with Bukkit/Spigot/etc, please report to them. All recipe ingredients are air. Recipe result: " + shape.cachedResult);
@@ -290,37 +285,45 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
             }
 
             return true;
-        } else if (r instanceof CachedShapelessRecipe shape && (cachedRecipe == null || cachedRecipe instanceof CachedShapelessRecipe)) {
-            if (shape.cachedKey.equals("shulker_box_coloring")) {
+        }
+
+        if (recipe instanceof CachedShapelessRecipe shape && (cachedRecipe == null || cachedRecipe instanceof CachedShapelessRecipe)) {
+            if (shape.cachedKey.equals("shulker_box_coloring"))
                 return false;
-            }
-            List<ItemStack> ing = new ArrayList<>(shape.cachedIngredientList);
-            if (ing.isEmpty()) {
-                return false; // If it's empty already, something is wrong with the recipe.
-            }
-            for (ItemStack it : cachedDispenserOrDropperInventory.getContents()) {
-                if (!ItemUtil.isStackValid(it)) continue;
-                if(ing.isEmpty())
+
+            List<ItemStack> remainingIngredients = new ArrayList<>(shape.cachedIngredientList);
+
+            // If it's empty already, something is wrong with the recipe.
+            if (remainingIngredients.isEmpty())
+                return false;
+
+            for (ItemStack matrixItem : cachedDispenserOrDropperInventory.getContents()) {
+                if (!ItemUtil.isStackValid(matrixItem))
+                    continue;
+
+                // No more required ingredients left, but there are still additional items in the crafting-matrix => mismatch.
+                if (remainingIngredients.isEmpty())
                     return false;
-                Iterator<ItemStack> ingIterator = ing.iterator();
-                while (ingIterator.hasNext()) {
-                    if(ing.isEmpty())
-                        break;
-                    ItemStack stack = ingIterator.next();
-                    if (!ItemUtil.isStackValid(stack)) {
-                        ingIterator.remove();
+
+                for (Iterator<ItemStack> iterator = remainingIngredients.iterator(); iterator.hasNext();) {
+                    ItemStack requiredIngredient = iterator.next();
+
+                    if (!ItemUtil.isStackValid(requiredIngredient)) {
+                        iterator.remove();
                         continue;
                     }
-                    if (ItemUtil.areItemsIdentical(it, stack)) {
-                        ingIterator.remove();
+
+                    if (ItemUtil.areItemsIdentical(matrixItem, requiredIngredient)) {
+                        iterator.remove();
                         break;
                     }
                 }
             }
-            return ing.isEmpty();
 
-        } else
-            return false;
+            return remainingIngredients.isEmpty();
+        }
+
+        return false;
     }
 
     public static class Factory extends AbstractICFactory {
