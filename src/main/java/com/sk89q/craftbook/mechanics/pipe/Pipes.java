@@ -112,13 +112,22 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
         return type == Material.PISTON || type == Material.STICKY_PISTON;
     }
 
-    private EnumerationResult locateExitNodesForItems(Block inputPistonBlock, LongSet visitedBlocks, List<ItemStack> itemsInPipe) {
-        return enumeratePipeBlocks(inputPistonBlock, visitedBlocks, (pipeBlock, cachedPipeBlock) -> {
+    private EnumerationResult locateExitNodesForItems(Block inputPistonBlock, LongSet visitedBlocks, boolean resetCounters, List<ItemStack> itemsInPipe) {
+        return _enumeratePipeBlocks(inputPistonBlock, visitedBlocks, resetCounters, (pipeBlock, cachedPipeBlock) -> {
             if (itemsInPipe.isEmpty())
                 return EnumerationDecision.STOP;
 
             if (!CachedBlock.isMaterial(cachedPipeBlock, Material.PISTON))
                 return EnumerationDecision.CONTINUE;
+
+            Block putBlock = pipeBlock.getRelative(CachedBlock.getFacing(cachedPipeBlock));
+            int cachedPutBlock = currentBlockCache.getCachedBlock(putBlock);
+            boolean isSubPipe = CachedBlock.isTube(cachedPutBlock) && !CachedBlock.isPane(cachedPutBlock);
+
+            // Add the sub-pipe tube-block to the visited-set as to avoid it being walked into again
+            // by the current enumerator on the next iteration, which would render filters useless.
+            if (isSubPipe)
+                visitedBlocks.add(CompactId.computeWorldlessBlockId(putBlock));
 
             PipeSign sign = currentBlockCache.getSignOnPiston(pipeBlock, cachedPipeBlock);
 
@@ -132,9 +141,6 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
             if (filteredPipeItems.isEmpty())
                 return EnumerationDecision.CONTINUE;
 
-            Block putBlock = pipeBlock.getRelative(CachedBlock.getFacing(cachedPipeBlock));
-            int cachedPutBlock = currentBlockCache.getCachedBlock(putBlock);
-
             PipePutEvent putEvent = new PipePutEvent(pipeBlock, new ArrayList<>(filteredPipeItems), putBlock, cachedPutBlock);
             Bukkit.getPluginManager().callEvent(putEvent);
 
@@ -143,6 +149,8 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
 
             List<ItemStack> itemsToPut = putEvent.getItems();
             List<ItemStack> leftovers = new ArrayList<>();
+
+            EnumerationResult subWalkResult = EnumerationResult.COMPLETED;
 
             if (
                 CachedBlock.hasHandledOutputInventory(cachedPutBlock)
@@ -161,6 +169,11 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
                     jukebox.setRecord(item);
                     jukebox.update();
                 }
+            } else if (isSubPipe) {
+                // Handle sub-pipes which continue the walk from here on forwards with a (possibly) limited set of items.
+                List<ItemStack> subPipeItems = new ArrayList<>(itemsToPut);
+                subWalkResult = locateExitNodesForItems(putBlock, visitedBlocks, false, subPipeItems);
+                leftovers.addAll(subPipeItems);
             } else {
                 leftovers.addAll(itemsToPut);
             }
@@ -168,7 +181,7 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
             itemsInPipe.removeAll(filteredPipeItems);
             itemsInPipe.addAll(leftovers);
 
-            if (itemsInPipe.isEmpty())
+            if (itemsInPipe.isEmpty() || subWalkResult != EnumerationResult.COMPLETED)
                 return EnumerationDecision.STOP;
 
             return EnumerationDecision.CONTINUE;
@@ -177,6 +190,10 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
 
     @Override
     public EnumerationResult enumeratePipeBlocks(Block firstBlock, @Nullable LongSet visitedBlocks, PipeEnumerationHandler enumerationHandler) {
+        return _enumeratePipeBlocks(firstBlock, visitedBlocks, true, enumerationHandler);
+    }
+
+    private EnumerationResult _enumeratePipeBlocks(Block firstBlock, @Nullable LongSet visitedBlocks, boolean resetCounters, PipeEnumerationHandler enumerationHandler) {
         if (!Bukkit.isPrimaryThread())
             throw new IllegalStateException("This method must be called on the main server thread");
 
@@ -188,8 +205,10 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
             if (visitedBlocks == null)
                 visitedBlocks = new LongOpenHashSet();
 
-            currentTubeBlockCounter = currentPistonBlockCounter = 0;
-            currentBlockCache.resetCacheLoadCounter();
+            if (resetCounters) {
+                currentTubeBlockCounter = currentPistonBlockCounter = 0;
+                currentBlockCache.resetCacheLoadCounter();
+            }
 
             Deque<Block> searchQueue = new ArrayDeque<>();
             searchQueue.addFirst(firstBlock);
@@ -435,7 +454,7 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
         EnumerationResult enumerationResult = EnumerationResult.COMPLETED;
 
         if (!suckEvent.isCancelled() && !itemsInPipe.isEmpty())
-            enumerationResult = locateExitNodesForItems(inputPistonBlock, visitedBlocks, itemsInPipe);
+            enumerationResult = locateExitNodesForItems(inputPistonBlock, visitedBlocks, true, itemsInPipe);
 
         // Try to put leftovers back into the block, if the limits have not been exceeded; otherwise,
         // let them be dropped at the input-container, as to avoid unending loops.
