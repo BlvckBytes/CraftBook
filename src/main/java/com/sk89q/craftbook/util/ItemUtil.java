@@ -22,11 +22,9 @@ import org.bukkit.inventory.meta.EnchantmentStorageMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.regex.Pattern;
 
 public final class ItemUtil {
@@ -57,17 +55,17 @@ public final class ItemUtil {
      * Filter a list of items by inclusions and exclusions.
      * 
      * @param stacks The base list of items.
-     * @param inclusions The list of items to include, skipped if empty.
-     * @param exclusions The list of items to exclude, skipped if empty.
+     * @param includeFilters The list of items to include, skipped if empty.
+     * @param excludeFilters The list of items to exclude, skipped if empty.
      * @return The list of items that have been filtered.
      */
-    public static List<ItemStack> filterItems(List<ItemStack> stacks, HashSet<ItemStack> inclusions, HashSet<ItemStack> exclusions) {
+    public static List<ItemStack> filterItems(List<ItemStack> stacks, List<ItemStack> includeFilters, List<ItemStack> excludeFilters) {
 
         List<ItemStack> ret = new ArrayList<>();
 
         for(ItemStack stack : stacks) {
 
-            if(doesItemPassFilters(stack, inclusions, exclusions))
+            if(doesItemPassFilters(stack, includeFilters, excludeFilters))
                 ret.add(stack);
         }
 
@@ -78,15 +76,15 @@ public final class ItemUtil {
      * Check whether or not an item passes filters.
      * 
      * @param stack The item to check if it passes.
-     * @param inclusions The list of items to include, skipped if empty.
-     * @param exclusions The list of items to exclude, skipped if empty.
+     * @param includeFilters The list of items to include, skipped if empty.
+     * @param excludeFilters The list of items to exclude, skipped if empty.
      * @return If the item passes the filters.
      */
-    public static boolean doesItemPassFilters(ItemStack stack, Set<ItemStack> inclusions, Set<ItemStack> exclusions) {
+    public static boolean doesItemPassFilters(ItemStack stack, List<ItemStack> includeFilters, List<ItemStack> excludeFilters) {
 
         boolean passesFilters = true;
-        if(inclusions != null && inclusions.size() > 0) {
-            for (ItemStack fil : inclusions) {
+        if(includeFilters != null) {
+            for (ItemStack fil : includeFilters) {
 
                 if(!ItemUtil.isStackValid(fil))
                     continue;
@@ -100,8 +98,8 @@ public final class ItemUtil {
             if(!passesFilters)
                 return false;
         }
-        if(exclusions != null && exclusions.size() > 0) {
-            for (ItemStack fil : exclusions) {
+        if(excludeFilters != null) {
+            for (ItemStack fil : excludeFilters) {
 
                 if(!ItemUtil.isStackValid(fil))
                     continue;
@@ -1028,109 +1026,6 @@ public final class ItemUtil {
                 player.getInventory().setItemInMainHand(heldItem);
             else
                 player.getInventory().setItemInMainHand(null);
-        }
-    }
-
-    public static boolean isStainedGlass(Material typeId) {
-        switch(typeId) {
-            case BLACK_STAINED_GLASS:
-            case BLUE_STAINED_GLASS:
-            case BROWN_STAINED_GLASS:
-            case CYAN_STAINED_GLASS:
-            case GRAY_STAINED_GLASS:
-            case GREEN_STAINED_GLASS:
-            case LIGHT_BLUE_STAINED_GLASS:
-            case LIGHT_GRAY_STAINED_GLASS:
-            case LIME_STAINED_GLASS:
-            case MAGENTA_STAINED_GLASS:
-            case ORANGE_STAINED_GLASS:
-            case PINK_STAINED_GLASS:
-            case PURPLE_STAINED_GLASS:
-            case RED_STAINED_GLASS:
-            case WHITE_STAINED_GLASS:
-            case YELLOW_STAINED_GLASS:
-                return true;
-            default:
-                return false;
-        }
-    }
-
-    public static boolean isStainedGlassPane(Material typeId) {
-        switch(typeId) {
-            case BLACK_STAINED_GLASS_PANE:
-            case BLUE_STAINED_GLASS_PANE:
-            case BROWN_STAINED_GLASS_PANE:
-            case CYAN_STAINED_GLASS_PANE:
-            case GRAY_STAINED_GLASS_PANE:
-            case GREEN_STAINED_GLASS_PANE:
-            case LIGHT_BLUE_STAINED_GLASS_PANE:
-            case LIGHT_GRAY_STAINED_GLASS_PANE:
-            case LIME_STAINED_GLASS_PANE:
-            case MAGENTA_STAINED_GLASS_PANE:
-            case ORANGE_STAINED_GLASS_PANE:
-            case PINK_STAINED_GLASS_PANE:
-            case PURPLE_STAINED_GLASS_PANE:
-            case RED_STAINED_GLASS_PANE:
-            case WHITE_STAINED_GLASS_PANE:
-            case YELLOW_STAINED_GLASS_PANE:
-                return true;
-            default:
-                return false;
-        }
-    }
-
-    public static DyeColor getStainedColor(Material material) {
-        switch (material) {
-            case BLACK_STAINED_GLASS:
-            case BLACK_STAINED_GLASS_PANE:
-                return DyeColor.BLACK;
-            case BLUE_STAINED_GLASS:
-            case BLUE_STAINED_GLASS_PANE:
-                return DyeColor.BLUE;
-            case BROWN_STAINED_GLASS:
-            case BROWN_STAINED_GLASS_PANE:
-                return DyeColor.BROWN;
-            case CYAN_STAINED_GLASS:
-            case CYAN_STAINED_GLASS_PANE:
-                return DyeColor.CYAN;
-            case GRAY_STAINED_GLASS:
-            case GRAY_STAINED_GLASS_PANE:
-                return DyeColor.GRAY;
-            case GREEN_STAINED_GLASS:
-            case GREEN_STAINED_GLASS_PANE:
-                return DyeColor.GREEN;
-            case LIGHT_BLUE_STAINED_GLASS:
-            case LIGHT_BLUE_STAINED_GLASS_PANE:
-                return DyeColor.LIGHT_BLUE;
-            case LIGHT_GRAY_STAINED_GLASS:
-            case LIGHT_GRAY_STAINED_GLASS_PANE:
-                return DyeColor.LIGHT_GRAY;
-            case LIME_STAINED_GLASS:
-            case LIME_STAINED_GLASS_PANE:
-                return DyeColor.LIME;
-            case MAGENTA_STAINED_GLASS:
-            case MAGENTA_STAINED_GLASS_PANE:
-                return DyeColor.MAGENTA;
-            case ORANGE_STAINED_GLASS:
-            case ORANGE_STAINED_GLASS_PANE:
-                return DyeColor.ORANGE;
-            case PINK_STAINED_GLASS:
-            case PINK_STAINED_GLASS_PANE:
-                return DyeColor.PINK;
-            case PURPLE_STAINED_GLASS:
-            case PURPLE_STAINED_GLASS_PANE:
-                return DyeColor.PURPLE;
-            case RED_STAINED_GLASS:
-            case RED_STAINED_GLASS_PANE:
-                return DyeColor.RED;
-            case WHITE_STAINED_GLASS:
-            case WHITE_STAINED_GLASS_PANE:
-                return DyeColor.WHITE;
-            case YELLOW_STAINED_GLASS:
-            case YELLOW_STAINED_GLASS_PANE:
-                return DyeColor.YELLOW;
-            default:
-                return DyeColor.WHITE;
         }
     }
 

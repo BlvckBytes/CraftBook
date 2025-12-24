@@ -361,6 +361,12 @@ mechanics:
         insulator-block: minecraft:white_wool
         stack-per-move: true
         require-sign: false
+        max-tube-block-count: -1
+        max-piston-block-count: -1
+        max-cache-load-count: 500
+        initial-chunk-retain-duration: 20
+        continued-chunk-retain-duration: 20
+        notification-radius: 5
     SignCopier:
         item: minecraft:ink_sac
     Snow:

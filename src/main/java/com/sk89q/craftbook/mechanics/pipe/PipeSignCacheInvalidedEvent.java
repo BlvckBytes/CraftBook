@@ -1,17 +1,21 @@
 package com.sk89q.craftbook.mechanics.pipe;
 
-import java.util.List;
-
 import org.bukkit.block.Block;
+import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
-import org.bukkit.inventory.ItemStack;
 
-public class PipeRequestEvent extends PipeSuckEvent {
+public class PipeSignCacheInvalidedEvent extends Event {
 
     private static final HandlerList handlers = new HandlerList();
 
-    public PipeRequestEvent(Block theBlock, List<ItemStack> items, Block sucked) {
-        super(theBlock, items, sucked, CachedBlock.NULL_SENTINEL);
+    private final Block pistonBlock;
+
+    public PipeSignCacheInvalidedEvent(Block pistonBlock) {
+        this.pistonBlock = pistonBlock;
+    }
+
+    public Block getPistonBlock() {
+        return pistonBlock;
     }
 
     @Override

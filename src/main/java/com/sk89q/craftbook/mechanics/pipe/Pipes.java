@@ -1,73 +1,79 @@
 package com.sk89q.craftbook.mechanics.pipe;
 
 import com.sk89q.craftbook.AbstractCraftBookMechanic;
-import com.sk89q.craftbook.ChangedSign;
 import com.sk89q.craftbook.CraftBookPlayer;
 import com.sk89q.craftbook.bukkit.CraftBookPlugin;
-import com.sk89q.craftbook.bukkit.util.CraftBookBukkitUtil;
-import com.sk89q.craftbook.util.BlockSyntax;
-import com.sk89q.craftbook.util.BlockUtil;
+import com.sk89q.craftbook.core.LanguageManager;
 import com.sk89q.craftbook.util.EventUtil;
 import com.sk89q.craftbook.util.InventoryUtil;
-import com.sk89q.craftbook.util.ItemSyntax;
 import com.sk89q.craftbook.util.ItemUtil;
-import com.sk89q.craftbook.util.LocationUtil;
 import com.sk89q.craftbook.util.ProtectionUtil;
-import com.sk89q.craftbook.util.RegexUtil;
 import com.sk89q.craftbook.util.SignUtil;
 import com.sk89q.craftbook.util.VerifyUtil;
 import com.sk89q.craftbook.util.events.SourcedBlockRedstoneEvent;
 import com.sk89q.util.yaml.YAMLProcessor;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
-import com.sk89q.worldedit.world.block.BlockStateHolder;
+import com.sk89q.worldedit.world.block.BlockType;
 import com.sk89q.worldedit.world.block.BlockTypes;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import it.unimi.dsi.fastutil.longs.LongSet;
+import net.md_5.bungee.api.ChatMessageType;
+import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.Tag;
-import org.bukkit.block.Block;
-import org.bukkit.block.BlockFace;
-import org.bukkit.block.Dropper;
-import org.bukkit.block.Furnace;
-import org.bukkit.block.Jukebox;
-import org.bukkit.block.Crafter;
-import org.bukkit.block.data.BlockData;
-import org.bukkit.block.data.Directional;
+import org.bukkit.block.*;
 import org.bukkit.block.data.type.Piston;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.SignChangeEvent;
-import org.bukkit.inventory.InventoryHolder;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.util.Vector;
+import org.bukkit.inventory.*;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Deque;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 
-public class Pipes extends AbstractCraftBookMechanic {
+public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
+
+    private int currentTubeBlockCounter;
+    private int currentPistonBlockCounter;
+
+    private final BlockCacheRegistry cacheRegistry;
+
+    private BlockCache currentBlockCache;
+
+    public Pipes() {
+        this.cacheRegistry = new BlockCacheRegistry();
+    }
+
+    @Override
+    public void disable() {
+        super.disable();
+
+        cacheRegistry.disable();
+    }
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onSignChange(SignChangeEvent event) {
 
-        if(!EventUtil.passesFilter(event)) return;
+        if (!EventUtil.passesFilter(event)) return;
 
-        if(!event.getLine(1).equalsIgnoreCase("[pipe]")) return;
+        if (!event.getLine(1).equalsIgnoreCase("[pipe]")) return;
 
         CraftBookPlayer player = CraftBookPlugin.inst().wrapPlayer(event.getPlayer());
 
-        if(!player.hasPermission("craftbook.circuits.pipes")) {
-            if(CraftBookPlugin.inst().getConfiguration().showPermissionMessages)
+        if (!player.hasPermission("craftbook.circuits.pipes")) {
+            if (CraftBookPlugin.inst().getConfiguration().showPermissionMessages)
                 player.printError("mech.create-permission");
             SignUtil.cancelSign(event);
             return;
         }
 
-        if(ProtectionUtil.shouldUseProtection()) {
+        if (ProtectionUtil.shouldUseProtection()) {
             Block pistonBlock = null;
 
             if (SignUtil.isWallSign(event.getBlock())) {
@@ -79,7 +85,7 @@ public class Pipes extends AbstractCraftBookMechanic {
                     pistonBlock = event.getBlock().getRelative(BlockFace.UP);
                 }
             }
-            if(pistonBlock != null && isPiston(pistonBlock)) {
+            if (pistonBlock != null && isPiston(pistonBlock)) {
                 Piston pis = (Piston) pistonBlock.getBlockData();
                 Block off = pistonBlock.getRelative(pis.getFacing());
                 if (InventoryUtil.doesBlockHaveInventory(off)) {
@@ -106,428 +112,489 @@ public class Pipes extends AbstractCraftBookMechanic {
         return type == Material.PISTON || type == Material.STICKY_PISTON;
     }
 
-    private static ChangedSign getSignOnPiston(Block block) {
-        BlockData blockData = block.getBlockData();
-        BlockFace facing = BlockFace.SELF;
-        if(blockData instanceof Directional directional) {
-            facing = directional.getFacing();
-        }
+    private EnumerationResult locateExitNodesForItems(Block inputPistonBlock, LongSet visitedBlocks, boolean resetCounters, List<ItemStack> itemsInPipe) {
+        return _enumeratePipeBlocks(inputPistonBlock, visitedBlocks, resetCounters, (pipeBlock, cachedPipeBlock) -> {
+            if (itemsInPipe.isEmpty())
+                return EnumerationDecision.STOP;
 
-        for(BlockFace face : LocationUtil.getDirectFaces()) {
-            if(face == facing || !SignUtil.isSign(block.getRelative(face)))
-                continue;
-            if(!SignUtil.isStandingSign(block.getRelative(face)) && (face == BlockFace.UP || face == BlockFace.DOWN))
-                continue;
-            else if (SignUtil.isStandingSign(block.getRelative(face)) && face != BlockFace.UP && face != BlockFace.DOWN)
-                continue;
-            if(!SignUtil.isStandingSign(block.getRelative(face)) && !SignUtil.getBackBlock(block.getRelative(face)).getLocation().equals(block.getLocation()))
-                continue;
-            ChangedSign sign = CraftBookBukkitUtil.toChangedSign(block.getRelative(face));
-            if(sign != null && sign.getLine(1).equalsIgnoreCase("[Pipe]"))
-                return sign;
-        }
+            if (!CachedBlock.isMaterial(cachedPipeBlock, Material.PISTON))
+                return EnumerationDecision.CONTINUE;
 
-        return null;
-    }
+            Block putBlock = pipeBlock.getRelative(CachedBlock.getFacing(cachedPipeBlock));
+            int cachedPutBlock = currentBlockCache.getCachedBlock(putBlock);
+            boolean isSubPipe = CachedBlock.isTube(cachedPutBlock) && !CachedBlock.isPane(cachedPutBlock);
 
-    private void searchNearbyPipes(Block block, Set<Vector> visitedPipes, List<ItemStack> items) {
-        Deque<Block> searchQueue = new ArrayDeque<>();
-        searchQueue.addFirst(block);
+            // Add the sub-pipe tube-block to the visited-set as to avoid it being walked into again
+            // by the current enumerator on the next iteration, which would render filters useless.
+            if (isSubPipe)
+                visitedBlocks.add(CompactId.computeWorldlessBlockId(putBlock));
 
-        //Use the queue to search blocks.
-        while (!searchQueue.isEmpty()) {
-            Block bl = searchQueue.poll();
-            Material blType = bl.getType();
-            if (blType == Material.PISTON) {
-                Piston p = (Piston) bl.getBlockData();
+            PipeSign sign = currentBlockCache.getSignOnPiston(pipeBlock, cachedPipeBlock);
 
-                ChangedSign sign = getSignOnPiston(bl);
+            List<ItemStack> filteredPipeItems = new ArrayList<>(VerifyUtil.withoutNulls(ItemUtil.filterItems(itemsInPipe, sign.includeFilters, sign.excludeFilters)));
 
-                HashSet<ItemStack> pFilters = new HashSet<>();
-                HashSet<ItemStack> pExceptions = new HashSet<>();
+            PipeFilterEvent filterEvent = new PipeFilterEvent(pipeBlock, itemsInPipe, sign.includeFilters, sign.excludeFilters, filteredPipeItems);
+            Bukkit.getPluginManager().callEvent(filterEvent);
 
-                if(sign != null) {
-                    for(String line3 : RegexUtil.COMMA_PATTERN.split(sign.getLine(2))) {
-                        pFilters.add(ItemSyntax.getItem(line3.trim()));
+            filteredPipeItems = filterEvent.getFilteredItems();
+
+            if (filteredPipeItems.isEmpty())
+                return EnumerationDecision.CONTINUE;
+
+            PipePutEvent putEvent = new PipePutEvent(pipeBlock, new ArrayList<>(filteredPipeItems), putBlock, cachedPutBlock);
+            Bukkit.getPluginManager().callEvent(putEvent);
+
+            if (putEvent.isCancelled())
+                return EnumerationDecision.CONTINUE;
+
+            List<ItemStack> itemsToPut = putEvent.getItems();
+            List<ItemStack> leftovers = new ArrayList<>();
+
+            EnumerationResult subWalkResult = EnumerationResult.COMPLETED;
+
+            if (
+                CachedBlock.hasHandledOutputInventory(cachedPutBlock)
+                    && putBlock.getState() instanceof InventoryHolder holder
+            ) {
+                leftovers.addAll(InventoryUtil.addItemsToInventory(holder, itemsToPut.toArray(new ItemStack[0])));
+            } else if (CachedBlock.isMaterial(cachedPutBlock, Material.JUKEBOX)) {
+                Jukebox jukebox = (Jukebox) putBlock.getState();
+
+                for (ItemStack item : itemsToPut) {
+                    if (jukebox.hasRecord() || !item.getType().isRecord()) {
+                        leftovers.add(item);
+                        continue;
                     }
-                    for(String line4 : RegexUtil.COMMA_PATTERN.split(sign.getLine(3))) {
-                        pExceptions.add(ItemSyntax.getItem(line4.trim()));
-                    }
 
-                    pFilters.removeAll(Collections.<ItemStack>singleton(null));
-                    pExceptions.removeAll(Collections.<ItemStack>singleton(null));
+                    jukebox.setRecord(item);
+                    jukebox.update();
                 }
-
-                List<ItemStack> filteredItems = new ArrayList<>(VerifyUtil.withoutNulls(ItemUtil.filterItems(items, pFilters, pExceptions)));
-
-                PipeFilterEvent filterEvent = new PipeFilterEvent(bl, items, pFilters, pExceptions, filteredItems);
-                Bukkit.getPluginManager().callEvent(filterEvent);
-
-                filteredItems = filterEvent.getFilteredItems();
-
-                if(filteredItems.isEmpty())
-                    continue;
-
-                List<ItemStack> newItems = new ArrayList<>();
-
-                Block fac = bl.getRelative(p.getFacing());
-
-                PipePutEvent event = new PipePutEvent(bl, new ArrayList<>(filteredItems), fac);
-                Bukkit.getPluginManager().callEvent(event);
-
-                if (!event.isCancelled()) {
-                    if (InventoryUtil.doesBlockHaveInventory(fac)) {
-                        InventoryHolder holder = (InventoryHolder) fac.getState();
-                        newItems.addAll(InventoryUtil.addItemsToInventory(holder, event.getItems().toArray(new ItemStack[event.getItems().size()])));
-                    } else if (fac.getType() == Material.JUKEBOX) {
-                        Jukebox juke = (Jukebox) fac.getState();
-                        List<ItemStack> its = new ArrayList<>(event.getItems());
-                        if (juke.getPlaying() != Material.AIR) {
-                            Iterator<ItemStack> iter = its.iterator();
-                            while (iter.hasNext()) {
-                                ItemStack st = iter.next();
-                                if (!st.getType().isRecord()) continue;
-                                juke.setPlaying(st.getType());
-                                juke.update();
-                                iter.remove();
-                                break;
-                            }
-                        }
-                        newItems.addAll(its);
-                    } else {
-                        newItems.addAll(event.getItems());
-                    }
-
-                    items.removeAll(filteredItems);
-                    items.addAll(newItems);
-                }
-            } else if (blType == Material.DROPPER) {
-                ChangedSign sign = getSignOnPiston(bl);
-
-                HashSet<ItemStack> pFilters = new HashSet<>();
-                HashSet<ItemStack> pExceptions = new HashSet<>();
-
-                if(sign != null) {
-                    for(String line3 : RegexUtil.COMMA_PATTERN.split(sign.getLine(2))) {
-                        pFilters.add(ItemSyntax.getItem(line3.trim()));
-                    }
-                    for(String line4 : RegexUtil.COMMA_PATTERN.split(sign.getLine(3))) {
-                        pExceptions.add(ItemSyntax.getItem(line4.trim()));
-                    }
-
-                    pFilters.removeAll(Collections.<ItemStack>singleton(null));
-                    pExceptions.removeAll(Collections.<ItemStack>singleton(null));
-                }
-
-                List<ItemStack> filteredItems = new ArrayList<>(VerifyUtil.withoutNulls(ItemUtil.filterItems(items, pFilters, pExceptions)));
-
-                if(filteredItems.isEmpty())
-                    continue;
-
-                Dropper dropper = (Dropper) bl.getState();
-                List<ItemStack> newItems =
-                        new ArrayList<>(dropper.getInventory().addItem(filteredItems.toArray(new ItemStack[filteredItems.size()])).values());
-
-                for(ItemStack stack : dropper.getInventory().getContents())
-                    if(ItemUtil.isStackValid(stack))
-                        for(int i = 0; i < stack.getAmount(); i++)
-                            dropper.drop();
-
-                items.removeAll(filteredItems);
-                items.addAll(newItems);
+            } else if (isSubPipe) {
+                // Handle sub-pipes which continue the walk from here on forwards with a (possibly) limited set of items.
+                List<ItemStack> subPipeItems = new ArrayList<>(itemsToPut);
+                subWalkResult = locateExitNodesForItems(putBlock, visitedBlocks, false, subPipeItems);
+                leftovers.addAll(subPipeItems);
+            } else {
+                leftovers.addAll(itemsToPut);
             }
 
-            if (!items.isEmpty()) {
-                //Enumerate the search queue.
+            itemsInPipe.removeAll(filteredPipeItems);
+            itemsInPipe.addAll(leftovers);
+
+            if (itemsInPipe.isEmpty() || subWalkResult != EnumerationResult.COMPLETED)
+                return EnumerationDecision.STOP;
+
+            return EnumerationDecision.CONTINUE;
+        });
+    }
+
+    @Override
+    public EnumerationResult enumeratePipeBlocks(Block firstBlock, @Nullable LongSet visitedBlocks, PipeEnumerationHandler enumerationHandler) {
+        return _enumeratePipeBlocks(firstBlock, visitedBlocks, true, enumerationHandler);
+    }
+
+    private EnumerationResult _enumeratePipeBlocks(Block firstBlock, @Nullable LongSet visitedBlocks, boolean resetCounters, PipeEnumerationHandler enumerationHandler) {
+        if (!Bukkit.isPrimaryThread())
+            throw new IllegalStateException("This method must be called on the main server thread");
+
+        try {
+            // Seeing how this is public API, assign the current block-cache again, because it
+            // will only be correctly set when called through #startPipe.
+            this.currentBlockCache = cacheRegistry.getBlockCache(firstBlock.getWorld());
+
+            if (visitedBlocks == null)
+                visitedBlocks = new LongOpenHashSet();
+
+            if (resetCounters) {
+                currentTubeBlockCounter = currentPistonBlockCounter = 0;
+                currentBlockCache.resetCacheLoadCounter();
+            }
+
+            Deque<Block> searchQueue = new ArrayDeque<>();
+            searchQueue.addFirst(firstBlock);
+            visitedBlocks.add(CompactId.computeWorldlessBlockId(firstBlock));
+
+            while (!searchQueue.isEmpty()) {
+                Block pipeBlock = searchQueue.poll();
+                int cachedPipeBlock = currentBlockCache.getCachedBlock(pipeBlock);
+
+                if (CachedBlock.isTube(cachedPipeBlock)) {
+                    ++currentTubeBlockCounter;
+
+                    if (maxTubeBlockCount >= 0 && currentTubeBlockCounter > maxTubeBlockCount)
+                        return EnumerationResult.EXCEEDED_TUBE_COUNT_LIMIT;
+                }
+
+                if (CachedBlock.isMaterial(cachedPipeBlock, Material.PISTON)) {
+                    ++currentPistonBlockCounter;
+
+                    if (maxPistonBlockCount >= 0 && currentPistonBlockCounter > maxPistonBlockCount)
+                        return EnumerationResult.EXCEEDED_PISTON_COUNT_LIMIT;
+                }
+
+                EnumerationDecision handleResult = enumerationHandler.handle(pipeBlock, cachedPipeBlock);
+
+                if (handleResult != EnumerationDecision.CONTINUE)
+                    return EnumerationResult.COMPLETED;
+
+                // While we could check for exceeding the load-counter at countless call-sites, and while there already have been
+                // a few cache-lookups prior to enumerating, a hand-full blocks more don't matter in the grand scheme of things.
+                if (maxCacheLoadCount >= 0 && currentBlockCache.getCacheLoadCounter() >= maxCacheLoadCount)
+                    return EnumerationResult.EXCEEDED_CACHE_LOAD_LIMIT;
+
                 for (int x = -1; x < 2; x++) {
                     for (int y = -1; y < 2; y++) {
                         for (int z = -1; z < 2; z++) {
-
-                            if(items.isEmpty())
-                                return;
+                            if (x == 0 && y == 0 && z == 0) continue;
 
                             if (!pipesDiagonal) {
                                 if (x != 0 && y != 0) continue;
                                 if (x != 0 && z != 0) continue;
                                 if (y != 0 && z != 0) continue;
-                            } else {
+                            } else if (pipeInsulator != null) {
                                 boolean xIsY = Math.abs(x) == Math.abs(y);
                                 boolean xIsZ = Math.abs(x) == Math.abs(z);
                                 if (xIsY && xIsZ) {
-                                    if (pipeInsulator.equalsFuzzy(BukkitAdapter.adapt(bl.getRelative(x, 0, 0).getBlockData()))
-                                            && pipeInsulator.equalsFuzzy(BukkitAdapter.adapt(bl.getRelative(0, y, 0).getBlockData()))
-                                            && pipeInsulator.equalsFuzzy(BukkitAdapter.adapt(bl.getRelative(0, 0, z).getBlockData()))) {
+                                    if (CachedBlock.isMaterial(currentBlockCache.getCachedBlock(pipeBlock.getRelative(x, 0, 0)), pipeInsulator)
+                                      && CachedBlock.isMaterial(currentBlockCache.getCachedBlock(pipeBlock.getRelative(0, y, 0)), pipeInsulator)
+                                      && CachedBlock.isMaterial(currentBlockCache.getCachedBlock(pipeBlock.getRelative(0, 0, z)), pipeInsulator)) {
                                         continue;
                                     }
                                 } else if (xIsY) {
-                                    if (pipeInsulator.equalsFuzzy(BukkitAdapter.adapt(bl.getRelative(x, 0, 0).getBlockData()))
-                                            && pipeInsulator.equalsFuzzy(BukkitAdapter.adapt(bl.getRelative(0, y, 0).getBlockData()))) {
+                                    if (CachedBlock.isMaterial(currentBlockCache.getCachedBlock(pipeBlock.getRelative(x, 0, 0)), pipeInsulator)
+                                      && CachedBlock.isMaterial(currentBlockCache.getCachedBlock(pipeBlock.getRelative(0, y, 0)), pipeInsulator)) {
                                         continue;
                                     }
                                 } else if (xIsZ) {
-                                    if (pipeInsulator.equalsFuzzy(BukkitAdapter.adapt(bl.getRelative(x, 0, 0).getBlockData()))
-                                            && pipeInsulator.equalsFuzzy(BukkitAdapter.adapt(bl.getRelative(0, 0, z).getBlockData()))) {
+                                    if (CachedBlock.isMaterial(currentBlockCache.getCachedBlock(pipeBlock.getRelative(x, 0, 0)), pipeInsulator)
+                                      && CachedBlock.isMaterial(currentBlockCache.getCachedBlock(pipeBlock.getRelative(0, 0, z)), pipeInsulator)) {
                                         continue;
                                     }
                                 } else {
-                                    if (pipeInsulator.equalsFuzzy(BukkitAdapter.adapt(bl.getRelative(0, y, 0).getBlockData()))
-                                            && pipeInsulator.equalsFuzzy(BukkitAdapter.adapt(bl.getRelative(0, 0, z).getBlockData()))) {
+                                    if (CachedBlock.isMaterial(currentBlockCache.getCachedBlock(pipeBlock.getRelative(0, y, 0)), pipeInsulator)
+                                      && CachedBlock.isMaterial(currentBlockCache.getCachedBlock(pipeBlock.getRelative(0, 0, z)), pipeInsulator)) {
                                         continue;
                                     }
                                 }
                             }
 
-                            Block off = bl.getRelative(x, y, z);
-                            Material offType = off.getType();
+                            Block enumeratedBlock = pipeBlock.getRelative(x, y, z);
+                            int cachedEnumeratedBlock = currentBlockCache.getCachedBlock(enumeratedBlock);
 
-                            if (!isValidPipeBlock(offType)) continue;
+                            if (!CachedBlock.isValidPipeBlock(cachedEnumeratedBlock))
+                                continue;
 
-                            if (visitedPipes.contains(off.getLocation().toVector())) continue;
-                            visitedPipes.add(off.getLocation().toVector());
+                            // Ensure that the block we came from is of the same color as the one we're enumerating.
+                            // [1]: Do this first, as to not mark blocks as visited that have not been walked into.
+                            //      This could become a problem if that other-colored block is a part of the future path.
+                            if (CachedBlock.doTubeColorsMismatch(cachedPipeBlock, cachedEnumeratedBlock))
+                                continue;
 
-                            if(ItemUtil.isStainedGlass(blType) && ItemUtil.isStainedGlass(offType) && blType != offType) continue;
+                            if (!visitedBlocks.add(CompactId.computeWorldlessBlockId(enumeratedBlock)))
+                                continue;
 
-                            if(offType == Material.GLASS || ItemUtil.isStainedGlass(offType)) {
-                                searchQueue.add(off);
-                            } else if (offType == Material.GLASS_PANE || ItemUtil.isStainedGlassPane(offType)) {
-                                Block offsetBlock = off.getRelative(x, y, z);
-                                Material offsetBlockType = offsetBlock.getType();
-                                if (!isValidPipeBlock(offsetBlockType)) continue;
-                                if (visitedPipes.contains(offsetBlock.getLocation().toVector())) continue;
-                                if(ItemUtil.isStainedGlassPane(offType)) {
-                                    if((ItemUtil.isStainedGlass(blType)
-                                            || ItemUtil.isStainedGlassPane(blType)) && ItemUtil.getStainedColor(offType) != ItemUtil
-                                            .getStainedColor(offsetBlockType)
-                                            || (ItemUtil.isStainedGlass(offsetBlockType)
-                                            || ItemUtil.isStainedGlassPane(offsetBlockType)) && ItemUtil.getStainedColor(offType) != ItemUtil
-                                            .getStainedColor(offsetBlockType)) continue;
-                                }
-                                visitedPipes.add(offsetBlock.getLocation().toVector());
-                                searchQueue.add(off.getRelative(x, y, z));
-                            } else if(offType == Material.PISTON)
-                                searchQueue.addFirst(off); //Pistons are treated with higher priority.
+                            if (!CachedBlock.isTube(cachedEnumeratedBlock)) {
+                                // Pistons are treated with higher priority.
+                                if (CachedBlock.isMaterial(cachedEnumeratedBlock, Material.PISTON))
+                                    searchQueue.addFirst(enumeratedBlock);
+
+                                continue;
+                            }
+
+                            if (!CachedBlock.isPane(cachedEnumeratedBlock)) {
+                                searchQueue.add(enumeratedBlock);
+                                continue;
+                            }
+
+                            Block nextEnumeratedBlock = enumeratedBlock.getRelative(x, y, z);
+                            int cachedNextEnumeratedBlock = currentBlockCache.getCachedBlock(nextEnumeratedBlock);
+
+                            if (!CachedBlock.isValidPipeBlock(cachedNextEnumeratedBlock))
+                                continue;
+
+                            // Ensure that the pane is allowed to link with the block we're jumping across to
+                            // Same reasoning here as with [1]
+                            if (CachedBlock.doTubeColorsMismatch(cachedEnumeratedBlock, cachedNextEnumeratedBlock))
+                                continue;
+
+                            if (!visitedBlocks.add(CompactId.computeWorldlessBlockId(nextEnumeratedBlock)))
+                                continue;
+
+                            searchQueue.add(nextEnumeratedBlock);
                         }
                     }
                 }
             }
+
+            return EnumerationResult.COMPLETED;
+        } catch (LoadingChunkException e) {
+            return EnumerationResult.NEEDS_CHUNK_LOADING;
         }
     }
 
-    private static boolean isValidPipeBlock(Material type) {
-        return switch (type) {
-            case GLASS, PISTON, STICKY_PISTON, DROPPER, GLASS_PANE -> true;
-            default -> ItemUtil.isStainedGlass(type)
-                    || ItemUtil.isStainedGlassPane(type)
-                    || SignUtil.isWallSign(type);
-        };
+    @Override
+    public int getMaxTubeBlockCount() {
+        return maxTubeBlockCount;
     }
 
-    private void startPipe(Block block, List<ItemStack> items, boolean request) {
+    @Override
+    public int getMaxPistonBlockCount() {
+        return maxPistonBlockCount;
+    }
 
-        Set<ItemStack> filters = new HashSet<>();
-        Set<ItemStack> exceptions = new HashSet<>();
+    @Override
+    public int getMaxCacheLoadCount() {
+        return maxCacheLoadCount;
+    }
 
-        ChangedSign sign = getSignOnPiston(block);
+    private EnumerationResult startPipe(Block inputPistonBlock, List<ItemStack> itemsInPipe, boolean wasRequest) {
+        this.currentBlockCache = cacheRegistry.getBlockCache(inputPistonBlock.getWorld());
 
-        if(sign != null) {
-            for(String line3 : RegexUtil.COMMA_PATTERN.split(sign.getLine(2))) {
-                filters.add(ItemSyntax.getItem(line3.trim()));
-            }
-            for(String line4 : RegexUtil.COMMA_PATTERN.split(sign.getLine(3))) {
-                exceptions.add(ItemSyntax.getItem(line4.trim()));
-            }
+        PipeSign sign;
+        Block containerBlock;
+        int cachedContainerBlock;
+
+        try {
+            int cachedInputPistonBlock = currentBlockCache.getCachedBlock(inputPistonBlock);
+
+            if (!CachedBlock.isMaterial(cachedInputPistonBlock, Material.STICKY_PISTON))
+                return EnumerationResult.COMPLETED;
+
+            sign = currentBlockCache.getSignOnPiston(inputPistonBlock, cachedInputPistonBlock);
+
+            if (pipeRequireSign && sign == PipeSign.NO_SIGN)
+                return EnumerationResult.COMPLETED;
+
+            containerBlock = inputPistonBlock.getRelative(CachedBlock.getFacing(cachedInputPistonBlock));
+            cachedContainerBlock = currentBlockCache.getCachedBlock(containerBlock);
+        }
+        // If the very beginning of the pipe already (partially) is within an unloaded chunk,
+        // there's no need to start the process at all.
+        catch (LoadingChunkException ignored) {
+            return EnumerationResult.NEEDS_CHUNK_LOADING;
         }
 
-        filters.removeAll(Collections.<ItemStack>singleton(null));
-        exceptions.removeAll(Collections.<ItemStack>singleton(null));
+        LongSet visitedBlocks = new LongOpenHashSet();
+        visitedBlocks.add(CompactId.computeWorldlessBlockId(containerBlock));
 
-        Set<Vector> visitedPipes = new HashSet<>();
+        // Suck items from container-block
 
-        if (block.getType() == Material.STICKY_PISTON) {
+        InventoryHolder inventoryHolder = null;
+        Jukebox jukebox = null;
 
-            List<ItemStack> leftovers = new ArrayList<>();
+        if (
+            CachedBlock.hasHandledInputInventory(cachedContainerBlock)
+                && containerBlock.getState() instanceof InventoryHolder holder
+        ) {
+            inventoryHolder = holder;
+            Inventory blockInventory = inventoryHolder.getInventory();
 
-            Piston p = (Piston) block.getBlockData();
-            Block fac = block.getRelative(p.getFacing());
-            Material facType = fac.getType();
+            if (blockInventory instanceof FurnaceInventory furnaceInventory) {
+                ItemStack result = furnaceInventory.getResult();
 
-            if (facType == Material.CHEST
-                    || facType == Material.TRAPPED_CHEST
-                    || facType == Material.DROPPER
-                    || facType == Material.DISPENSER
-                    || facType == Material.HOPPER
-                    || facType == Material.BARREL
-                    || facType == Material.CHISELED_BOOKSHELF
-                    || facType == Material.CRAFTER
-                    || facType == Material.DECORATED_POT
-                    || Tag.SHULKER_BOXES.isTagged(facType)) {
-                for (ItemStack stack : ((InventoryHolder) fac.getState()).getInventory().getContents()) {
+                if (ItemUtil.isStackValid(result) && ItemUtil.doesItemPassFilters(result, sign.includeFilters, sign.excludeFilters)) {
+                    itemsInPipe.add(result);
+                    furnaceInventory.setResult(null);
+                }
+            } else if (inventoryHolder instanceof BrewingStand brewingStand) {
+                if (brewingStand.getBrewingTime() <= 0) {
+                    BrewerInventory inventory = brewingStand.getInventory();
+
+                    for (int i = 0; i < 3; ++i) {
+                        ItemStack item = inventory.getItem(i);
+
+                        if (ItemUtil.isStackValid(item) && ItemUtil.doesItemPassFilters(item, sign.includeFilters, sign.excludeFilters)) {
+                            itemsInPipe.add(item);
+                            inventory.setItem(i, null);
+
+                            if (pipeStackPerPull)
+                                break;
+                        }
+                    }
+                }
+            } else {
+                for (int slot = 0; slot < blockInventory.getSize(); ++slot) {
+                    ItemStack stack = blockInventory.getItem(slot);
 
                     if (!ItemUtil.isStackValid(stack))
                         continue;
 
-                    if(!ItemUtil.doesItemPassFilters(stack, filters, exceptions))
+                    if (!ItemUtil.doesItemPassFilters(stack, sign.includeFilters, sign.excludeFilters))
                         continue;
 
-                    items.add(stack);
-                    ((InventoryHolder) fac.getState()).getInventory().removeItem(stack);
+                    itemsInPipe.add(stack);
+                    blockInventory.setItem(slot, null);
+
                     if (pipeStackPerPull)
                         break;
                 }
+            }
+        } else if (CachedBlock.isMaterial(cachedContainerBlock, Material.JUKEBOX)) {
+            jukebox = (Jukebox) containerBlock.getState();
 
-                PipeSuckEvent event = new PipeSuckEvent(block, new ArrayList<>(items), fac);
-                Bukkit.getPluginManager().callEvent(event);
-                items.clear();
-                items.addAll(event.getItems());
-                if(!event.isCancelled()) {
-                    visitedPipes.add(fac.getLocation().toVector());
-                    searchNearbyPipes(block, visitedPipes, items);
-                }
+            if (jukebox.hasRecord()) {
+                itemsInPipe.add(jukebox.getRecord());
+                jukebox.setRecord(null);
+                jukebox.update();
+            }
+        }
 
-                if (!items.isEmpty()) {
-                    if (facType == Material.CRAFTER)
-                        leftovers.addAll(InventoryUtil.addItemsToCrafter((Crafter) fac.getState(), items.toArray(new ItemStack[items.size()])));
-                    else {
-                        for (ItemStack item : items) {
-                            if (item == null) continue;
-                            leftovers.addAll(((InventoryHolder) fac.getState()).getInventory().addItem(item).values());
-                        }
-                    }
-                }
-            } else if (facType == Material.FURNACE || facType == Material.BLAST_FURNACE || facType == Material.SMOKER) {
+        PipeSuckEvent suckEvent = new PipeSuckEvent(inputPistonBlock, new ArrayList<>(itemsInPipe), containerBlock, cachedContainerBlock);
+        Bukkit.getPluginManager().callEvent(suckEvent);
 
-                Furnace f = (Furnace) fac.getState();
+        itemsInPipe.clear();
 
-                if (!ItemUtil.isStackValid(f.getInventory().getResult()))
-                    return;
+        for (ItemStack item : suckEvent.getItems()) {
+            if (ItemUtil.isStackValid(item))
+                itemsInPipe.add(item);
+        }
 
-                if(!ItemUtil.doesItemPassFilters(f.getInventory().getResult(), filters, exceptions))
-                    return;
-                items.add(f.getInventory().getResult());
-                if (f.getInventory().getResult() != null) f.getInventory().setResult(null);
+        // Walk pipe to store as many items as possible
 
-                PipeSuckEvent event = new PipeSuckEvent(block, new ArrayList<>(items), fac);
-                Bukkit.getPluginManager().callEvent(event);
-                items.clear();
-                items.addAll(event.getItems());
-                if(!event.isCancelled()) {
-                    visitedPipes.add(fac.getLocation().toVector());
-                    searchNearbyPipes(block, visitedPipes, items);
-                }
+        EnumerationResult enumerationResult = EnumerationResult.COMPLETED;
 
-                if (!items.isEmpty()) {
-                    for (ItemStack item : items) {
-                        if (item == null) continue;
-                        if(f.getInventory().getResult() == null)
-                            f.getInventory().setResult(item);
-                        else
-                            leftovers.add(ItemUtil.addToStack(f.getInventory().getResult(), item));
-                    }
-                } else f.getInventory().setResult(null);
-            } else if (facType == Material.JUKEBOX) {
+        if (!suckEvent.isCancelled() && !itemsInPipe.isEmpty())
+            enumerationResult = locateExitNodesForItems(inputPistonBlock, visitedBlocks, true, itemsInPipe);
 
-                Jukebox juke = (Jukebox) fac.getState();
+        // Try to put leftovers back into the block, if the limits have not been exceeded; otherwise,
+        // let them be dropped at the input-container, as to avoid unending loops.
 
-                if (juke.getPlaying() != Material.AIR) {
-                    items.add(new ItemStack(juke.getPlaying()));
+        List<ItemStack> leftovers = new ArrayList<>();
 
-                    PipeSuckEvent event = new PipeSuckEvent(block, new ArrayList<>(items), fac);
-                    Bukkit.getPluginManager().callEvent(event);
-                    items.clear();
-                    items.addAll(event.getItems());
-
-                    if (!event.isCancelled()) {
-                        visitedPipes.add(fac.getLocation().toVector());
-                        searchNearbyPipes(block, visitedPipes, items);
+        if (enumerationResult.didExceedExtentLimits) {
+            leftovers.addAll(itemsInPipe);
+        } else if (!itemsInPipe.isEmpty()) {
+            if (inventoryHolder != null) {
+                leftovers.addAll(InventoryUtil.addItemsToInventory(inventoryHolder, itemsInPipe.toArray(new ItemStack[0])));
+            } else if (jukebox != null) {
+                for (ItemStack item : itemsInPipe) {
+                    if (jukebox.hasRecord() || !item.getType().isRecord()) {
+                        leftovers.add(item);
+                        continue;
                     }
 
-                    if (!items.isEmpty()) {
-                        for (ItemStack item : items) {
-                            if (!ItemUtil.isStackValid(item)) continue;
-                            block.getWorld().dropItem(BlockUtil.getBlockCentre(block), item);
-                        }
-                    } else {
-                        juke.setPlaying(Material.AIR);
-                        juke.update();
-                    }
+                    jukebox.setRecord(item);
+                    jukebox.update();
                 }
             } else {
-                PipeSuckEvent event = new PipeSuckEvent(block, new ArrayList<>(items), fac);
-                Bukkit.getPluginManager().callEvent(event);
-                items.clear();
-                items.addAll(event.getItems());
-                if(!event.isCancelled() && !items.isEmpty()) {
-                    visitedPipes.add(fac.getLocation().toVector());
-                    searchNearbyPipes(block, visitedPipes, items);
-                }
-                leftovers.addAll(items);
+                leftovers.addAll(itemsInPipe);
+            }
+        }
+
+        // Finish up the pipe and possibly drop leftovers
+
+        PipeFinishEvent finishEvent = new PipeFinishEvent(inputPistonBlock, leftovers, containerBlock, wasRequest);
+        Bukkit.getPluginManager().callEvent(finishEvent);
+
+        leftovers = finishEvent.getItems();
+        itemsInPipe.clear();
+
+        if (!leftovers.isEmpty()) {
+            for (ItemStack item : leftovers) {
+                if (!ItemUtil.isStackValid(item))
+                    continue;
+
+                inputPistonBlock.getWorld().dropItemNaturally(inputPistonBlock.getLocation().add(0.5, 0.5, 0.5), item);
+            }
+        }
+
+        return enumerationResult;
+    }
+
+    private void startPipeAndHandleNotifications(Block inputPistonBlock, List<ItemStack> itemsInPipe, boolean wasRequest) {
+        EnumerationResult result = startPipe(inputPistonBlock, itemsInPipe, wasRequest);
+
+        if (result == EnumerationResult.COMPLETED)
+            return;
+
+        if (notificationRadiusSquared <= 0)
+            return;
+
+        Location inputLocation = inputPistonBlock.getLocation();
+        LanguageManager languageManager = CraftBookPlugin.inst().getLanguageManager();
+
+        for (Player player : inputPistonBlock.getWorld().getPlayers()) {
+            if (player.getLocation().distanceSquared(inputLocation) > notificationRadiusSquared)
+                continue;
+
+            String message;
+
+            if (result == EnumerationResult.NEEDS_CHUNK_LOADING || result == EnumerationResult.EXCEEDED_CACHE_LOAD_LIMIT) {
+                message = ChatColor.GOLD + languageManager.getString("circuits.pipes.warmup-notification", LanguageManager.getPlayersLanguage(player))
+                    .replace("{tubes}", String.valueOf(currentTubeBlockCounter))
+                    .replace("{pistons}", String.valueOf(currentPistonBlockCounter));
+            } else if (result == EnumerationResult.EXCEEDED_TUBE_COUNT_LIMIT) {
+                message = ChatColor.RED + languageManager.getString("circuits.pipes.exceeded-tube-count-notification", LanguageManager.getPlayersLanguage(player))
+                    .replace("{limit}", String.valueOf(maxTubeBlockCount));
+            } else if (result == EnumerationResult.EXCEEDED_PISTON_COUNT_LIMIT) {
+                message = ChatColor.RED + languageManager.getString("circuits.pipes.exceeded-piston-count-notification", LanguageManager.getPlayersLanguage(player))
+                    .replace("{limit}", String.valueOf(maxPistonBlockCount));
+            } else {
+                continue;
             }
 
-            PipeFinishEvent fEvent = new PipeFinishEvent(block, leftovers, fac, request);
-            Bukkit.getPluginManager().callEvent(fEvent);
-
-            leftovers = fEvent.getItems();
-            items.clear();
-
-            if (!leftovers.isEmpty()) {
-                for (ItemStack item : leftovers) {
-                    if (!ItemUtil.isStackValid(item)) continue;
-                    block.getWorld().dropItemNaturally(block.getLocation().add(0.5, 0.5, 0.5), item);
-                }
-            }
+            player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(message));
         }
     }
 
     @EventHandler(priority = EventPriority.HIGH)
-    public void onBlockRedstoneChange(SourcedBlockRedstoneEvent event){
+    public void onBlockRedstoneChange(SourcedBlockRedstoneEvent event) {
+        if (!EventUtil.passesFilter(event))
+            return;
 
-        if (event.getBlock().getType() == Material.STICKY_PISTON) {
-
-            ChangedSign sign = getSignOnPiston(event.getBlock());
-
-            if (pipeRequireSign && sign == null)
-                return;
-
-            if(!EventUtil.passesFilter(event)) return;
-
-            startPipe(event.getBlock(), new ArrayList<>(), false);
-        }
+        startPipeAndHandleNotifications(event.getBlock(), new ArrayList<>(), false);
     }
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onPipeRequest(PipeRequestEvent event) {
+        if (!EventUtil.passesFilter(event))
+            return;
 
-        if (event.getBlock().getType() == Material.STICKY_PISTON) {
-
-            ChangedSign sign = getSignOnPiston(event.getBlock());
-
-            if (pipeRequireSign && sign == null)
-                return;
-
-            if(!EventUtil.passesFilter(event)) return;
-
-            startPipe(event.getBlock(), event.getItems(), true);
-        }
+        startPipeAndHandleNotifications(event.getBlock(), event.getItems(), true);
     }
 
     private boolean pipesDiagonal;
-    private BlockStateHolder<?> pipeInsulator;
+    private @Nullable Material pipeInsulator;
     private boolean pipeStackPerPull;
     private boolean pipeRequireSign;
+    private int maxTubeBlockCount;
+    private int maxPistonBlockCount;
+    private int maxCacheLoadCount;
+    private int notificationRadiusSquared;
 
     @Override
-    public void loadConfiguration (YAMLProcessor config, String path) {
+    public void loadConfiguration(YAMLProcessor config, String path) {
 
         config.setComment(path + "allow-diagonal", "Allow pipes to work diagonally. Required for insulators to work.");
         pipesDiagonal = config.getBoolean(path + "allow-diagonal", false);
 
         config.setComment(path + "insulator-block", "When pipes work diagonally, this block allows the pipe to be insulated to not work diagonally.");
-        pipeInsulator = BlockSyntax.getBlock(config.getString(path + "insulator-block", BlockTypes.WHITE_WOOL.id()), true);
+        BlockType insulatorType = BlockTypes.get(config.getString(path + "insulator-block", BlockTypes.WHITE_WOOL.id()));
+        pipeInsulator = insulatorType == null ? null : BukkitAdapter.adapt(insulatorType);
 
         config.setComment(path + "stack-per-move", "This option stops the pipes taking the entire chest on power, and makes it just take a single stack.");
         pipeStackPerPull = config.getBoolean(path + "stack-per-move", true);
 
         config.setComment(path + "require-sign", "Requires pipes to have a [Pipe] sign connected to them. This is the only way to require permissions to make pipes.");
         pipeRequireSign = config.getBoolean(path + "require-sign", false);
+
+        config.setComment(path + "max-tube-block-count", "After how many encountered tube-blocks to stop walking the pipe; -1 for no limit.");
+        maxTubeBlockCount = config.getInt(path + "max-pipe-block-count", -1);
+
+        config.setComment(path + "max-piston-block-count", "After how many encountered output-pistons to stop walking the pipe; -1 for no limit.");
+        maxPistonBlockCount = config.getInt(path + "max-piston-block-count", -1);
+
+        config.setComment(path + "max-cache-load-count", "When initially warming up caches, how many blocks to load in one go at max; -1 for no limit.");
+        maxCacheLoadCount = config.getInt(path + "max-cache-load-count", 500);
+
+        config.setComment(path + "initial-chunk-retain-duration", "For how long, in seconds, to retain chunks in memory after having loaded them while traversing pipes; -1 for no retainment at all.");
+        cacheRegistry.setInitialChunkTicketDuration(config.getInt(path + "initial-chunk-retain-duration", BlockCacheRegistry.DEFAULT_INITIAL_CHUNK_TICKET_DURATION) * 1000);
+
+        config.setComment(path + "continued-chunk-retain-duration", "For how long, in seconds, to retain chunks in memory that contain regularly accessed blocks; -1 for no continued retainment.");
+        cacheRegistry.setContinuedChunkTicketDuration(config.getInt(path + "continued-chunk-retain-duration", BlockCacheRegistry.DEFAULT_CONTINUED_CHUNK_TICKET_DURATION) * 1000);
+
+        config.setComment(path + "notification-radius", "In what radius around an input-block to send notifications to player's action-bars; -1 to hide them");
+        notificationRadiusSquared = config.getInt(path + "notification-radius", 5);
+        notificationRadiusSquared = notificationRadiusSquared * notificationRadiusSquared;
     }
 }
