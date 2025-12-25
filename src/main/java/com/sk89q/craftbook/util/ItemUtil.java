@@ -60,6 +60,8 @@ public final class ItemUtil {
      * @return The list of items that have been filtered.
      */
     public static List<ItemStack> filterItems(List<ItemStack> stacks, List<ItemStack> includeFilters, List<ItemStack> excludeFilters) {
+        if (includeFilters.isEmpty() && excludeFilters.isEmpty())
+            return stacks;
 
         List<ItemStack> ret = new ArrayList<>();
 
