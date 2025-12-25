@@ -483,7 +483,7 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
 
         // Finish up the pipe and possibly drop leftovers
 
-        PipeFinishEvent finishEvent = new PipeFinishEvent(inputPistonBlock, leftovers, containerBlock, wasRequest);
+        PipeFinishEvent finishEvent = new PipeFinishEvent(inputPistonBlock, leftovers, containerBlock, cachedContainerBlock, wasRequest);
         Bukkit.getPluginManager().callEvent(finishEvent);
 
         leftovers = finishEvent.getItems();

@@ -90,7 +90,7 @@ public abstract class CuboidToggleMechanic extends AbstractCraftBookMechanic {
 
         if(!EventUtil.passesFilter(event)) return;
 
-        if(!SignUtil.isSign(event.getOrigin())) return;
+        if (!CachedBlock.isSign(event.getCachedOrigin())) return;
         ChangedSign sign = CraftBookBukkitUtil.toChangedSign(event.getOrigin());
 
         if(!isApplicableSign(sign.getLine(1))) return;
