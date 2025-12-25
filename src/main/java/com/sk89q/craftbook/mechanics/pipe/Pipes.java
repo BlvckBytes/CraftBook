@@ -32,10 +32,7 @@ import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.inventory.*;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Deque;
-import java.util.List;
+import java.util.*;
 
 public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
 
@@ -112,7 +109,11 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
         return type == Material.PISTON || type == Material.STICKY_PISTON;
     }
 
-    private EnumerationResult locateExitNodesForItems(Block inputPistonBlock, LongSet visitedBlocks, boolean resetCounters, List<ItemStack> itemsInPipe) {
+    private EnumerationResult locateExitNodesForItems(Block inputPistonBlock, LongSet visitedBlocks, EnumSet<LocateFlag> flags, List<ItemStack> itemsInPipe) {
+        // Only reset the limit-counters once, at the very top of the call-stack, seeing
+        // how they do apply to the pipe as a whole, including sub-pipes.
+        boolean resetCounters = flags.remove(LocateFlag.RESET_COUNTERS);
+
         return _enumeratePipeBlocks(inputPistonBlock, visitedBlocks, resetCounters, (pipeBlock, cachedPipeBlock) -> {
             if (itemsInPipe.isEmpty())
                 return EnumerationDecision.STOP;
@@ -130,6 +131,14 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
                 visitedBlocks.add(CompactId.computeWorldlessBlockId(putBlock));
 
             PipeSign sign = currentBlockCache.getSignOnPiston(pipeBlock, cachedPipeBlock);
+
+            if (pipeRequireSign) {
+                if (sign != PipeSign.NO_SIGN)
+                    flags.add(LocateFlag.ENCOUNTERED_SIGN);
+
+                if (!flags.contains(LocateFlag.ENCOUNTERED_SIGN))
+                    return EnumerationDecision.CONTINUE;
+            }
 
             List<ItemStack> filteredPipeItems = new ArrayList<>(VerifyUtil.withoutNulls(ItemUtil.filterItems(itemsInPipe, sign.includeFilters, sign.excludeFilters)));
 
@@ -172,7 +181,7 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
             } else if (isSubPipe) {
                 // Handle sub-pipes which continue the walk from here on forwards with a (possibly) limited set of items.
                 List<ItemStack> subPipeItems = new ArrayList<>(itemsToPut);
-                subWalkResult = locateExitNodesForItems(putBlock, visitedBlocks, false, subPipeItems);
+                subWalkResult = locateExitNodesForItems(putBlock, visitedBlocks, flags, subPipeItems);
                 leftovers.addAll(subPipeItems);
             } else {
                 leftovers.addAll(itemsToPut);
@@ -347,7 +356,7 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
         return maxCacheLoadCount;
     }
 
-    private EnumerationResult startPipe(Block inputPistonBlock, List<ItemStack> itemsInPipe, boolean wasRequest) {
+    private PipeResult startPipe(Block inputPistonBlock, List<ItemStack> itemsInPipe, boolean wasRequest) {
         this.currentBlockCache = cacheRegistry.getBlockCache(inputPistonBlock.getWorld());
 
         PipeSign sign;
@@ -358,12 +367,9 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
             int cachedInputPistonBlock = currentBlockCache.getCachedBlock(inputPistonBlock);
 
             if (!CachedBlock.isMaterial(cachedInputPistonBlock, Material.STICKY_PISTON))
-                return EnumerationResult.COMPLETED;
+                return PipeResult.COMPLETED;
 
             sign = currentBlockCache.getSignOnPiston(inputPistonBlock, cachedInputPistonBlock);
-
-            if (pipeRequireSign && sign == PipeSign.NO_SIGN)
-                return EnumerationResult.COMPLETED;
 
             containerBlock = inputPistonBlock.getRelative(CachedBlock.getFacing(cachedInputPistonBlock));
             cachedContainerBlock = currentBlockCache.getCachedBlock(containerBlock);
@@ -371,7 +377,7 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
         // If the very beginning of the pipe already (partially) is within an unloaded chunk,
         // there's no need to start the process at all.
         catch (LoadingChunkException ignored) {
-            return EnumerationResult.NEEDS_CHUNK_LOADING;
+            return PipeResult.WARMING_UP;
         }
 
         LongSet visitedBlocks = new LongOpenHashSet();
@@ -449,22 +455,35 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
                 itemsInPipe.add(item);
         }
 
+        if (itemsInPipe.isEmpty())
+            return PipeResult.COMPLETED;
+
         // Walk pipe to store as many items as possible
 
         EnumerationResult enumerationResult = EnumerationResult.COMPLETED;
+        EnumSet<LocateFlag> locateFlags = EnumSet.of(LocateFlag.RESET_COUNTERS);
 
-        if (!suckEvent.isCancelled() && !itemsInPipe.isEmpty())
-            enumerationResult = locateExitNodesForItems(inputPistonBlock, visitedBlocks, true, itemsInPipe);
+        if (sign != PipeSign.NO_SIGN)
+            locateFlags.add(LocateFlag.ENCOUNTERED_SIGN);
 
-        // Try to put leftovers back into the block, if the limits have not been exceeded; otherwise,
-        // let them be dropped at the input-container, as to avoid unending loops.
+        if (!suckEvent.isCancelled())
+            enumerationResult = locateExitNodesForItems(inputPistonBlock, visitedBlocks, locateFlags, itemsInPipe);
+
+        // Try to put leftovers back into the block and drop the rest at the input-piston.
 
         List<ItemStack> leftovers = new ArrayList<>();
 
-        if (enumerationResult.didExceedExtentLimits) {
-            leftovers.addAll(itemsInPipe);
-        } else if (!itemsInPipe.isEmpty()) {
-            if (inventoryHolder != null) {
+        // Do not cause leftovers to be dropped when not having encountered a sign yet during the
+        // warmup process; signs are only missed if the pipe completed fully.
+        boolean missedSign = pipeRequireSign && enumerationResult == EnumerationResult.COMPLETED && !locateFlags.contains(LocateFlag.ENCOUNTERED_SIGN);
+
+        if (!itemsInPipe.isEmpty()) {
+            boolean exceededLimits = enumerationResult == EnumerationResult.EXCEEDED_TUBE_COUNT_LIMIT || enumerationResult == EnumerationResult.EXCEEDED_PISTON_COUNT_LIMIT;
+
+            // Always drop leftovers for "malformed" pipes, as to avoid unending loops.
+            if (missedSign || exceededLimits) {
+                leftovers.addAll(itemsInPipe);
+            } else if (inventoryHolder != null) {
                 leftovers.addAll(InventoryUtil.addItemsToInventory(inventoryHolder, itemsInPipe.toArray(new ItemStack[0])));
             } else if (jukebox != null) {
                 for (ItemStack item : itemsInPipe) {
@@ -498,13 +517,21 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
             }
         }
 
-        return enumerationResult;
+        if (missedSign)
+            return PipeResult.NO_SIGN_ENCOUNTERED;
+
+        return switch (enumerationResult) {
+            case COMPLETED -> PipeResult.COMPLETED;
+            case NEEDS_CHUNK_LOADING, EXCEEDED_CACHE_LOAD_LIMIT -> PipeResult.WARMING_UP;
+            case EXCEEDED_PISTON_COUNT_LIMIT -> PipeResult.EXCEEDED_PISTON_COUNT_LIMIT;
+            case EXCEEDED_TUBE_COUNT_LIMIT -> PipeResult.EXCEEDED_TUBE_COUNT_LIMIT;
+        };
     }
 
     private void startPipeAndHandleNotifications(Block inputPistonBlock, List<ItemStack> itemsInPipe, boolean wasRequest) {
-        EnumerationResult result = startPipe(inputPistonBlock, itemsInPipe, wasRequest);
+        PipeResult result = startPipe(inputPistonBlock, itemsInPipe, wasRequest);
 
-        if (result == EnumerationResult.COMPLETED)
+        if (result == PipeResult.COMPLETED)
             return;
 
         if (notificationRadiusSquared <= 0)
@@ -519,18 +546,29 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
 
             String message;
 
-            if (result == EnumerationResult.NEEDS_CHUNK_LOADING || result == EnumerationResult.EXCEEDED_CACHE_LOAD_LIMIT) {
-                message = ChatColor.GOLD + languageManager.getString("circuits.pipes.warmup-notification", LanguageManager.getPlayersLanguage(player))
-                    .replace("{tubes}", String.valueOf(currentTubeBlockCounter))
-                    .replace("{pistons}", String.valueOf(currentPistonBlockCounter));
-            } else if (result == EnumerationResult.EXCEEDED_TUBE_COUNT_LIMIT) {
-                message = ChatColor.RED + languageManager.getString("circuits.pipes.exceeded-tube-count-notification", LanguageManager.getPlayersLanguage(player))
-                    .replace("{limit}", String.valueOf(maxTubeBlockCount));
-            } else if (result == EnumerationResult.EXCEEDED_PISTON_COUNT_LIMIT) {
-                message = ChatColor.RED + languageManager.getString("circuits.pipes.exceeded-piston-count-notification", LanguageManager.getPlayersLanguage(player))
-                    .replace("{limit}", String.valueOf(maxPistonBlockCount));
-            } else {
-                continue;
+            switch (result) {
+                case WARMING_UP:
+                    message = ChatColor.GOLD + languageManager.getString("circuits.pipes.warmup-notification", LanguageManager.getPlayersLanguage(player))
+                       .replace("{tubes}", String.valueOf(currentTubeBlockCounter))
+                       .replace("{pistons}", String.valueOf(currentPistonBlockCounter));
+                    break;
+
+                case EXCEEDED_TUBE_COUNT_LIMIT:
+                    message = ChatColor.RED + languageManager.getString("circuits.pipes.exceeded-tube-count-notification", LanguageManager.getPlayersLanguage(player))
+                        .replace("{limit}", String.valueOf(maxTubeBlockCount));
+                    break;
+
+                case EXCEEDED_PISTON_COUNT_LIMIT:
+                    message = ChatColor.RED + languageManager.getString("circuits.pipes.exceeded-piston-count-notification", LanguageManager.getPlayersLanguage(player))
+                        .replace("{limit}", String.valueOf(maxPistonBlockCount));
+                    break;
+
+                case NO_SIGN_ENCOUNTERED:
+                    message = ChatColor.RED + languageManager.getString("circuits.pipes.no-sign-encountered", LanguageManager.getPlayersLanguage(player));
+                    break;
+
+                default:
+                    continue;
             }
 
             player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(message));
