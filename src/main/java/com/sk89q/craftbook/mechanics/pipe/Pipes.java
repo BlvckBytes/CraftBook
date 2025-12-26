@@ -136,7 +136,8 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
                 if (sign != PipeSign.NO_SIGN)
                     flags.add(LocateFlag.ENCOUNTERED_SIGN);
 
-                if (!flags.contains(LocateFlag.ENCOUNTERED_SIGN))
+                // Do walk into sub-pipes without requiring a sign
+                if (!isSubPipe && !flags.contains(LocateFlag.ENCOUNTERED_SIGN))
                     return EnumerationDecision.CONTINUE;
             }
 
