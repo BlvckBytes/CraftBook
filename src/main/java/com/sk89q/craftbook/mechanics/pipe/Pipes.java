@@ -481,8 +481,8 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
         if (!itemsInPipe.isEmpty()) {
             boolean exceededLimits = enumerationResult == EnumerationResult.EXCEEDED_TUBE_COUNT_LIMIT || enumerationResult == EnumerationResult.EXCEEDED_PISTON_COUNT_LIMIT;
 
-            // Always drop leftovers for "malformed" pipes, as to avoid unending loops.
-            if (missedSign || exceededLimits) {
+            // Drop leftovers for "malformed" pipes, if configured.
+            if ((dropNoSign && missedSign) || (dropExceededLimits && exceededLimits)) {
                 leftovers.addAll(itemsInPipe);
             } else if (inventoryHolder != null) {
                 leftovers.addAll(InventoryUtil.addItemsToInventory(inventoryHolder, itemsInPipe.toArray(new ItemStack[0])));
@@ -541,38 +541,49 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
         Location inputLocation = inputPistonBlock.getLocation();
         LanguageManager languageManager = CraftBookPlugin.inst().getLanguageManager();
 
+        String coordinates = inputPistonBlock.getX() + " " + inputPistonBlock.getY() + " " + inputPistonBlock.getZ();
+
         for (Player player : inputPistonBlock.getWorld().getPlayers()) {
             if (player.getLocation().distanceSquared(inputLocation) > notificationRadiusSquared)
                 continue;
 
             String message;
+            ChatMessageType messageType;
 
             switch (result) {
                 case WARMING_UP:
                     message = ChatColor.GOLD + languageManager.getString("circuits.pipes.warmup-notification", LanguageManager.getPlayersLanguage(player))
-                       .replace("{tubes}", String.valueOf(currentTubeBlockCounter))
-                       .replace("{pistons}", String.valueOf(currentPistonBlockCounter));
+                        .replace("{coordinates}", coordinates)
+                        .replace("{tubes}", String.valueOf(currentTubeBlockCounter))
+                        .replace("{pistons}", String.valueOf(currentPistonBlockCounter));
+                    messageType = ChatMessageType.ACTION_BAR;
                     break;
 
                 case EXCEEDED_TUBE_COUNT_LIMIT:
                     message = ChatColor.RED + languageManager.getString("circuits.pipes.exceeded-tube-count-notification", LanguageManager.getPlayersLanguage(player))
+                        .replace("{coordinates}", coordinates)
                         .replace("{limit}", String.valueOf(maxTubeBlockCount));
+                    messageType = ChatMessageType.CHAT;
                     break;
 
                 case EXCEEDED_PISTON_COUNT_LIMIT:
                     message = ChatColor.RED + languageManager.getString("circuits.pipes.exceeded-piston-count-notification", LanguageManager.getPlayersLanguage(player))
+                        .replace("{coordinates}", coordinates)
                         .replace("{limit}", String.valueOf(maxPistonBlockCount));
+                    messageType = ChatMessageType.CHAT;
                     break;
 
                 case NO_SIGN_ENCOUNTERED:
-                    message = ChatColor.RED + languageManager.getString("circuits.pipes.no-sign-encountered", LanguageManager.getPlayersLanguage(player));
+                    message = ChatColor.RED + languageManager.getString("circuits.pipes.no-sign-encountered", LanguageManager.getPlayersLanguage(player))
+                        .replace("{coordinates}", coordinates);
+                    messageType = ChatMessageType.CHAT;
                     break;
 
                 default:
                     continue;
             }
 
-            player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(message));
+            player.spigot().sendMessage(messageType, new TextComponent(message));
         }
     }
 
@@ -596,6 +607,8 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
     private @Nullable Material pipeInsulator;
     private boolean pipeStackPerPull;
     private boolean pipeRequireSign;
+    private boolean dropExceededLimits;
+    private boolean dropNoSign;
     private int maxTubeBlockCount;
     private int maxPistonBlockCount;
     private int maxCacheLoadCount;
@@ -616,6 +629,12 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
 
         config.setComment(path + "require-sign", "Requires pipes to have a [Pipe] sign connected to them. This is the only way to require permissions to make pipes.");
         pipeRequireSign = config.getBoolean(path + "require-sign", false);
+
+        config.setComment(path + "drop-exceeded-limits", "Whether to drop the contents of the pipe if the extent-limits have been exceeded");
+        dropExceededLimits = config.getBoolean(path + "drop-exceeded-limits", true);
+
+        config.setComment(path + "drop-no-sign", "Whether to drop the contents of the pipe if a sign was required but none has been encountered");
+        dropNoSign = config.getBoolean(path + "drop-no-sign", true);
 
         config.setComment(path + "max-tube-block-count", "After how many encountered tube-blocks to stop walking the pipe; -1 for no limit.");
         maxTubeBlockCount = config.getInt(path + "max-pipe-block-count", -1);

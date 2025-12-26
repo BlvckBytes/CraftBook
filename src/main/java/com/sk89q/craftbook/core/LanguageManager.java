@@ -256,9 +256,9 @@ public class LanguageManager {
         put("circuits.pipes.create","Pipe created!");
         put("circuits.pipes.pipe-not-found", "Failed to find pipe!");
         put("circuits.pipes.warmup-notification", "[Pipe] Warming up... {tubes}T {pistons}P");
-        put("circuits.pipes.exceeded-tube-count-notification", "[Pipe] Exceeded the tube-block limit of {limit}; dropping");
-        put("circuits.pipes.exceeded-piston-count-notification", "[Pipe] Exceeded the piston-block limit of {limit}; dropping");
-        put("circuits.pipes.no-sign-encountered", "[Pipe] Could not locate a valid sign anywhere on the pipe; dropping");
+        put("circuits.pipes.exceeded-tube-count-notification", "[Pipe] Exceeded the tube-block limit of {limit} at {coordinates}; dropping");
+        put("circuits.pipes.exceeded-piston-count-notification", "[Pipe] Exceeded the piston-block limit of {limit} at {coordinates}; dropping");
+        put("circuits.pipes.no-sign-encountered", "[Pipe] Could not locate a valid sign anywhere on the pipe at {coordinates}; dropping");
 
 
         put("vehicles.create-permission","You don't have permissions to create this vehicle mechanic!");
