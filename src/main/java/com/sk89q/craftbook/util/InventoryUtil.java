@@ -28,13 +28,13 @@ public class InventoryUtil {
 
     /**
      * Adds items to an inventory, returning the leftovers.
-     * 
+     *
      * @param container The InventoryHolder to add the items to.
      * @param stacks The stacks to add to the inventory.
      * @return The stacks that could not be added.
      */
-    public static List<ItemStack> addItemsToInventory(InventoryHolder container, ItemStack ... stacks) {
-        return addItemsToInventory(container, true, stacks);
+    public static List<ItemStack> addItemsToInventory(InventoryHolder container, ItemStack stacks) {
+        return addItemsToInventory(container, Collections.singletonList(stacks));
     }
 
     /**
@@ -44,25 +44,36 @@ public class InventoryUtil {
      * @param stacks The stacks to add to the inventory.
      * @return The stacks that could not be added.
      */
-    public static List<ItemStack> addItemsToInventory(InventoryHolder container, boolean update, ItemStack ... stacks) {
-
-        if(container instanceof Furnace) {
+    public static List<ItemStack> addItemsToInventory(InventoryHolder container, Iterable<ItemStack> stacks) {
+        if (container instanceof Furnace)
             return addItemsToFurnace((Furnace) container, stacks);
-        } else if(container instanceof BrewingStand) {
+
+        if (container instanceof BrewingStand)
             return addItemsToBrewingStand((BrewingStand) container, stacks);
-        } else if(container instanceof Crafter) {
+
+        if (container instanceof Crafter)
             return addItemsToCrafter((Crafter) container, stacks);
-        } else if(container instanceof ChiseledBookshelf) {
+
+        if (container instanceof ChiseledBookshelf)
             return addItemsToChiseledBookshelf((ChiseledBookshelf) container, stacks);
-        } else { //Basic inventories like chests, dispensers, storage carts, etc.
-            List<ItemStack> leftovers = new ArrayList<>();
-            if (container instanceof ShulkerBox) {
-                Arrays.stream(stacks).filter(item -> ItemUtil.isShulkerBox(item.getType())).forEach(leftovers::add);
-                stacks = Arrays.stream(stacks).filter(item -> !ItemUtil.isShulkerBox(item.getType())).toArray(ItemStack[]::new);
+
+        // Basic inventories like chests, dispensers, storage carts, etc.
+
+        var leftovers = new ArrayList<ItemStack>();
+        var isAddingToShulkerBox = container instanceof ShulkerBox;
+        var inventory = container.getInventory();
+
+        for (var stack : stacks) {
+            // Shulker-boxes do not nest
+            if (isAddingToShulkerBox && ItemUtil.isShulkerBox(stack.getType())) {
+                leftovers.add(stack);
+                continue;
             }
-            leftovers.addAll(container.getInventory().addItem(stacks).values());
-            return leftovers;
+
+            leftovers.addAll(inventory.addItem(stack).values());
         }
+
+        return leftovers;
     }
 
     /**
@@ -72,30 +83,43 @@ public class InventoryUtil {
      * @param stacks The stacks to add to the inventory.
      * @return The stacks that could not be added.
      */
-    public static List<ItemStack> addItemsToFurnace(Furnace furnace, ItemStack ... stacks) {
+    public static List<ItemStack> addItemsToFurnace(Furnace furnace, Iterable<ItemStack> stacks) {
+        var inventory = furnace.getInventory();
+        var leftovers = new ArrayList<ItemStack>();
 
-        List<ItemStack> leftovers = new ArrayList<>();
+        ItemStack leftover;
 
-        for(ItemStack stack : stacks) {
-
-            if(!ItemUtil.isStackValid(stack))
+        for (var stack : stacks) {
+            if (!ItemUtil.isStackValid(stack))
                 continue;
 
-            if (ItemUtil.isFurnacable(stack) && fitsInSlot(stack, furnace.getInventory().getSmelting())) {
-                if (furnace.getInventory().getSmelting() == null)
-                    furnace.getInventory().setSmelting(stack);
-                else
-                    leftovers.add(ItemUtil.addToStack(furnace.getInventory().getSmelting(), stack));
-            } else if (ItemUtil.isAFuel(stack) && fitsInSlot(stack, furnace.getInventory().getFuel())) {
-                if (furnace.getInventory().getFuel() == null)
-                    furnace.getInventory().setFuel(stack);
-                else
-                    leftovers.add(ItemUtil.addToStack(furnace.getInventory().getFuel(), stack));
-            } else {
-                leftovers.add(stack);
+            if (ItemUtil.isFurnacable(stack)) {
+                if (inventory.getSmelting() == null) {
+                    inventory.setSmelting(stack);
+                    continue;
+                }
+
+                if ((leftover = ItemUtil.addToStack(inventory.getSmelting(), stack)) != null)
+                    leftovers.add(leftover);
+
+                continue;
             }
+
+            if (ItemUtil.isAFuel(stack)) {
+                if (inventory.getFuel() == null) {
+                    inventory.setFuel(stack);
+                    continue;
+                }
+
+                if ((leftover = ItemUtil.addToStack(inventory.getFuel(), stack)) != null)
+                    leftovers.add(leftover);
+
+                continue;
+            }
+
+            // Not compatible with any of the furnace input-slots
+            leftovers.add(stack);
         }
-        leftovers.removeAll(Collections.singleton(null));
 
         return leftovers;
     }
@@ -107,7 +131,7 @@ public class InventoryUtil {
      * @param stacks The stacks to add to the inventory.
      * @return The stacks that could not be added.
      */
-    public static List<ItemStack> addItemsToBrewingStand(BrewingStand brewingStand, ItemStack ... stacks) {
+    public static List<ItemStack> addItemsToBrewingStand(BrewingStand brewingStand, Iterable<ItemStack> stacks) {
 
         List<ItemStack> leftovers = new ArrayList<>();
 
@@ -158,7 +182,7 @@ public class InventoryUtil {
      * @param stacks The stacks to add to the inventory.
      * @return The stacks that could not be added.
      */
-    public static List<ItemStack> addItemsToCrafter(Crafter crafter, ItemStack ... stacks) {
+    public static List<ItemStack> addItemsToCrafter(Crafter crafter, Iterable<ItemStack> stacks) {
 
         List<ItemStack> leftovers = new ArrayList<>();
         int[] availableSlots = IntStream.rangeClosed(0, crafter.getInventory().getSize() - 1).filter(slot -> !crafter.isSlotDisabled(slot)).toArray();
@@ -191,14 +215,18 @@ public class InventoryUtil {
      * @param stacks The stacks to add to the inventory.
      * @return The stacks that could not be added.
      */
-    public static List<ItemStack> addItemsToChiseledBookshelf(ChiseledBookshelf chiseledBookshelf, ItemStack ... stacks) {
+    public static List<ItemStack> addItemsToChiseledBookshelf(ChiseledBookshelf chiseledBookshelf, Iterable<ItemStack> stacks) {
+        var leftovers = new ArrayList<ItemStack>();
+        var inventory = chiseledBookshelf.getInventory();
 
-        List<ItemStack> leftovers = new ArrayList<>();
-        
-        Arrays.stream(stacks).filter(item -> !ItemUtil.isAStorableBook(item)).forEach(leftovers::add);
-        stacks = Arrays.stream(stacks).filter(item -> ItemUtil.isAStorableBook(item)).toArray(ItemStack[]::new);
+        for (var stack : stacks) {
+            if (!ItemUtil.isAStorableBook(stack)) {
+                leftovers.add(stack);
+                continue;
+            }
 
-        leftovers.addAll(chiseledBookshelf.getInventory().addItem(stacks).values());
+            leftovers.addAll(inventory.addItem(stack).values());
+        }
 
         return leftovers;
     }

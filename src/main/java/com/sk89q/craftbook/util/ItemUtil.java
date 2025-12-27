@@ -37,18 +37,22 @@ public final class ItemUtil {
      * @return The unaddable items.
      */
     public static ItemStack addToStack(ItemStack base, ItemStack toAdd) {
+        var spaceOnBase = base.getMaxStackSize() - base.getAmount();
 
-        if (!areItemsIdentical(base, toAdd)) return toAdd;
+        if (spaceOnBase <= 0)
+            return toAdd;
 
-        if (base.getAmount() + toAdd.getAmount() > base.getMaxStackSize()) {
+        if (!areItemsIdentical(base, toAdd))
+            return toAdd;
 
-            toAdd.setAmount(base.getAmount() + toAdd.getAmount() - base.getMaxStackSize());
+        if (toAdd.getAmount() > spaceOnBase) {
+            toAdd.setAmount(toAdd.getAmount() - spaceOnBase);
             base.setAmount(base.getMaxStackSize());
             return toAdd;
-        } else {
-            base.setAmount(base.getAmount() + toAdd.getAmount());
-            return null;
         }
+
+        base.setAmount(base.getAmount() + toAdd.getAmount());
+        return null;
     }
 
     /**
