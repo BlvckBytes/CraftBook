@@ -169,7 +169,7 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
                 CachedBlock.hasHandledOutputInventory(cachedPutBlock)
                     && putBlock.getState() instanceof InventoryHolder holder
             ) {
-                leftovers.addAll(InventoryUtil.addItemsToInventory(holder, itemsToPut.toArray(new ItemStack[0])));
+                leftovers.addAll(InventoryUtil.addItemsToInventory(holder, itemsToPut));
             } else if (CachedBlock.isMaterial(cachedPutBlock, Material.JUKEBOX)) {
                 Jukebox jukebox = (Jukebox) putBlock.getState();
 
@@ -488,7 +488,7 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
             if ((dropNoSign && missedSign) || (dropExceededLimits && exceededLimits)) {
                 leftovers.addAll(itemsInPipe);
             } else if (inventoryHolder != null) {
-                leftovers.addAll(InventoryUtil.addItemsToInventory(inventoryHolder, itemsInPipe.toArray(new ItemStack[0])));
+                leftovers.addAll(InventoryUtil.addItemsToInventory(inventoryHolder, itemsInPipe));
             } else if (jukebox != null) {
                 for (ItemStack item : itemsInPipe) {
                     if (jukebox.hasRecord() || !item.getType().isRecord()) {

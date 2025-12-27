@@ -161,7 +161,7 @@ public class RangedCollector extends AbstractSelfTriggeredIC {
             // Add the items to a container, and destroy them.
             for (Item entity : itemsForChest) {
                 ItemStack stack = entity.getItemStack();
-                List<ItemStack> leftovers = InventoryUtil.addItemsToInventory(chestState, false, stack);
+                List<ItemStack> leftovers = InventoryUtil.addItemsToInventory(chestState, stack);
                 if (leftovers.isEmpty()) {
                     entity.remove();
                 } else {
