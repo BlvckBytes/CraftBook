@@ -15,6 +15,8 @@ import com.sk89q.util.yaml.YAMLProcessor;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldedit.world.block.BlockType;
 import com.sk89q.worldedit.world.block.BlockTypes;
+import com.sk89q.worldguard.WorldGuard;
+import com.sk89q.worldguard.domains.DefaultDomain;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import net.md_5.bungee.api.ChatMessageType;
@@ -33,6 +35,7 @@ import org.bukkit.inventory.*;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.function.Consumer;
 
 public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
 
@@ -535,55 +538,115 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
         if (result == PipeResult.COMPLETED)
             return;
 
-        if (notificationRadiusSquared <= 0)
+        var messagedPlayerIds = new HashSet<UUID>();
+
+        if (notificationRadiusSquared > 0) {
+            Location inputLocation = inputPistonBlock.getLocation();
+
+            for (Player player : inputPistonBlock.getWorld().getPlayers()) {
+                if (player.getLocation().distanceSquared(inputLocation) > notificationRadiusSquared)
+                    continue;
+
+                if (!messagedPlayerIds.add(player.getUniqueId()))
+                    continue;
+
+                sendNotification(result, player, inputPistonBlock);
+            }
+        }
+
+        // There's no need to broadcast warmup-notifications this far - they're only meant as a status-update
+        // for close-by players who are patently waiting on their items to move through the pipe.
+        if (result == PipeResult.WARMING_UP)
             return;
 
-        Location inputLocation = inputPistonBlock.getLocation();
-        LanguageManager languageManager = CraftBookPlugin.inst().getLanguageManager();
+        forEachTargetedRegionPlayer(inputPistonBlock, player -> {
+            if (!messagedPlayerIds.add(player.getUniqueId()))
+                return;
 
-        String coordinates = inputPistonBlock.getX() + " " + inputPistonBlock.getY() + " " + inputPistonBlock.getZ();
+            sendNotification(result, player, inputPistonBlock);
+        });
+    }
 
-        for (Player player : inputPistonBlock.getWorld().getPlayers()) {
-            if (player.getLocation().distanceSquared(inputLocation) > notificationRadiusSquared)
+    private void sendNotification(PipeResult result, Player player, Block inputPistonBlock) {
+        var coordinates = inputPistonBlock.getX() + " " + inputPistonBlock.getY() + " " + inputPistonBlock.getZ();
+        var languageManager = CraftBookPlugin.inst().getLanguageManager();
+
+        String message;
+
+        switch (result) {
+            case WARMING_UP:
+                message = ChatColor.GOLD + languageManager.getString("circuits.pipes.warmup-notification", LanguageManager.getPlayersLanguage(player))
+                    .replace("{coordinates}", coordinates)
+                    .replace("{tubes}", String.valueOf(currentTubeBlockCounter))
+                    .replace("{pistons}", String.valueOf(currentPistonBlockCounter));
+                break;
+
+            case EXCEEDED_TUBE_COUNT_LIMIT:
+                message = ChatColor.RED + languageManager.getString("circuits.pipes.exceeded-tube-count-notification", LanguageManager.getPlayersLanguage(player))
+                    .replace("{coordinates}", coordinates)
+                    .replace("{limit}", String.valueOf(maxTubeBlockCount));
+                break;
+
+            case EXCEEDED_PISTON_COUNT_LIMIT:
+                message = ChatColor.RED + languageManager.getString("circuits.pipes.exceeded-piston-count-notification", LanguageManager.getPlayersLanguage(player))
+                    .replace("{coordinates}", coordinates)
+                    .replace("{limit}", String.valueOf(maxPistonBlockCount));
+                break;
+
+            case NO_SIGN_ENCOUNTERED:
+                message = ChatColor.RED + languageManager.getString("circuits.pipes.no-sign-encountered", LanguageManager.getPlayersLanguage(player))
+                    .replace("{coordinates}", coordinates);
+                break;
+
+            default:
+                return;
+        }
+
+        // Send warmup-messages to the action-bar, seeing how they would otherwise completely spam the chat.
+        if (result == PipeResult.WARMING_UP) {
+            player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(message));
+            return;
+        }
+
+        player.sendMessage(message);
+    }
+
+    private void forEachTargetedRegionPlayer(Block inputPistonBlock, Consumer<Player> handler) {
+        if (CraftBookPlugin.plugins.getWorldGuard() == null)
+            return;
+
+        if (!notifyOwnersOfRegion && !notifyMembersOfRegion)
+            return;
+
+        var applicableRegions = WorldGuard.getInstance()
+          .getPlatform()
+          .getRegionContainer()
+          .createQuery()
+          .getApplicableRegions(BukkitAdapter.adapt(inputPistonBlock.getLocation()));
+
+        for (var region : applicableRegions) {
+            if (ignoredRegionsLower.contains(region.getId().toLowerCase()))
                 continue;
 
-            String message;
-            ChatMessageType messageType;
+            if (notifyMembersOfRegion)
+                forEachOnlineDomainPlayer(region.getMembers(), handler);
 
-            switch (result) {
-                case WARMING_UP:
-                    message = ChatColor.GOLD + languageManager.getString("circuits.pipes.warmup-notification", LanguageManager.getPlayersLanguage(player))
-                        .replace("{coordinates}", coordinates)
-                        .replace("{tubes}", String.valueOf(currentTubeBlockCounter))
-                        .replace("{pistons}", String.valueOf(currentPistonBlockCounter));
-                    messageType = ChatMessageType.ACTION_BAR;
-                    break;
+            if (notifyOwnersOfRegion)
+                forEachOnlineDomainPlayer(region.getOwners(), handler);
+        }
+    }
 
-                case EXCEEDED_TUBE_COUNT_LIMIT:
-                    message = ChatColor.RED + languageManager.getString("circuits.pipes.exceeded-tube-count-notification", LanguageManager.getPlayersLanguage(player))
-                        .replace("{coordinates}", coordinates)
-                        .replace("{limit}", String.valueOf(maxTubeBlockCount));
-                    messageType = ChatMessageType.CHAT;
-                    break;
+    private void forEachOnlineDomainPlayer(DefaultDomain domain, Consumer<Player> handler) {
+        Player player;
 
-                case EXCEEDED_PISTON_COUNT_LIMIT:
-                    message = ChatColor.RED + languageManager.getString("circuits.pipes.exceeded-piston-count-notification", LanguageManager.getPlayersLanguage(player))
-                        .replace("{coordinates}", coordinates)
-                        .replace("{limit}", String.valueOf(maxPistonBlockCount));
-                    messageType = ChatMessageType.CHAT;
-                    break;
+        for (var playerName : domain.getPlayers()) {
+            if ((player = Bukkit.getPlayer(playerName)) != null)
+                handler.accept(player);
+        }
 
-                case NO_SIGN_ENCOUNTERED:
-                    message = ChatColor.RED + languageManager.getString("circuits.pipes.no-sign-encountered", LanguageManager.getPlayersLanguage(player))
-                        .replace("{coordinates}", coordinates);
-                    messageType = ChatMessageType.CHAT;
-                    break;
-
-                default:
-                    continue;
-            }
-
-            player.spigot().sendMessage(messageType, new TextComponent(message));
+        for (var playerId : domain.getUniqueIds()) {
+            if ((player = Bukkit.getPlayer(playerId)) != null)
+                handler.accept(player);
         }
     }
 
@@ -613,6 +676,9 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
     private int maxPistonBlockCount;
     private int maxCacheLoadCount;
     private int notificationRadiusSquared;
+    private boolean notifyOwnersOfRegion;
+    private boolean notifyMembersOfRegion;
+    private Set<String> ignoredRegionsLower;
 
     @Override
     public void loadConfiguration(YAMLProcessor config, String path) {
@@ -654,5 +720,17 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
         config.setComment(path + "notification-radius", "In what radius around an input-block to send notifications to player's action-bars; -1 to hide them");
         notificationRadiusSquared = config.getInt(path + "notification-radius", 5);
         notificationRadiusSquared = notificationRadiusSquared * notificationRadiusSquared;
+
+        config.setComment(path + "notify-owners-of-region", "Whether to display warning-notifications to all owners of the region(s) the input-piston resides in");
+        notifyOwnersOfRegion = config.getBoolean(path + "notify-owners-of-region", true);
+
+        config.setComment(path + "notify-members-of-region", "Whether to display warning-notifications to all members of the region(s) the input-piston resides in");
+        notifyMembersOfRegion = config.getBoolean(path + "notify-members-of-region", true);
+
+        ignoredRegionsLower = new HashSet<>();
+
+        config.setComment(path + "notify-ignored-regions", "A list of regions to ignore while sending out notifications to members and/or owners");
+        for (var ignoredRegion : config.getStringList(path + "notify-ignored-regions", Collections.emptyList()))
+            ignoredRegionsLower.add(ignoredRegion.trim().toLowerCase());
     }
 }
