@@ -559,7 +559,14 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
         if (result == PipeResult.WARMING_UP)
             return;
 
+        var inputPistonWorld = inputPistonBlock.getWorld();
+
         forEachTargetedRegionPlayer(inputPistonBlock, player -> {
+            // Do not send to players that are outside of this world - this could be rather confusing, seeing
+            // how we're not printing world-names with coordinates (unnecessary clutter).
+            if (!player.getWorld().equals(inputPistonWorld))
+                return;
+
             if (!messagedPlayerIds.add(player.getUniqueId()))
                 return;
 
