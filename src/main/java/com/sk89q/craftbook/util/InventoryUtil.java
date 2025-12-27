@@ -17,7 +17,6 @@ import org.bukkit.inventory.PlayerInventory;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.IntStream;
 
@@ -73,29 +72,42 @@ public class InventoryUtil {
      * @return The stacks that could not be added.
      */
     public static List<ItemStack> addItemsToFurnace(Furnace furnace, ItemStack ... stacks) {
+        var inventory = furnace.getInventory();
+        var leftovers = new ArrayList<ItemStack>();
 
-        List<ItemStack> leftovers = new ArrayList<>();
+        ItemStack leftover;
 
-        for(ItemStack stack : stacks) {
-
-            if(!ItemUtil.isStackValid(stack))
+        for (var stack : stacks) {
+            if (!ItemUtil.isStackValid(stack))
                 continue;
 
-            if (ItemUtil.isFurnacable(stack) && fitsInSlot(stack, furnace.getInventory().getSmelting())) {
-                if (furnace.getInventory().getSmelting() == null)
-                    furnace.getInventory().setSmelting(stack);
-                else
-                    leftovers.add(ItemUtil.addToStack(furnace.getInventory().getSmelting(), stack));
-            } else if (ItemUtil.isAFuel(stack) && fitsInSlot(stack, furnace.getInventory().getFuel())) {
-                if (furnace.getInventory().getFuel() == null)
-                    furnace.getInventory().setFuel(stack);
-                else
-                    leftovers.add(ItemUtil.addToStack(furnace.getInventory().getFuel(), stack));
-            } else {
-                leftovers.add(stack);
+            if (ItemUtil.isFurnacable(stack)) {
+                if (inventory.getSmelting() == null) {
+                    inventory.setSmelting(stack);
+                    continue;
+                }
+
+                if ((leftover = ItemUtil.addToStack(inventory.getSmelting(), stack)) != null)
+                    leftovers.add(leftover);
+
+                continue;
             }
+
+            if (ItemUtil.isAFuel(stack)) {
+                if (inventory.getFuel() == null) {
+                    inventory.setFuel(stack);
+                    continue;
+                }
+
+                if ((leftover = ItemUtil.addToStack(inventory.getFuel(), stack)) != null)
+                    leftovers.add(leftover);
+
+                continue;
+            }
+
+            // Not compatible with any of the furnace input-slots
+            leftovers.add(stack);
         }
-        leftovers.removeAll(Collections.singleton(null));
 
         return leftovers;
     }
