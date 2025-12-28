@@ -17,6 +17,7 @@ import com.sk89q.worldedit.world.block.BlockType;
 import com.sk89q.worldedit.world.block.BlockTypes;
 import com.sk89q.worldguard.WorldGuard;
 import com.sk89q.worldguard.domains.DefaultDomain;
+import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import net.md_5.bungee.api.ChatMessageType;
@@ -546,7 +547,7 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
         if (result != PipeResult.WARMING_UP) {
             var inputPistonWorld = inputPistonBlock.getWorld();
 
-            forEachTargetedRegionPlayer(inputPistonBlock, (player, regionId) -> {
+            forEachTargetedRegionPlayer(inputPistonBlock, (player, regionDetails) -> {
                 // Do not send to players that are outside of this world - this could be rather confusing, seeing
                 // how we're not printing world-names with coordinates (unnecessary clutter).
                 if (!player.getWorld().equals(inputPistonWorld))
@@ -555,7 +556,7 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
                 if (!messagedPlayerIds.add(player.getUniqueId()))
                     return;
 
-                sendNotification(result, player, inputPistonBlock, regionId);
+                sendNotification(result, player, inputPistonBlock, regionDetails);
             });
         }
 
@@ -574,11 +575,11 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
         }
     }
 
-    private void sendNotification(PipeResult result, Player player, Block inputPistonBlock, @Nullable String regionId) {
+    private void sendNotification(PipeResult result, Player player, Block inputPistonBlock, @Nullable String regionDetails) {
         var coordinates = inputPistonBlock.getX() + " " + inputPistonBlock.getY() + " " + inputPistonBlock.getZ();
 
-        if (regionId != null)
-            coordinates += " (region " + regionId + ")";
+        if (regionDetails != null)
+            coordinates += " (region " + regionDetails + ")";
 
         var languageManager = CraftBookPlugin.inst().getLanguageManager();
 
@@ -639,12 +640,45 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
             if (ignoredRegionsLower.contains(region.getId().toLowerCase()))
                 continue;
 
+            var regionOwnerNames = getOwnerNames(region);
+
+            String regionDetails;
+
+            if (!regionOwnerNames.isEmpty())
+                regionDetails = region.getId() + " (owned by " + String.join(", ", regionOwnerNames) + ")";
+            else
+                regionDetails = region.getId();
+
             if (notifyMembersOfRegion)
-                forEachOnlineDomainPlayer(region.getMembers(), player -> handler.handle(player, region.getId()));
+                forEachOnlineDomainPlayer(region.getMembers(), player -> handler.handle(player, regionDetails));
 
             if (notifyOwnersOfRegion)
-                forEachOnlineDomainPlayer(region.getOwners(), player -> handler.handle(player, region.getId()));
+                forEachOnlineDomainPlayer(region.getOwners(), player -> handler.handle(player, regionDetails));
         }
+    }
+
+    private List<String> getOwnerNames(ProtectedRegion region) {
+        var result = new ArrayList<String>();
+        var namesLower = new HashSet<String>();
+
+        var domain = region.getOwners();
+
+        for (var playerName : domain.getPlayers()) {
+            if (namesLower.add(playerName.toLowerCase()))
+                result.add(playerName);
+        }
+
+        for (var playerId : domain.getUniqueIds()) {
+            var playerName = Bukkit.getOfflinePlayer(playerId).getName();
+
+            if (playerName == null)
+                continue;
+
+            if (namesLower.add(playerName.toLowerCase()))
+                result.add(playerName);
+        }
+
+        return result;
     }
 
     private void forEachOnlineDomainPlayer(DefaultDomain domain, Consumer<Player> handler) {
