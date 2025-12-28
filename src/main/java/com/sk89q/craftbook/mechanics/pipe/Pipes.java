@@ -15,9 +15,6 @@ import com.sk89q.util.yaml.YAMLProcessor;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldedit.world.block.BlockType;
 import com.sk89q.worldedit.world.block.BlockTypes;
-import com.sk89q.worldguard.WorldGuard;
-import com.sk89q.worldguard.domains.DefaultDomain;
-import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import net.md_5.bungee.api.ChatMessageType;
@@ -36,7 +33,6 @@ import org.bukkit.inventory.*;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
-import java.util.function.Consumer;
 
 public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
 
@@ -545,12 +541,13 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
         // for close-by players who are patently waiting on their items to move through the pipe.
         // But do, for other cases, target region-players first, as to possibly attach the information of the region-name.
         if (result != PipeResult.WARMING_UP) {
-            var inputPistonWorld = inputPistonBlock.getWorld();
+            var world = inputPistonBlock.getWorld();
+            var location = inputPistonBlock.getLocation();
 
-            forEachTargetedRegionPlayer(inputPistonBlock, (player, regionDetails) -> {
+            WorldGuardUtil.forEachTargetedRegionPlayer(location, notifyOwnersOfRegion, notifyMembersOfRegion, ignoredRegionsLower, (player, regionDetails) -> {
                 // Do not send to players that are outside of this world - this could be rather confusing, seeing
                 // how we're not printing world-names with coordinates (unnecessary clutter).
-                if (!player.getWorld().equals(inputPistonWorld))
+                if (!player.getWorld().equals(world))
                     return;
 
                 if (!messagedPlayerIds.add(player.getUniqueId()))
@@ -621,78 +618,6 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
         }
 
         player.sendMessage(message);
-    }
-
-    private void forEachTargetedRegionPlayer(Block inputPistonBlock, RegionPlayerHandler handler) {
-        if (CraftBookPlugin.plugins.getWorldGuard() == null)
-            return;
-
-        if (!notifyOwnersOfRegion && !notifyMembersOfRegion)
-            return;
-
-        var applicableRegions = WorldGuard.getInstance()
-          .getPlatform()
-          .getRegionContainer()
-          .createQuery()
-          .getApplicableRegions(BukkitAdapter.adapt(inputPistonBlock.getLocation()));
-
-        for (var region : applicableRegions) {
-            if (ignoredRegionsLower.contains(region.getId().toLowerCase()))
-                continue;
-
-            var regionOwnerNames = getOwnerNames(region);
-
-            String regionDetails;
-
-            if (!regionOwnerNames.isEmpty())
-                regionDetails = region.getId() + " (owned by " + String.join(", ", regionOwnerNames) + ")";
-            else
-                regionDetails = region.getId();
-
-            if (notifyMembersOfRegion)
-                forEachOnlineDomainPlayer(region.getMembers(), player -> handler.handle(player, regionDetails));
-
-            if (notifyOwnersOfRegion)
-                forEachOnlineDomainPlayer(region.getOwners(), player -> handler.handle(player, regionDetails));
-        }
-    }
-
-    private List<String> getOwnerNames(ProtectedRegion region) {
-        var result = new ArrayList<String>();
-        var namesLower = new HashSet<String>();
-
-        var domain = region.getOwners();
-
-        for (var playerName : domain.getPlayers()) {
-            if (namesLower.add(playerName.toLowerCase()))
-                result.add(playerName);
-        }
-
-        for (var playerId : domain.getUniqueIds()) {
-            var playerName = Bukkit.getOfflinePlayer(playerId).getName();
-
-            if (playerName == null)
-                continue;
-
-            if (namesLower.add(playerName.toLowerCase()))
-                result.add(playerName);
-        }
-
-        return result;
-    }
-
-    private void forEachOnlineDomainPlayer(DefaultDomain domain, Consumer<Player> handler) {
-        Player player;
-
-        for (var playerName : domain.getPlayers()) {
-            if ((player = Bukkit.getPlayer(playerName)) != null)
-                handler.accept(player);
-        }
-
-        for (var playerId : domain.getUniqueIds()) {
-            if ((player = Bukkit.getPlayer(playerId)) != null)
-                handler.accept(player);
-        }
     }
 
     @EventHandler(priority = EventPriority.HIGH)
