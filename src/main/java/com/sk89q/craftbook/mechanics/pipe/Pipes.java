@@ -540,6 +540,25 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
 
         var messagedPlayerIds = new HashSet<UUID>();
 
+        // There's no need to broadcast warmup-notifications this far - they're only meant as a status-update
+        // for close-by players who are patently waiting on their items to move through the pipe.
+        // But do, for other cases, target region-players first, as to possibly attach the information of the region-name.
+        if (result != PipeResult.WARMING_UP) {
+            var inputPistonWorld = inputPistonBlock.getWorld();
+
+            forEachTargetedRegionPlayer(inputPistonBlock, (player, regionId) -> {
+                // Do not send to players that are outside of this world - this could be rather confusing, seeing
+                // how we're not printing world-names with coordinates (unnecessary clutter).
+                if (!player.getWorld().equals(inputPistonWorld))
+                    return;
+
+                if (!messagedPlayerIds.add(player.getUniqueId()))
+                    return;
+
+                sendNotification(result, player, inputPistonBlock, regionId);
+            });
+        }
+
         if (notificationRadiusSquared > 0) {
             Location inputLocation = inputPistonBlock.getLocation();
 
@@ -550,32 +569,17 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
                 if (!messagedPlayerIds.add(player.getUniqueId()))
                     continue;
 
-                sendNotification(result, player, inputPistonBlock);
+                sendNotification(result, player, inputPistonBlock, null);
             }
         }
-
-        // There's no need to broadcast warmup-notifications this far - they're only meant as a status-update
-        // for close-by players who are patently waiting on their items to move through the pipe.
-        if (result == PipeResult.WARMING_UP)
-            return;
-
-        var inputPistonWorld = inputPistonBlock.getWorld();
-
-        forEachTargetedRegionPlayer(inputPistonBlock, player -> {
-            // Do not send to players that are outside of this world - this could be rather confusing, seeing
-            // how we're not printing world-names with coordinates (unnecessary clutter).
-            if (!player.getWorld().equals(inputPistonWorld))
-                return;
-
-            if (!messagedPlayerIds.add(player.getUniqueId()))
-                return;
-
-            sendNotification(result, player, inputPistonBlock);
-        });
     }
 
-    private void sendNotification(PipeResult result, Player player, Block inputPistonBlock) {
+    private void sendNotification(PipeResult result, Player player, Block inputPistonBlock, @Nullable String regionId) {
         var coordinates = inputPistonBlock.getX() + " " + inputPistonBlock.getY() + " " + inputPistonBlock.getZ();
+
+        if (regionId != null)
+            coordinates += " (region " + regionId + ")";
+
         var languageManager = CraftBookPlugin.inst().getLanguageManager();
 
         String message;
@@ -618,7 +622,7 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
         player.sendMessage(message);
     }
 
-    private void forEachTargetedRegionPlayer(Block inputPistonBlock, Consumer<Player> handler) {
+    private void forEachTargetedRegionPlayer(Block inputPistonBlock, RegionPlayerHandler handler) {
         if (CraftBookPlugin.plugins.getWorldGuard() == null)
             return;
 
@@ -636,10 +640,10 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
                 continue;
 
             if (notifyMembersOfRegion)
-                forEachOnlineDomainPlayer(region.getMembers(), handler);
+                forEachOnlineDomainPlayer(region.getMembers(), player -> handler.handle(player, region.getId()));
 
             if (notifyOwnersOfRegion)
-                forEachOnlineDomainPlayer(region.getOwners(), handler);
+                forEachOnlineDomainPlayer(region.getOwners(), player -> handler.handle(player, region.getId()));
         }
     }
 
