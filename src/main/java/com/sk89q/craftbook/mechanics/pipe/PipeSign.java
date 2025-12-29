@@ -1,6 +1,8 @@
 package com.sk89q.craftbook.mechanics.pipe;
 
 import com.sk89q.craftbook.bukkit.CraftBookPlugin;
+import com.sk89q.craftbook.mechanics.pipe.notification.MalformedSignNotification;
+import com.sk89q.craftbook.mechanics.pipe.notification.PipeNotification;
 import com.sk89q.craftbook.util.ItemSyntax;
 import com.sk89q.craftbook.util.ParsingUtil;
 import com.sk89q.craftbook.util.RegexUtil;
@@ -24,17 +26,17 @@ public class PipeSign {
         this.excludeFilters = Collections.unmodifiableList(excludeFilters);
     }
 
-    public static PipeSign fromSign(Sign sign, String[] lines) {
+    public static PipeSign fromSign(Sign sign, String[] lines, List<PipeNotification> notifications) {
         List<ItemStack> includeFilters = new ArrayList<>();
         List<ItemStack> excludeFilters = new ArrayList<>();
 
-        parseLineItems(sign, lines, 2, includeFilters);
-        parseLineItems(sign, lines, 3, excludeFilters);
+        parseLineItems(sign, lines, 2, includeFilters, notifications);
+        parseLineItems(sign, lines, 3, excludeFilters, notifications);
 
         return new PipeSign(includeFilters, excludeFilters);
     }
 
-    private static void parseLineItems(Sign sign, String[] lines, int lineId, List<ItemStack> output) {
+    private static void parseLineItems(Sign sign, String[] lines, int lineId, List<ItemStack> output, List<PipeNotification> notifications) {
         String preprocessedLine = ParsingUtil.parseLine(lines[lineId], null);
 
         for (String token : RegexUtil.COMMA_PATTERN.split(preprocessedLine)) {
@@ -49,10 +51,11 @@ public class PipeSign {
                 // This method can throw (missing resource-key), even if I only ever experienced it on FaWe-Paper with
                 // a token of "twisting_vines_plant". The user should be able to locate the malformed sign and the pipe
                 // should *not* lose items due to unwinding the stack before putting leftovers back. Better safe than sorry.
+                // Update: we also encountered this issue with "bamboo_sapling" instead of "bamboo"; the catch is most definitely
+                // justified and, in combination with notifications, represents a great way for players to get feedback.
                 item = ItemSyntax.getItem(token);
             } catch (Throwable e) {
-                String position = sign.getX() + "," + sign.getY() + "," + sign.getZ() + "@" + sign.getWorld().getName();
-                CraftBookPlugin.logger().log(Level.WARNING, "Could not parse \"" + token + "\" as a valid item in line " + (lineId + 1) + " on sign at " + position, e);
+                notifications.add(new MalformedSignNotification(sign.getLocation(), token, lineId + 1));
                 continue;
             }
 
