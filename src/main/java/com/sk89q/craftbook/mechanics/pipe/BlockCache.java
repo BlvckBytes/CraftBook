@@ -1,6 +1,7 @@
 package com.sk89q.craftbook.mechanics.pipe;
 
 import com.sk89q.craftbook.bukkit.CraftBookPlugin;
+import com.sk89q.craftbook.mechanics.pipe.notification.PipeNotification;
 import it.unimi.dsi.fastutil.longs.Long2IntMap;
 import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
@@ -11,8 +12,8 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.block.Sign;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.type.WallSign;
-import org.bukkit.event.block.*;
 
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 
@@ -119,7 +120,7 @@ public class BlockCache {
         return cachedBlock;
     }
 
-    public PipeSign getSignOnPiston(Block pistonBlock, int cachedPistonBlock) throws LoadingChunkException {
+    public PipeSign getSignOnPiston(Block pistonBlock, int cachedPistonBlock, List<PipeNotification> notifications) throws LoadingChunkException {
         long pistonCompactId = CompactId.computeWorldlessBlockId(pistonBlock);
 
         PipeSign cachedSign = pipeSignByPistonCompactId.get(pistonCompactId);
@@ -161,7 +162,7 @@ public class BlockCache {
             if (!lines[1].equalsIgnoreCase("[Pipe]"))
                 continue;
 
-            cachedSign = PipeSign.fromSign(sign, lines);
+            cachedSign = PipeSign.fromSign(sign, lines, notifications);
             Bukkit.getPluginManager().callEvent(new PipeSignCacheCreatedEvent(pistonBlock, sign, lines));
             break;
         }

@@ -3,7 +3,7 @@ package com.sk89q.craftbook.mechanics.pipe;
 import com.sk89q.craftbook.AbstractCraftBookMechanic;
 import com.sk89q.craftbook.CraftBookPlayer;
 import com.sk89q.craftbook.bukkit.CraftBookPlugin;
-import com.sk89q.craftbook.core.LanguageManager;
+import com.sk89q.craftbook.mechanics.pipe.notification.*;
 import com.sk89q.craftbook.util.EventUtil;
 import com.sk89q.craftbook.util.InventoryUtil;
 import com.sk89q.craftbook.util.ItemUtil;
@@ -17,10 +17,7 @@ import com.sk89q.worldedit.world.block.BlockType;
 import com.sk89q.worldedit.world.block.BlockTypes;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
-import net.md_5.bungee.api.ChatMessageType;
-import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.*;
@@ -109,7 +106,7 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
         return type == Material.PISTON || type == Material.STICKY_PISTON;
     }
 
-    private EnumerationResult locateExitNodesForItems(Block inputPistonBlock, LongSet visitedBlocks, EnumSet<LocateFlag> flags, List<ItemStack> itemsInPipe) {
+    private EnumerationResult locateExitNodesForItems(Block inputPistonBlock, LongSet visitedBlocks, EnumSet<LocateFlag> flags, List<ItemStack> itemsInPipe, List<PipeNotification> notification) {
         // Only reset the limit-counters once, at the very top of the call-stack, seeing
         // how they do apply to the pipe as a whole, including sub-pipes.
         boolean resetCounters = flags.remove(LocateFlag.RESET_COUNTERS);
@@ -130,7 +127,7 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
             if (isSubPipe)
                 visitedBlocks.add(CompactId.computeWorldlessBlockId(putBlock));
 
-            PipeSign sign = currentBlockCache.getSignOnPiston(pipeBlock, cachedPipeBlock);
+            PipeSign sign = currentBlockCache.getSignOnPiston(pipeBlock, cachedPipeBlock, notification);
 
             if (pipeRequireSign) {
                 if (sign != PipeSign.NO_SIGN)
@@ -182,7 +179,7 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
             } else if (isSubPipe) {
                 // Handle sub-pipes which continue the walk from here on forwards with a (possibly) limited set of items.
                 List<ItemStack> subPipeItems = new ArrayList<>(itemsToPut);
-                subWalkResult = locateExitNodesForItems(putBlock, visitedBlocks, flags, subPipeItems);
+                subWalkResult = locateExitNodesForItems(putBlock, visitedBlocks, flags, subPipeItems, notification);
                 leftovers.addAll(subPipeItems);
             } else {
                 leftovers.addAll(itemsToPut);
@@ -357,7 +354,7 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
         return maxCacheLoadCount;
     }
 
-    private PipeResult startPipe(Block inputPistonBlock, List<ItemStack> itemsInPipe, boolean wasRequest) {
+    private void startPipe(Block inputPistonBlock, List<ItemStack> itemsInPipe, boolean wasRequest, List<PipeNotification> notifications) {
         this.currentBlockCache = cacheRegistry.getBlockCache(inputPistonBlock.getWorld());
 
         PipeSign sign;
@@ -368,9 +365,9 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
             int cachedInputPistonBlock = currentBlockCache.getCachedBlock(inputPistonBlock);
 
             if (!CachedBlock.isMaterial(cachedInputPistonBlock, Material.STICKY_PISTON))
-                return PipeResult.COMPLETED;
+                return;
 
-            sign = currentBlockCache.getSignOnPiston(inputPistonBlock, cachedInputPistonBlock);
+            sign = currentBlockCache.getSignOnPiston(inputPistonBlock, cachedInputPistonBlock, notifications);
 
             containerBlock = inputPistonBlock.getRelative(CachedBlock.getFacing(cachedInputPistonBlock));
             cachedContainerBlock = currentBlockCache.getCachedBlock(containerBlock);
@@ -378,7 +375,8 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
         // If the very beginning of the pipe already (partially) is within an unloaded chunk,
         // there's no need to start the process at all.
         catch (LoadingChunkException ignored) {
-            return PipeResult.WARMING_UP;
+            notifications.add(new WarmupNotification(currentPistonBlockCounter, currentTubeBlockCounter));
+            return;
         }
 
         LongSet visitedBlocks = new LongOpenHashSet();
@@ -457,7 +455,7 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
         }
 
         if (itemsInPipe.isEmpty())
-            return PipeResult.COMPLETED;
+            return;
 
         // Walk pipe to store as many items as possible
 
@@ -468,7 +466,7 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
             locateFlags.add(LocateFlag.ENCOUNTERED_SIGN);
 
         if (!suckEvent.isCancelled())
-            enumerationResult = locateExitNodesForItems(inputPistonBlock, visitedBlocks, locateFlags, itemsInPipe);
+            enumerationResult = locateExitNodesForItems(inputPistonBlock, visitedBlocks, locateFlags, itemsInPipe, notifications);
 
         // Try to put leftovers back into the block and drop the rest at the input-piston.
 
@@ -518,29 +516,29 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
             }
         }
 
-        if (missedSign)
-            return PipeResult.NO_SIGN_ENCOUNTERED;
+        if (missedSign) {
+            notifications.add(new NoSignNotification());
+            return;
+        }
 
-        return switch (enumerationResult) {
-            case COMPLETED -> PipeResult.COMPLETED;
-            case NEEDS_CHUNK_LOADING, EXCEEDED_CACHE_LOAD_LIMIT -> PipeResult.WARMING_UP;
-            case EXCEEDED_PISTON_COUNT_LIMIT -> PipeResult.EXCEEDED_PISTON_COUNT_LIMIT;
-            case EXCEEDED_TUBE_COUNT_LIMIT -> PipeResult.EXCEEDED_TUBE_COUNT_LIMIT;
-        };
+        switch (enumerationResult) {
+            case NEEDS_CHUNK_LOADING, EXCEEDED_CACHE_LOAD_LIMIT -> notifications.add(new WarmupNotification(currentPistonBlockCounter, currentTubeBlockCounter));
+            case EXCEEDED_PISTON_COUNT_LIMIT -> notifications.add(new PistonLimitNotification(maxPistonBlockCount));
+            case EXCEEDED_TUBE_COUNT_LIMIT -> notifications.add(new TubeLimitNotification(maxTubeBlockCount));
+        }
     }
 
     private void startPipeAndHandleNotifications(Block inputPistonBlock, List<ItemStack> itemsInPipe, boolean wasRequest) {
-        PipeResult result = startPipe(inputPistonBlock, itemsInPipe, wasRequest);
+        var notifications = new ArrayList<PipeNotification>();
 
-        if (result == PipeResult.COMPLETED)
-            return;
+        startPipe(inputPistonBlock, itemsInPipe, wasRequest, notifications);
 
-        var messagedPlayerIds = new HashSet<UUID>();
+        var hasRegionNotifications = notifications.stream().anyMatch(PipeNotification::broadcastToRegion);
+        var coordinates = inputPistonBlock.getX() + " " + inputPistonBlock.getY() + " " + inputPistonBlock.getZ();
 
-        // There's no need to broadcast warmup-notifications this far - they're only meant as a status-update
-        // for close-by players who are patently waiting on their items to move through the pipe.
-        // But do, for other cases, target region-players first, as to possibly attach the information of the region-name.
-        if (result != PipeResult.WARMING_UP) {
+        // Avoid locating region-players if no notification targets this range, but otherwise, do use
+        // this handler first, as to append region-information even to players within range.
+        if (hasRegionNotifications) {
             var world = inputPistonBlock.getWorld();
             var location = inputPistonBlock.getLocation();
 
@@ -550,10 +548,14 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
                 if (!player.getWorld().equals(world))
                     return;
 
-                if (!messagedPlayerIds.add(player.getUniqueId()))
-                    return;
+                var extendedCoordinates = coordinates + " (region " + regionDetails + ")";
 
-                sendNotification(result, player, inputPistonBlock, regionDetails);
+                for (var notification : notifications) {
+                    if (!notification.broadcastToRegion())
+                        continue;
+
+                    notification.sendOnce(player, extendedCoordinates);
+                }
             });
         }
 
@@ -564,60 +566,10 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
                 if (player.getLocation().distanceSquared(inputLocation) > notificationRadiusSquared)
                     continue;
 
-                if (!messagedPlayerIds.add(player.getUniqueId()))
-                    continue;
-
-                sendNotification(result, player, inputPistonBlock, null);
+                for (var notification : notifications)
+                    notification.sendOnce(player, coordinates);
             }
         }
-    }
-
-    private void sendNotification(PipeResult result, Player player, Block inputPistonBlock, @Nullable String regionDetails) {
-        var coordinates = inputPistonBlock.getX() + " " + inputPistonBlock.getY() + " " + inputPistonBlock.getZ();
-
-        if (regionDetails != null)
-            coordinates += " (region " + regionDetails + ")";
-
-        var languageManager = CraftBookPlugin.inst().getLanguageManager();
-
-        String message;
-
-        switch (result) {
-            case WARMING_UP:
-                message = ChatColor.GOLD + languageManager.getString("circuits.pipes.warmup-notification", LanguageManager.getPlayersLanguage(player))
-                    .replace("{coordinates}", coordinates)
-                    .replace("{tubes}", String.valueOf(currentTubeBlockCounter))
-                    .replace("{pistons}", String.valueOf(currentPistonBlockCounter));
-                break;
-
-            case EXCEEDED_TUBE_COUNT_LIMIT:
-                message = ChatColor.RED + languageManager.getString("circuits.pipes.exceeded-tube-count-notification", LanguageManager.getPlayersLanguage(player))
-                    .replace("{coordinates}", coordinates)
-                    .replace("{limit}", String.valueOf(maxTubeBlockCount));
-                break;
-
-            case EXCEEDED_PISTON_COUNT_LIMIT:
-                message = ChatColor.RED + languageManager.getString("circuits.pipes.exceeded-piston-count-notification", LanguageManager.getPlayersLanguage(player))
-                    .replace("{coordinates}", coordinates)
-                    .replace("{limit}", String.valueOf(maxPistonBlockCount));
-                break;
-
-            case NO_SIGN_ENCOUNTERED:
-                message = ChatColor.RED + languageManager.getString("circuits.pipes.no-sign-encountered", LanguageManager.getPlayersLanguage(player))
-                    .replace("{coordinates}", coordinates);
-                break;
-
-            default:
-                return;
-        }
-
-        // Send warmup-messages to the action-bar, seeing how they would otherwise completely spam the chat.
-        if (result == PipeResult.WARMING_UP) {
-            player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new TextComponent(message));
-            return;
-        }
-
-        player.sendMessage(message);
     }
 
     @EventHandler(priority = EventPriority.HIGH)
