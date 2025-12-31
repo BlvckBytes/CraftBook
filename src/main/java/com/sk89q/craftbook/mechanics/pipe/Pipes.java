@@ -21,6 +21,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.SignChangeEvent;
+import org.bukkit.event.inventory.HopperInventorySearchEvent;
 import org.bukkit.inventory.*;
 import org.jetbrains.annotations.Nullable;
 
@@ -588,6 +589,20 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
             return;
 
         startPipeAndHandleNotifications(event.getBlock(), event.getItems(), true);
+    }
+
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onHopperSearch(HopperInventorySearchEvent event) {
+        var hopper = event.getBlock();
+        var sourceOrDestination = event.getSearchBlock();
+
+        // Destinations are always either below the hopper-block or on any other
+        // direct face besides UP, whenever the output does the 90° bend. Blocks above
+        // are sources, and we're not trying to suck from a pipe, merely put into it.
+        if (sourceOrDestination.getY() > hopper.getY())
+            return;
+
+        startPipeAndHandleNotifications(sourceOrDestination, null, false);
     }
 
     private boolean pipesDiagonal;
