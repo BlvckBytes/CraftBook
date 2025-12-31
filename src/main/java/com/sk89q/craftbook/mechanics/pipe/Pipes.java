@@ -4,12 +4,7 @@ import com.sk89q.craftbook.AbstractCraftBookMechanic;
 import com.sk89q.craftbook.CraftBookPlayer;
 import com.sk89q.craftbook.bukkit.CraftBookPlugin;
 import com.sk89q.craftbook.mechanics.pipe.notification.*;
-import com.sk89q.craftbook.util.EventUtil;
-import com.sk89q.craftbook.util.InventoryUtil;
-import com.sk89q.craftbook.util.ItemUtil;
-import com.sk89q.craftbook.util.ProtectionUtil;
-import com.sk89q.craftbook.util.SignUtil;
-import com.sk89q.craftbook.util.VerifyUtil;
+import com.sk89q.craftbook.util.*;
 import com.sk89q.craftbook.util.events.SourcedBlockRedstoneEvent;
 import com.sk89q.util.yaml.YAMLProcessor;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
@@ -483,7 +478,8 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
             if ((dropNoSign && missedSign) || (dropExceededLimits && exceededLimits)) {
                 leftovers.addAll(itemsInPipe);
             } else if (inventoryHolder != null) {
-                leftovers.addAll(InventoryUtil.addItemsToInventory(inventoryHolder, itemsInPipe));
+                // Allow to put items that have been sucked from the result-slot back into the furnace.
+                leftovers.addAll(InventoryUtil.addItemsToInventory(inventoryHolder, itemsInPipe, EnumSet.of(InventoryAddFlag.ADD_TO_FURNACE_RESULT)));
             } else if (jukebox != null) {
                 for (ItemStack item : itemsInPipe) {
                     if (jukebox.hasRecord() || !item.getType().isRecord()) {
