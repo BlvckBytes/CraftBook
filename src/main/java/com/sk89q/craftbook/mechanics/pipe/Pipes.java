@@ -107,7 +107,7 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
         // how they do apply to the pipe as a whole, including sub-pipes.
         boolean resetCounters = flags.remove(LocateFlag.RESET_COUNTERS);
 
-        return _enumeratePipeBlocks(inputPistonBlock, visitedBlocks, resetCounters, (pipeBlock, cachedPipeBlock) -> {
+        return _enumeratePipeBlocks(inputPistonBlock, visitedBlocks, EnumSet.noneOf(EnumerationBehavior.class), resetCounters, (pipeBlock, cachedPipeBlock) -> {
             if (itemsInPipe.isEmpty())
                 return EnumerationDecision.STOP;
 
@@ -192,11 +192,11 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
     }
 
     @Override
-    public EnumerationResult enumeratePipeBlocks(Block firstBlock, @Nullable LongSet visitedBlocks, PipeEnumerationHandler enumerationHandler) {
-        return _enumeratePipeBlocks(firstBlock, visitedBlocks, true, enumerationHandler);
+    public EnumerationResult enumeratePipeBlocks(Block firstBlock, @Nullable LongSet visitedBlocks, EnumSet<EnumerationBehavior> behaviorFlags, PipeEnumerationHandler enumerationHandler) {
+        return _enumeratePipeBlocks(firstBlock, visitedBlocks, behaviorFlags, true, enumerationHandler);
     }
 
-    private EnumerationResult _enumeratePipeBlocks(Block firstBlock, @Nullable LongSet visitedBlocks, boolean resetCounters, PipeEnumerationHandler enumerationHandler) {
+    private EnumerationResult _enumeratePipeBlocks(Block firstBlock, @Nullable LongSet visitedBlocks, EnumSet<EnumerationBehavior> behaviorFlags, boolean resetCounters, PipeEnumerationHandler enumerationHandler) {
         if (!Bukkit.isPrimaryThread())
             throw new IllegalStateException("This method must be called on the main server thread");
 
@@ -298,8 +298,18 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
 
                             if (!CachedBlock.isTube(cachedEnumeratedBlock)) {
                                 // Pistons are treated with higher priority.
-                                if (CachedBlock.isMaterial(cachedEnumeratedBlock, Material.PISTON))
+                                if (CachedBlock.isMaterial(cachedEnumeratedBlock, Material.PISTON)) {
+                                    if (!behaviorFlags.contains(EnumerationBehavior.IGNORE_CHECK_VALVES)) {
+                                        var oppositePistonFacing = CachedBlock.getFacing(cachedEnumeratedBlock).getOppositeFace();
+
+                                        // Do not walk into the extending side of a piston - this makes it behave
+                                        // like a check-valve, which has numerous helpful applications.
+                                        if (oppositePistonFacing.getModX() == x && oppositePistonFacing.getModY() == y && oppositePistonFacing.getModZ() == z)
+                                            continue;
+                                    }
+
                                     searchQueue.addFirst(enumeratedBlock);
+                                }
 
                                 continue;
                             }
