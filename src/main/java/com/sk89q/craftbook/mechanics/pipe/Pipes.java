@@ -349,7 +349,7 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
         return maxCacheLoadCount;
     }
 
-    private void startPipe(Block inputPistonBlock, List<ItemStack> itemsInPipe, boolean wasRequest, List<PipeNotification> notifications) {
+    private void startPipe(Block inputPistonBlock, @Nullable List<ItemStack> itemsInPipe, boolean wasRequest, List<PipeNotification> notifications) {
         this.currentBlockCache = cacheRegistry.getBlockCache(inputPistonBlock.getWorld());
 
         PipeSign sign;
@@ -373,6 +373,9 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
             notifications.add(new WarmupNotification(currentPistonBlockCounter, currentTubeBlockCounter));
             return;
         }
+
+        if (itemsInPipe == null)
+            itemsInPipe = new ArrayList<>();
 
         LongSet visitedBlocks = new LongOpenHashSet();
         visitedBlocks.add(CompactId.computeWorldlessBlockId(containerBlock));
@@ -524,10 +527,13 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
         }
     }
 
-    private void startPipeAndHandleNotifications(Block inputPistonBlock, List<ItemStack> itemsInPipe, boolean wasRequest) {
-        var notifications = new ArrayList<PipeNotification>();
+    private void startPipeAndHandleNotifications(Block inputPistonBlock, @Nullable List<ItemStack> itemsInPipe, boolean wasRequest) {
+        var notifications = new ArrayList<PipeNotification>(1);
 
         startPipe(inputPistonBlock, itemsInPipe, wasRequest, notifications);
+
+        if (notifications.isEmpty())
+            return;
 
         var hasRegionNotifications = notifications.stream().anyMatch(PipeNotification::broadcastToRegion);
         var coordinates = inputPistonBlock.getX() + " " + inputPistonBlock.getY() + " " + inputPistonBlock.getZ();
@@ -573,7 +579,7 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
         if (!EventUtil.passesFilter(event))
             return;
 
-        startPipeAndHandleNotifications(event.getBlock(), new ArrayList<>(), false);
+        startPipeAndHandleNotifications(event.getBlock(), null, false);
     }
 
     @EventHandler(priority = EventPriority.HIGH)
