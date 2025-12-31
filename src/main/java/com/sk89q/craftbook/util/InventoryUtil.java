@@ -15,10 +15,7 @@ import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.stream.IntStream;
 
 /**
@@ -26,15 +23,12 @@ import java.util.stream.IntStream;
  */
 public class InventoryUtil {
 
-    /**
-     * Adds items to an inventory, returning the leftovers.
-     *
-     * @param container The InventoryHolder to add the items to.
-     * @param stacks The stacks to add to the inventory.
-     * @return The stacks that could not be added.
-     */
-    public static List<ItemStack> addItemsToInventory(InventoryHolder container, ItemStack stacks) {
-        return addItemsToInventory(container, Collections.singletonList(stacks));
+    public static List<ItemStack> addItemsToInventory(InventoryHolder container, ItemStack stack) {
+        return addItemsToInventory(container, Collections.singletonList(stack), EnumSet.noneOf(InventoryAddFlag.class));
+    }
+
+    public static List<ItemStack> addItemsToInventory(InventoryHolder container, Iterable<ItemStack> stacks) {
+        return addItemsToInventory(container, stacks, EnumSet.noneOf(InventoryAddFlag.class));
     }
 
     /**
@@ -44,9 +38,9 @@ public class InventoryUtil {
      * @param stacks The stacks to add to the inventory.
      * @return The stacks that could not be added.
      */
-    public static List<ItemStack> addItemsToInventory(InventoryHolder container, Iterable<ItemStack> stacks) {
+    public static List<ItemStack> addItemsToInventory(InventoryHolder container, Iterable<ItemStack> stacks, EnumSet<InventoryAddFlag> flags) {
         if (container instanceof Furnace)
-            return addItemsToFurnace((Furnace) container, stacks);
+            return addItemsToFurnace((Furnace) container, stacks, flags.contains(InventoryAddFlag.ADD_TO_FURNACE_RESULT));
 
         if (container instanceof BrewingStand)
             return addItemsToBrewingStand((BrewingStand) container, stacks);
@@ -83,7 +77,7 @@ public class InventoryUtil {
      * @param stacks The stacks to add to the inventory.
      * @return The stacks that could not be added.
      */
-    public static List<ItemStack> addItemsToFurnace(Furnace furnace, Iterable<ItemStack> stacks) {
+    public static List<ItemStack> addItemsToFurnace(Furnace furnace, Iterable<ItemStack> stacks, boolean addToResult) {
         var inventory = furnace.getInventory();
         var leftovers = new ArrayList<ItemStack>();
 
@@ -112,6 +106,18 @@ public class InventoryUtil {
                 }
 
                 if ((leftover = ItemUtil.addToStack(inventory.getFuel(), stack)) != null)
+                    leftovers.add(leftover);
+
+                continue;
+            }
+
+            if (addToResult) {
+                if (inventory.getResult() == null) {
+                    inventory.setResult(stack);
+                    continue;
+                }
+
+                if ((leftover = ItemUtil.addToStack(inventory.getResult(), stack)) != null)
                     leftovers.add(leftover);
 
                 continue;

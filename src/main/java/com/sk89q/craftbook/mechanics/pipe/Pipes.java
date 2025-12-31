@@ -4,12 +4,7 @@ import com.sk89q.craftbook.AbstractCraftBookMechanic;
 import com.sk89q.craftbook.CraftBookPlayer;
 import com.sk89q.craftbook.bukkit.CraftBookPlugin;
 import com.sk89q.craftbook.mechanics.pipe.notification.*;
-import com.sk89q.craftbook.util.EventUtil;
-import com.sk89q.craftbook.util.InventoryUtil;
-import com.sk89q.craftbook.util.ItemUtil;
-import com.sk89q.craftbook.util.ProtectionUtil;
-import com.sk89q.craftbook.util.SignUtil;
-import com.sk89q.craftbook.util.VerifyUtil;
+import com.sk89q.craftbook.util.*;
 import com.sk89q.craftbook.util.events.SourcedBlockRedstoneEvent;
 import com.sk89q.util.yaml.YAMLProcessor;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
@@ -26,6 +21,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.SignChangeEvent;
+import org.bukkit.event.inventory.HopperInventorySearchEvent;
 import org.bukkit.inventory.*;
 import org.jetbrains.annotations.Nullable;
 
@@ -354,7 +350,7 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
         return maxCacheLoadCount;
     }
 
-    private void startPipe(Block inputPistonBlock, List<ItemStack> itemsInPipe, boolean wasRequest, List<PipeNotification> notifications) {
+    private void startPipe(Block inputPistonBlock, @Nullable List<ItemStack> itemsInPipe, boolean wasRequest, List<PipeNotification> notifications) {
         this.currentBlockCache = cacheRegistry.getBlockCache(inputPistonBlock.getWorld());
 
         PipeSign sign;
@@ -378,6 +374,9 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
             notifications.add(new WarmupNotification(currentPistonBlockCounter, currentTubeBlockCounter));
             return;
         }
+
+        if (itemsInPipe == null)
+            itemsInPipe = new ArrayList<>();
 
         LongSet visitedBlocks = new LongOpenHashSet();
         visitedBlocks.add(CompactId.computeWorldlessBlockId(containerBlock));
@@ -483,7 +482,8 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
             if ((dropNoSign && missedSign) || (dropExceededLimits && exceededLimits)) {
                 leftovers.addAll(itemsInPipe);
             } else if (inventoryHolder != null) {
-                leftovers.addAll(InventoryUtil.addItemsToInventory(inventoryHolder, itemsInPipe));
+                // Allow to put items that have been sucked from the result-slot back into the furnace.
+                leftovers.addAll(InventoryUtil.addItemsToInventory(inventoryHolder, itemsInPipe, EnumSet.of(InventoryAddFlag.ADD_TO_FURNACE_RESULT)));
             } else if (jukebox != null) {
                 for (ItemStack item : itemsInPipe) {
                     if (jukebox.hasRecord() || !item.getType().isRecord()) {
@@ -528,10 +528,13 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
         }
     }
 
-    private void startPipeAndHandleNotifications(Block inputPistonBlock, List<ItemStack> itemsInPipe, boolean wasRequest) {
-        var notifications = new ArrayList<PipeNotification>();
+    private void startPipeAndHandleNotifications(Block inputPistonBlock, @Nullable List<ItemStack> itemsInPipe, boolean wasRequest) {
+        var notifications = new ArrayList<PipeNotification>(1);
 
         startPipe(inputPistonBlock, itemsInPipe, wasRequest, notifications);
+
+        if (notifications.isEmpty())
+            return;
 
         var hasRegionNotifications = notifications.stream().anyMatch(PipeNotification::broadcastToRegion);
         var coordinates = inputPistonBlock.getX() + " " + inputPistonBlock.getY() + " " + inputPistonBlock.getZ();
@@ -577,7 +580,7 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
         if (!EventUtil.passesFilter(event))
             return;
 
-        startPipeAndHandleNotifications(event.getBlock(), new ArrayList<>(), false);
+        startPipeAndHandleNotifications(event.getBlock(), null, false);
     }
 
     @EventHandler(priority = EventPriority.HIGH)
@@ -586,6 +589,20 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
             return;
 
         startPipeAndHandleNotifications(event.getBlock(), event.getItems(), true);
+    }
+
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onHopperSearch(HopperInventorySearchEvent event) {
+        var hopper = event.getBlock();
+        var sourceOrDestination = event.getSearchBlock();
+
+        // Destinations are always either below the hopper-block or on any other
+        // direct face besides UP, whenever the output does the 90° bend. Blocks above
+        // are sources, and we're not trying to suck from a pipe, merely put into it.
+        if (sourceOrDestination.getY() > hopper.getY())
+            return;
+
+        startPipeAndHandleNotifications(sourceOrDestination, null, false);
     }
 
     private boolean pipesDiagonal;
