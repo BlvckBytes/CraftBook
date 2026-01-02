@@ -4,6 +4,7 @@ import org.bukkit.block.Block;
 import org.bukkit.event.Cancellable;
 import org.bukkit.event.HandlerList;
 import org.bukkit.inventory.ItemStack;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
@@ -11,8 +12,8 @@ public class PipeSuckEvent extends PipeEvent implements Cancellable {
 
     private static final HandlerList handlers = new HandlerList();
 
-    private Block sucked;
-    private int cachedSucked;
+    private final Block sucked;
+    private final int cachedSucked;
 
     public PipeSuckEvent(Block theBlock, List<ItemStack> items, Block sucked, int cachedSucked) {
         super(theBlock, items);
@@ -29,15 +30,6 @@ public class PipeSuckEvent extends PipeEvent implements Cancellable {
     }
 
     @Override
-    public HandlerList getHandlers() {
-        return handlers;
-    }
-
-    public static HandlerList getHandlerList() {
-        return handlers;
-    }
-
-    @Override
     public boolean isCancelled() {
         return isCancelled;
     }
@@ -51,5 +43,16 @@ public class PipeSuckEvent extends PipeEvent implements Cancellable {
 
     public boolean isValid() {
         return !isCancelled && !getItems().isEmpty();
+    }
+
+    @Override
+    @NotNull
+    public HandlerList getHandlers() {
+        return handlers;
+    }
+
+    @NotNull
+    public static HandlerList getHandlerList() {
+        return handlers;
     }
 }
