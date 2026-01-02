@@ -25,6 +25,7 @@ import com.sk89q.worldedit.util.Location;
 import com.sk89q.worldedit.world.item.ItemType;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
+import org.bukkit.metadata.FixedMetadataValue;
 
 public final class BukkitCraftBookPlayer extends BukkitPlayer implements CraftBookPlayer {
 
@@ -69,6 +70,13 @@ public final class BukkitCraftBookPlayer extends BukkitPlayer implements CraftBo
     public void teleport(Location location) {
 
         player.teleport(CraftBookBukkitUtil.toLocation(location));
+    }
+
+    @Override
+    public void temporarilyAttachMetadataFlag(String key, boolean value, Runnable runnable) {
+        player.setMetadata(key, new FixedMetadataValue(plugin, value));
+        runnable.run();
+        player.removeMetadata(key, plugin);
     }
 
     @Override

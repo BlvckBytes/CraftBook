@@ -29,6 +29,8 @@ public interface CraftBookPlayer extends Player {
 
     void teleport(Location location); // TODO Add to WorldEdit
 
+    void temporarilyAttachMetadataFlag(String key, boolean value, Runnable runnable);
+
     boolean isSneaking(); // TODO Add to WorldEdit
 
     boolean isInsideVehicle(); // TODO Add to WorldEdit

@@ -67,6 +67,8 @@ import java.util.UUID;
  */
 public class Elevator extends AbstractCraftBookMechanic {
 
+    private record LiftData(Elevator.Direction direction, boolean noBack) {}
+
     private HashSet<UUID> flyingPlayers;
     private HashMap<UUID, Entity> playerVehicles;
 
@@ -179,7 +181,9 @@ public class Elevator extends AbstractCraftBookMechanic {
         if (!EventUtil.passesFilter(event))
             return;
 
-        Direction dir = isLift(event.getBlock());
+        LiftData liftData = getLiftData(event.getBlock());
+
+        Direction dir = liftData.direction;
         switch (dir) {
             case UP:
             case DOWN:
@@ -209,7 +213,7 @@ public class Elevator extends AbstractCraftBookMechanic {
                 continue;
             }
 
-            makeItSo(localPlayer, destination, shift);
+            makeItSo(localPlayer, destination, shift, liftData.noBack);
         }
     }
 
@@ -237,8 +241,10 @@ public class Elevator extends AbstractCraftBookMechanic {
 
         CraftBookPlayer localPlayer = CraftBookPlugin.inst().wrapPlayer(event.getPlayer());
 
+        LiftData liftData = getLiftData(event.getClickedBlock());
+
         // check if this looks at all like something we're interested in first
-        Direction dir = isLift(event.getClickedBlock());
+        Direction dir = liftData.direction;
         switch (dir) {
             case UP:
             case DOWN:
@@ -276,7 +282,7 @@ public class Elevator extends AbstractCraftBookMechanic {
             return;
         }
 
-        makeItSo(localPlayer, destination, shift);
+        makeItSo(localPlayer, destination, shift, liftData.noBack);
 
         event.setCancelled(true);
     }
@@ -293,7 +299,10 @@ public class Elevator extends AbstractCraftBookMechanic {
         boolean loopd = false;
         while (true) {
             destination = destination.getRelative(shift);
-            Direction derp = isLift(destination);
+
+            LiftData liftData = getLiftData(destination);
+
+            Direction derp = liftData.direction;
             if (derp != Direction.NONE && isValidLift(CraftBookBukkitUtil.toChangedSign(clickedBlock), CraftBookBukkitUtil.toChangedSign(destination)))
                 break; // found it!
 
@@ -325,7 +334,7 @@ public class Elevator extends AbstractCraftBookMechanic {
         return destination;
     }
 
-    private void makeItSo(CraftBookPlayer player, Block destination, BlockFace shift) {
+    private void makeItSo(CraftBookPlayer player, Block destination, BlockFace shift, boolean noBack) {
         // start with the block shifted vertically from the player
         // to the destination sign's height (plus one).
         Block floor = destination.getWorld().getBlockAt((int) Math.floor(player.getLocation().getX()), destination.getY() + 1,
@@ -360,17 +369,17 @@ public class Elevator extends AbstractCraftBookMechanic {
             return;
         }
 
-        teleportPlayer(player, floor, destination, shift);
+        teleportPlayer(player, floor, destination, shift, noBack);
     }
 
-    public void teleportPlayer(final CraftBookPlayer player, final Block floor, final Block destination, final BlockFace shift) {
+    public void teleportPlayer(final CraftBookPlayer player, final Block floor, final Block destination, final BlockFace shift, boolean noBack) {
 
         final Location newLocation = CraftBookBukkitUtil.toLocation(player.getLocation());
         newLocation.setY(floor.getY() + 1);
 
         if(elevatorSlowMove) {
 
-            final Location lastLocation = CraftBookBukkitUtil.toLocation(player.getLocation());
+            final com.sk89q.worldedit.util.Location lastLocation = player.getLocation();
 
             if (player.isInsideVehicle()) {
                 Player bukkitPlayer = ((BukkitCraftBookPlayer)player).getPlayer();
@@ -380,7 +389,7 @@ public class Elevator extends AbstractCraftBookMechanic {
 
                 // Ejecting the player out of the vehicle will move
                 // the player to the side, so we have to correct this.
-                bukkitPlayer.teleport(lastLocation);
+                player.temporarilyAttachMetadataFlag("essentials:ignore-teleport", noBack, () -> player.teleport(lastLocation));
             }
 
             new BukkitRunnable(){
@@ -440,7 +449,7 @@ public class Elevator extends AbstractCraftBookMechanic {
                             // moving down into solid blocks works just fine.
                             p.setVelocity(new Vector(0, -elevatorMoveSpeed, 0));
                             if (isSolidBlockOccludingMovement(p, playerVerticalMovement))
-                                p.teleport(p.getLocation().add(0, -elevatorMoveSpeed, 0));
+                                player.temporarilyAttachMetadataFlag("essentials:ignore-teleport", noBack, () -> p.teleport(p.getLocation().add(0, -elevatorMoveSpeed, 0)));
                             break;
                         default:
                             // Player is not moving
@@ -452,7 +461,7 @@ public class Elevator extends AbstractCraftBookMechanic {
                 }
 
                 private void finishElevatingPlayer(Player p) {
-                    p.teleport(newLocation);
+                    player.temporarilyAttachMetadataFlag("essentials:ignore-teleport", noBack, () -> p.teleport(newLocation));
                     teleportFinish(player, destination, shift);
                     disableFlightMode(p);
                     setPassengerIfPlayerWasInVehicle(player);
@@ -465,11 +474,11 @@ public class Elevator extends AbstractCraftBookMechanic {
             if (player.isInsideVehicle()) {
                 Entity teleportedVehicle = LocationUtil.ejectAndTeleportPlayerVehicle(player, newLocation);
 
-                player.setPosition(BukkitAdapter.adapt(newLocation).toVector(), newLocation.getPitch(), newLocation.getYaw());
+                player.temporarilyAttachMetadataFlag("essentials:ignore-teleport", noBack, () -> player.teleport(BukkitAdapter.adapt(newLocation)));
 
                 LocationUtil.addVehiclePassengerDelayed(teleportedVehicle, player);
             } else {
-                player.setPosition(BukkitAdapter.adapt(newLocation).toVector(), newLocation.getPitch(), newLocation.getYaw());
+                player.temporarilyAttachMetadataFlag("essentials:ignore-teleport", noBack, () -> player.teleport(BukkitAdapter.adapt(newLocation)));
             }
 
             teleportFinish(player, destination, shift);
@@ -554,32 +563,34 @@ public class Elevator extends AbstractCraftBookMechanic {
         } else return true;
     }
 
-    private Elevator.Direction isLift(Block block) {
+    private LiftData getLiftData(Block block) {
 
         if (!SignUtil.isSign(block)) {
             if (elevatorButtonEnabled && Tag.BUTTONS.isTagged(block.getType())) {
                 Switch b = (Switch) block.getBlockData();
                 if(b == null || b.getFacing() == null)
-                    return Direction.NONE;
+                    return new LiftData(Direction.NONE, false);
                 Block sign = block.getRelative(b.getFacing().getOppositeFace(), 2);
                 if (SignUtil.isSign(sign))
-                    return isLift(CraftBookBukkitUtil.toChangedSign(sign));
+                    return getLiftData(CraftBookBukkitUtil.toChangedSign(sign));
             }
-            return Direction.NONE;
+            return new LiftData(Direction.NONE, false);
         }
 
-        return isLift(CraftBookBukkitUtil.toChangedSign(block));
+        return getLiftData(CraftBookBukkitUtil.toChangedSign(block));
     }
 
-    private static Elevator.Direction isLift(ChangedSign sign) {
+    private static LiftData getLiftData(ChangedSign sign) {
         // if you were really feeling frisky this could definitely
         // be optomized by converting the string to a char[] and then
         // doing work
 
-        if (sign.getLine(1).equalsIgnoreCase("[Lift Up]")) return Direction.UP;
-        if (sign.getLine(1).equalsIgnoreCase("[Lift Down]")) return Direction.DOWN;
-        if (sign.getLine(1).equalsIgnoreCase("[Lift]")) return Direction.RECV;
-        return Direction.NONE;
+        boolean noBack = sign.getLine(3).equalsIgnoreCase("no-back");
+
+        if (sign.getLine(1).equalsIgnoreCase("[Lift Up]")) return new LiftData(Direction.UP, noBack);
+        if (sign.getLine(1).equalsIgnoreCase("[Lift Down]")) return new LiftData(Direction.DOWN, noBack);
+        if (sign.getLine(1).equalsIgnoreCase("[Lift]")) return new LiftData(Direction.RECV, noBack);
+        return new LiftData(Direction.NONE, false);
     }
 
     private boolean elevatorAllowRedstone;
