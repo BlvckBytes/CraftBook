@@ -5,6 +5,7 @@ import java.util.List;
 import org.bukkit.block.Block;
 import org.bukkit.event.HandlerList;
 import org.bukkit.inventory.ItemStack;
+import org.jetbrains.annotations.NotNull;
 
 public class PipeRequestEvent extends PipeSuckEvent {
 
@@ -15,10 +16,12 @@ public class PipeRequestEvent extends PipeSuckEvent {
     }
 
     @Override
+    @NotNull
     public HandlerList getHandlers() {
         return handlers;
     }
 
+    @NotNull
     public static HandlerList getHandlerList() {
         return handlers;
     }

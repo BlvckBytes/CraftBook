@@ -3,16 +3,16 @@ package com.sk89q.craftbook.mechanics.pipe;
 import org.bukkit.block.Block;
 import org.bukkit.event.HandlerList;
 import org.bukkit.inventory.ItemStack;
+import org.jetbrains.annotations.NotNull;
 
-import javax.annotation.Nonnull;
 import java.util.List;
 
 public class PipeFilterEvent extends PipeEvent {
 
     private static final HandlerList handlers = new HandlerList();
 
-    private List<ItemStack> includeFilters;
-    private List<ItemStack> excludeFilters;
+    private final List<ItemStack> includeFilters;
+    private final List<ItemStack> excludeFilters;
     private List<ItemStack> filteredItems;
 
     public PipeFilterEvent(Block theBlock, List<ItemStack> items, List<ItemStack> includeFilters, List<ItemStack> excludeFilters, List<ItemStack> filteredItems) {
@@ -40,12 +40,12 @@ public class PipeFilterEvent extends PipeEvent {
     }
 
     @Override
-    @Nonnull
+    @NotNull
     public HandlerList getHandlers() {
         return handlers;
     }
 
-    @Nonnull
+    @NotNull
     public static HandlerList getHandlerList() {
         return handlers;
     }

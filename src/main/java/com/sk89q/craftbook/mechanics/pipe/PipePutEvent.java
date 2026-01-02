@@ -4,30 +4,22 @@ import org.bukkit.block.Block;
 import org.bukkit.event.Cancellable;
 import org.bukkit.event.HandlerList;
 import org.bukkit.inventory.ItemStack;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
 public class PipePutEvent extends PipeEvent implements Cancellable {
 
-    private Block put;
-    private int cachedPut;
+    private static final HandlerList handlers = new HandlerList();
+
+    private final Block put;
+    private final int cachedPut;
 
     public PipePutEvent(Block theBlock, List<ItemStack> items, Block put, int cachedPut) {
         super(theBlock, items);
         this.put = put;
         this.cachedPut = cachedPut;
     }
-
-    @Override
-    public HandlerList getHandlers() {
-        return handlers;
-    }
-
-    public static HandlerList getHandlerList() {
-        return handlers;
-    }
-
-    private static final HandlerList handlers = new HandlerList();
 
     public int getCachedPuttingBlock() {
         return cachedPut;
@@ -52,5 +44,16 @@ public class PipePutEvent extends PipeEvent implements Cancellable {
 
     public boolean isValid() {
         return !isCancelled && !getItems().isEmpty();
+    }
+
+    @Override
+    @NotNull
+    public HandlerList getHandlers() {
+        return handlers;
+    }
+
+    @NotNull
+    public static HandlerList getHandlerList() {
+        return handlers;
     }
 }

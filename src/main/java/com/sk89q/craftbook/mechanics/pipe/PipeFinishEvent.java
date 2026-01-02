@@ -3,14 +3,17 @@ package com.sk89q.craftbook.mechanics.pipe;
 import java.util.List;
 
 import org.bukkit.block.Block;
+import org.bukkit.event.HandlerList;
 import org.bukkit.inventory.ItemStack;
+import org.jetbrains.annotations.NotNull;
 
 public class PipeFinishEvent extends PipeEvent {
 
-    private Block origin;
-    private int cachedOrigin;
+    private static final HandlerList handlers = new HandlerList();
 
-    private boolean request;
+    private final Block origin;
+    private final int cachedOrigin;
+    private final boolean request;
 
     public PipeFinishEvent(Block theBlock, List<ItemStack> items, Block origin, int cachedOrigin, boolean request) {
         super(theBlock, items);
@@ -29,5 +32,16 @@ public class PipeFinishEvent extends PipeEvent {
 
     public boolean isRequest() {
         return request;
+    }
+
+    @Override
+    @NotNull
+    public HandlerList getHandlers() {
+        return handlers;
+    }
+
+    @NotNull
+    public static HandlerList getHandlerList() {
+        return handlers;
     }
 }
