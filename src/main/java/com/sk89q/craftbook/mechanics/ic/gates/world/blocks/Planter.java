@@ -228,6 +228,8 @@ public class Planter extends AbstractSelfTriggeredIC {
             case COCOA_BEANS:
             case CRIMSON_FUNGUS:
             case WARPED_FUNGUS:
+            case PITCHER_POD:
+            case TORCHFLOWER_SEEDS:
                 return true;
             default:
                 return Tag.SAPLINGS.isTagged(item.getType());
@@ -244,6 +246,8 @@ public class Planter extends AbstractSelfTriggeredIC {
             case POTATO:
             case CARROT:
             case BEETROOT_SEEDS:
+            case PITCHER_POD:
+            case TORCHFLOWER_SEEDS:
                 return belowType == Material.FARMLAND;
             case NETHER_WART:
                 return belowType == Material.SOUL_SAND;
@@ -321,6 +325,12 @@ public class Planter extends AbstractSelfTriggeredIC {
                 return true;
             case WARPED_FUNGUS:
                 block.setType(Material.WARPED_FUNGUS);
+                return true;
+            case TORCHFLOWER_SEEDS:
+                block.setType(Material.TORCHFLOWER_CROP);
+                return true;
+            case PITCHER_POD:
+                block.setType(Material.PITCHER_CROP);
                 return true;
             default:
                 if (Tag.SAPLINGS.isTagged(item.getType())) {
