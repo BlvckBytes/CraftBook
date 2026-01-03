@@ -117,12 +117,15 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
                 continue;
             }
 
-            replace[i] = new ItemStack(contents[i]);
+            ItemStack replaceItem = replace[i] = new ItemStack(contents[i]);
 
-            if(replace[i].getType() == Material.WATER_BUCKET || replace[i].getType() == Material.LAVA_BUCKET || replace[i].getType() == Material.MILK_BUCKET)
+            if (replaceItem.getType() == Material.WATER_BUCKET || replaceItem.getType() == Material.LAVA_BUCKET || replaceItem.getType() == Material.MILK_BUCKET)
                 items.add(new ItemStack(Material.BUCKET, 1));
 
-            replace[i].setAmount(replace[i].getAmount() - 1);
+            if (replaceItem.getType() == Material.HONEY_BOTTLE)
+                items.add(new ItemStack(Material.GLASS_BOTTLE, 1));
+
+            replaceItem.setAmount(replaceItem.getAmount() - 1);
         }
 
         cachedDispenserOrDropperInventory.clear();
