@@ -22,6 +22,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.inventory.HopperInventorySearchEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.*;
 import org.jetbrains.annotations.Nullable;
 
@@ -36,8 +37,11 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
 
     private BlockCache currentBlockCache;
 
+    private final NotificationDebouncer notificationDebouncer;
+
     public Pipes() {
         this.cacheRegistry = new BlockCacheRegistry();
+        this.notificationDebouncer = new NotificationDebouncer();
     }
 
     @Override
@@ -567,7 +571,7 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
                     if (!notification.broadcastToRegion())
                         continue;
 
-                    notification.sendOnce(player, extendedCoordinates);
+                    notification.sendOnceIfNotDebounced(player, inputPistonBlock, extendedCoordinates, notificationDebouncer);
                 }
             });
         }
@@ -580,7 +584,7 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
                     continue;
 
                 for (var notification : notifications)
-                    notification.sendOnce(player, coordinates);
+                    notification.sendOnceIfNotDebounced(player, inputPistonBlock, coordinates, notificationDebouncer);
             }
         }
     }
@@ -613,6 +617,11 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
             return;
 
         startPipeAndHandleNotifications(sourceOrDestination, null, false);
+    }
+
+    @EventHandler
+    public void onQuit(PlayerQuitEvent event) {
+        notificationDebouncer.removePlayer(event.getPlayer());
     }
 
     private boolean pipesDiagonal;
@@ -681,5 +690,8 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
         config.setComment(path + "notify-ignored-regions", "A list of regions to ignore while sending out notifications to members and/or owners");
         for (var ignoredRegion : config.getStringList(path + "notify-ignored-regions", Collections.emptyList()))
             ignoredRegionsLower.add(ignoredRegion.trim().toLowerCase());
+
+        config.setComment(path + "notification-debounce-delay", "Minimum duration, in seconds, between sending out equal notifications; 0 for none");
+        notificationDebouncer.setDebounceMillis(config.getInt(path + "notification-debounce-delay", 15) * 1000L);
     }
 }

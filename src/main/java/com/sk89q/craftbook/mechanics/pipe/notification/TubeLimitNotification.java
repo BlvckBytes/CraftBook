@@ -5,6 +5,7 @@ import com.sk89q.craftbook.core.LanguageManager;
 import net.md_5.bungee.api.ChatMessageType;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
+import org.jetbrains.annotations.Nullable;
 
 public class TubeLimitNotification extends PipeNotification {
 
@@ -25,11 +26,16 @@ public class TubeLimitNotification extends PipeNotification {
   }
 
   @Override
-  public String buildMessage(Player receiver, String inputPistonCoordinates) {
+  public String buildMessage(Player receiver, String extendedCoordinates) {
     var languageManager = CraftBookPlugin.inst().getLanguageManager();
 
     return ChatColor.RED + languageManager.getString("circuits.pipes.exceeded-tube-count-notification", LanguageManager.getPlayersLanguage(receiver))
-      .replace("{coordinates}", inputPistonCoordinates)
+      .replace("{coordinates}", extendedCoordinates)
       .replace("{limit}", String.valueOf(tubeLimit));
+  }
+
+  @Override
+  public @Nullable Object[] getDataTokens() {
+    return new Object[0];
   }
 }

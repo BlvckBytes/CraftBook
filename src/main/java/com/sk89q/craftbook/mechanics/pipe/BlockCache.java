@@ -205,8 +205,10 @@ public class BlockCache {
     private void addOrTouchChunkTicket(Block block, long compactChunkId) {
         var existingTicket = chunkTicketByCompactId.get(compactChunkId);
 
-        if (existingTicket != null && registry.getContinuedChunkTicketDuration() > 0) {
-            existingTicket.touch(registry.getContinuedChunkTicketDuration());
+        if (existingTicket != null) {
+            if (registry.getContinuedChunkTicketDuration() > 0)
+                existingTicket.touch(registry.getContinuedChunkTicketDuration());
+
             return;
         }
 
