@@ -5,6 +5,7 @@ import com.sk89q.craftbook.core.LanguageManager;
 import net.md_5.bungee.api.ChatMessageType;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
+import org.jetbrains.annotations.Nullable;
 
 public class WarmupNotification extends PipeNotification {
 
@@ -30,12 +31,18 @@ public class WarmupNotification extends PipeNotification {
   }
 
   @Override
-  public String buildMessage(Player receiver, String inputPistonCoordinates) {
+  public String buildMessage(Player receiver, String extendedCoordinates) {
     var languageManager = CraftBookPlugin.inst().getLanguageManager();
 
     return ChatColor.GOLD + languageManager.getString("circuits.pipes.warmup-notification", LanguageManager.getPlayersLanguage(receiver))
-      .replace("{coordinates}", inputPistonCoordinates)
+      .replace("{coordinates}", extendedCoordinates)
       .replace("{tubes}", String.valueOf(tubeBlockCount))
       .replace("{pistons}", String.valueOf(pistonBlockCount));
+  }
+
+  @Override
+  public @Nullable String[] getDataTokens() {
+    // This notification is supposed to be "spammy", as to keep the action-bar-message visible with full opacity
+    return null;
   }
 }
