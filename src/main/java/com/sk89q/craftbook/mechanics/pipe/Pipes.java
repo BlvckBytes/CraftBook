@@ -16,12 +16,14 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.*;
+import org.bukkit.block.data.Directional;
 import org.bukkit.block.data.type.Piston;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.inventory.HopperInventorySearchEvent;
+import org.bukkit.event.inventory.InventoryMoveItemEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.*;
 import org.jetbrains.annotations.Nullable;
@@ -364,7 +366,7 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
         return maxCacheLoadCount;
     }
 
-    private void startPipe(Block inputPistonBlock, @Nullable List<ItemStack> itemsInPipe, boolean wasRequest, List<PipeNotification> notifications) {
+    private void startPipe(Block inputPistonBlock, @Nullable Block overrideContainerBlock, @Nullable List<ItemStack> itemsInPipe, boolean wasRequest, List<PipeNotification> notifications) {
         this.currentBlockCache = cacheRegistry.getBlockCache(inputPistonBlock.getWorld());
 
         PipeSign sign;
@@ -379,7 +381,7 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
 
             sign = currentBlockCache.getSignOnPiston(inputPistonBlock, cachedInputPistonBlock, notifications);
 
-            containerBlock = inputPistonBlock.getRelative(CachedBlock.getFacing(cachedInputPistonBlock));
+            containerBlock = overrideContainerBlock != null ? overrideContainerBlock : inputPistonBlock.getRelative(CachedBlock.getFacing(cachedInputPistonBlock));
             cachedContainerBlock = currentBlockCache.getCachedBlock(containerBlock);
         }
         // If the very beginning of the pipe already (partially) is within an unloaded chunk,
@@ -542,10 +544,10 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
         }
     }
 
-    private void startPipeAndHandleNotifications(Block inputPistonBlock, @Nullable List<ItemStack> itemsInPipe, boolean wasRequest) {
+    private void startPipeAndHandleNotifications(Block inputPistonBlock, @Nullable Block overrideContainerBlock, @Nullable List<ItemStack> itemsInPipe, boolean wasRequest) {
         var notifications = new ArrayList<PipeNotification>(1);
 
-        startPipe(inputPistonBlock, itemsInPipe, wasRequest, notifications);
+        startPipe(inputPistonBlock, overrideContainerBlock, itemsInPipe, wasRequest, notifications);
 
         if (notifications.isEmpty())
             return;
@@ -594,7 +596,7 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
         if (!EventUtil.passesFilter(event))
             return;
 
-        startPipeAndHandleNotifications(event.getBlock(), null, false);
+        startPipeAndHandleNotifications(event.getBlock(), null, null, false);
     }
 
     @EventHandler(priority = EventPriority.HIGH)
@@ -602,11 +604,14 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
         if (!EventUtil.passesFilter(event))
             return;
 
-        startPipeAndHandleNotifications(event.getBlock(), event.getItems(), true);
+        startPipeAndHandleNotifications(event.getBlock(), null, event.getItems(), true);
     }
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onHopperSearch(HopperInventorySearchEvent event) {
+        // Used to let hoppers become initiators of the pipe if moveable contents
+        // reside in their own inventory; handy in combination with the magnet-mechanic.
+
         var hopper = event.getBlock();
         var sourceOrDestination = event.getSearchBlock();
 
@@ -616,7 +621,68 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
         if (sourceOrDestination.getY() > hopper.getY())
             return;
 
-        startPipeAndHandleNotifications(sourceOrDestination, null, false);
+        startPipeAndHandleNotifications(sourceOrDestination, null, null, false);
+    }
+
+    @EventHandler
+    public void onItemMove(InventoryMoveItemEvent event) {
+        // Used to let hoppers become mediators for starting the pipe if moveable
+        // contents reside in their connected input-container.
+
+        // Move *into* a hopper's inventory
+        if (!(event.getDestination().getHolder() instanceof Hopper hopper))
+            return;
+
+        var sourceHolder = event.getSource().getHolder();
+
+        // Move *from* a block's inventory
+        Block sourceBlock;
+
+        if (sourceHolder instanceof BlockInventoryHolder blockInventoryHolder) {
+            sourceBlock = blockInventoryHolder.getBlock();
+        }
+        else if (sourceHolder instanceof DoubleChest doubleChest) {
+            if (doubleChest.getLeftSide() instanceof Chest chest)
+                sourceBlock = chest.getBlock();
+            else if (doubleChest.getRightSide() instanceof Chest chest)
+                sourceBlock = chest.getBlock();
+            else
+                return;
+        }
+        else
+            return;
+
+        var hopperBlock = hopper.getBlock();
+        var hopperFacing = ((Directional) hopperBlock.getBlockData()).getFacing();
+
+        // The block the hopper is facing into - N|E|S|W|D
+        var hopperTarget = hopperBlock.getRelative(hopperFacing);
+
+        // Not facing into a sticky-piston
+        if (hopperTarget.getType() != Material.STICKY_PISTON)
+            return;
+
+        // The sticky-piston is not facing the output of the hopper directly
+        if (((Directional) hopperTarget.getBlockData()).getFacing() != hopperFacing.getOppositeFace())
+            return;
+
+        // If all constraints of the above hold, there is no reason to move into the hopper, seeing
+        // how the intention of the setup is rather unambiguous. This hopper is but a mediator.
+        event.setCancelled(true);
+
+        // During this event, Bukkit gets the moved item from the input-inventory and actually
+        // sets its amount to 1 (or whatever's configured) by reference, so we have no way of
+        // knowing how many items there actually were. Hopper-moves aren't initiated at every
+        // tick (instead every 8), so we're absolutely safe to postpone this action by
+        // one tick, as to get access to the unmanipulated inventory again for sucking.
+
+        Bukkit.getScheduler().runTaskLater(CraftBookPlugin.inst(), () -> startPipeAndHandleNotifications(hopperTarget, sourceBlock, null, false), 1);
+
+        // Then, also call once more after 5 ticks, meaning 4 ticks later than the first attempt to suck,
+        // as to make it become a steady 200ms clock if there are more items to transport, instead
+        // of the 400ms as the 8 ticks would yield, which is actually noticeably slower.
+
+        Bukkit.getScheduler().runTaskLater(CraftBookPlugin.inst(), () -> startPipeAndHandleNotifications(hopperTarget, sourceBlock, null, false), 5);
     }
 
     @EventHandler
