@@ -21,6 +21,8 @@ import java.util.*;
 
 public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInputIC {
 
+    private static final ItemStack AIR_STACK = new ItemStack(Material.AIR);
+
     private static boolean hasWarned = false;
     private static boolean hasWarnedNoResult = false;
 
@@ -266,7 +268,7 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
 
                 String shapeRow = shape.getShapeRow(rowIndex);
 
-                ItemStack ingredient = null;
+                RecipeChoice ingredient = null;
                 char ingredientChar = ' ';
 
                 if (columnIndex < shapeRow.length())
@@ -275,10 +277,19 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
                 if (ingredientChar != ' ')
                     ingredient = shape.getIngredient(ingredientChar);
 
-                if (ingredient != null && ingredient.getType() != Material.AIR)
-                    ++validRecipeItems;
+                if (ingredient == null) {
+                    if (matrixItem != null && matrixItem.getType() != Material.AIR)
+                        return false;
 
-                if (!ItemUtil.areItemsIdentical(ingredient, matrixItem))
+                    continue;
+                }
+
+                ++validRecipeItems;
+
+                if (matrixItem == null)
+                    matrixItem = AIR_STACK;
+
+                if (!ingredient.test(matrixItem))
                     return false;
             }
 
@@ -297,7 +308,7 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
             if (shape.cachedKey.equals("shulker_box_coloring"))
                 return false;
 
-            List<ItemStack> remainingIngredients = new ArrayList<>(shape.cachedIngredientList);
+            var remainingIngredients = new ArrayList<>(shape.cachedIngredientList);
 
             // If it's empty already, something is wrong with the recipe.
             if (remainingIngredients.isEmpty())
@@ -311,15 +322,10 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
                 if (remainingIngredients.isEmpty())
                     return false;
 
-                for (Iterator<ItemStack> iterator = remainingIngredients.iterator(); iterator.hasNext();) {
-                    ItemStack requiredIngredient = iterator.next();
+                for (var iterator = remainingIngredients.iterator(); iterator.hasNext();) {
+                    var requiredIngredient = iterator.next();
 
-                    if (!ItemUtil.isStackValid(requiredIngredient)) {
-                        iterator.remove();
-                        continue;
-                    }
-
-                    if (ItemUtil.areItemsIdentical(matrixItem, requiredIngredient)) {
+                    if (requiredIngredient.test(matrixItem)) {
                         iterator.remove();
                         break;
                     }
