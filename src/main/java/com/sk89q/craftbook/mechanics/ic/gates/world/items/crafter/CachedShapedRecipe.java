@@ -4,10 +4,8 @@ import it.unimi.dsi.fastutil.chars.Char2ObjectMap;
 import it.unimi.dsi.fastutil.chars.Char2ObjectOpenHashMap;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.Recipe;
+import org.bukkit.inventory.RecipeChoice;
 import org.bukkit.inventory.ShapedRecipe;
-
-import java.util.Collections;
-import java.util.Map;
 
 public class CachedShapedRecipe implements CachedRecipe {
 
@@ -15,14 +13,14 @@ public class CachedShapedRecipe implements CachedRecipe {
 
   public final ItemStack cachedResult;
   private final String[] cachedShape;
-  private final Char2ObjectMap<ItemStack> cachedIngredientsMap;
+  private final Char2ObjectMap<RecipeChoice> cachedIngredientsMap;
 
   CachedShapedRecipe(ShapedRecipe handle) {
     this.handle = handle;
     this.cachedResult = handle.getResult();
     this.cachedShape = handle.getShape();
     this.cachedIngredientsMap = new Char2ObjectOpenHashMap<>();
-    cachedIngredientsMap.putAll(handle.getIngredientMap());
+    cachedIngredientsMap.putAll(handle.getChoiceMap());
   }
 
   public String getShapeRow(int index) {
@@ -32,7 +30,7 @@ public class CachedShapedRecipe implements CachedRecipe {
     return "   ";
   }
 
-  public ItemStack getIngredient(char c) {
+  public RecipeChoice getIngredient(char c) {
     return cachedIngredientsMap.get(c);
   }
 
