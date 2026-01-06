@@ -1,33 +1,54 @@
 package com.sk89q.craftbook.util;
 
 import com.sk89q.craftbook.bukkit.CraftBookPlugin;
-import org.bukkit.ChatColor;
-import org.bukkit.DyeColor;
-import org.bukkit.Material;
-import org.bukkit.Tag;
-import org.bukkit.TreeSpecies;
+import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.Recipe;
-import org.bukkit.inventory.ShapedRecipe;
-import org.bukkit.inventory.ShapelessRecipe;
+import org.bukkit.inventory.*;
 import org.bukkit.inventory.meta.BookMeta;
 import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.EnchantmentStorageMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
 import java.util.regex.Pattern;
 
 public final class ItemUtil {
+
+    private static final Map<Material, ItemStack> furnaceResults;
+    private static final Map<Material, ItemStack> blastFurnaceResults;
+
+    static {
+        furnaceResults = new HashMap<>();
+        blastFurnaceResults = new HashMap<>();
+
+        var recipes = Bukkit.recipeIterator();
+
+        while (recipes.hasNext()) {
+            Recipe recipe = recipes.next();
+
+            if (!(recipe instanceof CookingRecipe<?> cookingRecipe))
+                continue;
+
+            if (!(cookingRecipe.getInputChoice() instanceof RecipeChoice.MaterialChoice materialChoice))
+                continue;
+
+            Map<Material, ItemStack> targetMap;
+
+            switch (cookingRecipe) {
+                case FurnaceRecipe ignored -> targetMap = furnaceResults;
+                case BlastingRecipe ignored -> targetMap = blastFurnaceResults;
+                default -> { continue; }
+            }
+
+            for (var choice : materialChoice.getChoices())
+                targetMap.put(choice, cookingRecipe.getResult());
+        }
+    }
 
     /**
      * Add an itemstack to an existing itemstack.
@@ -469,125 +490,15 @@ public final class ItemUtil {
     }
 
     public static ItemStack getCookedResult(ItemStack item) {
-
-        switch (item.getType()) {
-            case BEEF:
-                return new ItemStack(Material.COOKED_BEEF);
-            case CHICKEN:
-                return new ItemStack(Material.COOKED_CHICKEN);
-            case COD:
-                return new ItemStack(Material.COOKED_COD);
-            case SALMON:
-                return new ItemStack(Material.COOKED_SALMON);
-            case PORKCHOP:
-                return new ItemStack(Material.COOKED_PORKCHOP);
-            case POTATO:
-                return new ItemStack(Material.BAKED_POTATO);
-            case MUTTON:
-                return new ItemStack(Material.COOKED_MUTTON);
-            case RABBIT:
-                return new ItemStack(Material.COOKED_RABBIT);
-            case CHORUS_FRUIT:
-                return new ItemStack(Material.POPPED_CHORUS_FRUIT);
-            case KELP:
-                return new ItemStack(Material.DRIED_KELP);
-            default:
-                return null;
-        }
+        return furnaceResults.get(item.getType());
     }
 
     public static boolean isSmeltable(ItemStack item) {
-
         return getSmeltedResult(item) != null;
     }
 
     public static ItemStack getSmeltedResult(ItemStack item) {
-
-        switch (item.getType()) {
-            case COBBLESTONE:
-                return new ItemStack(Material.STONE);
-            case COBBLED_DEEPSLATE:
-                return new ItemStack(Material.DEEPSLATE);
-            case DEEPSLATE_BRICKS:
-                return new ItemStack(Material.CRACKED_DEEPSLATE_BRICKS);
-            case DEEPSLATE_TILES:
-                return new ItemStack(Material.CRACKED_DEEPSLATE_TILES);
-            case POLISHED_BLACKSTONE_BRICKS:
-                return new ItemStack(Material.CRACKED_POLISHED_BLACKSTONE_BRICKS);
-            case BASALT:
-                return new ItemStack(Material.SMOOTH_BASALT);
-            case CACTUS:
-                return new ItemStack(Material.GREEN_DYE);
-            case SAND:
-            case RED_SAND:
-                return new ItemStack(Material.GLASS);
-            case CLAY_BALL:
-                return new ItemStack(Material.BRICK);
-            case NETHERRACK:
-                return new ItemStack(Material.NETHER_BRICK);
-            case CLAY:
-                return new ItemStack(Material.TERRACOTTA);
-            case STONE_BRICKS:
-                return new ItemStack(Material.CRACKED_STONE_BRICKS);
-            case NETHER_BRICKS:
-                return new ItemStack(Material.CRACKED_NETHER_BRICKS);
-            case WET_SPONGE:
-                return new ItemStack(Material.SPONGE);
-            case WHITE_TERRACOTTA:
-                return new ItemStack(Material.WHITE_GLAZED_TERRACOTTA);
-            case ORANGE_TERRACOTTA:
-                return new ItemStack(Material.ORANGE_GLAZED_TERRACOTTA);
-            case MAGENTA_TERRACOTTA:
-                return new ItemStack(Material.MAGENTA_GLAZED_TERRACOTTA);
-            case LIGHT_BLUE_TERRACOTTA:
-                return new ItemStack(Material.LIGHT_BLUE_GLAZED_TERRACOTTA);
-            case YELLOW_TERRACOTTA:
-                return new ItemStack(Material.YELLOW_GLAZED_TERRACOTTA);
-            case LIME_TERRACOTTA:
-                return new ItemStack(Material.LIME_GLAZED_TERRACOTTA);
-            case PINK_TERRACOTTA:
-                return new ItemStack(Material.PINK_GLAZED_TERRACOTTA);
-            case GRAY_TERRACOTTA:
-                return new ItemStack(Material.GRAY_GLAZED_TERRACOTTA);
-            case LIGHT_GRAY_TERRACOTTA:
-                return new ItemStack(Material.LIGHT_GRAY_GLAZED_TERRACOTTA);
-            case CYAN_TERRACOTTA:
-                return new ItemStack(Material.CYAN_GLAZED_TERRACOTTA);
-            case PURPLE_TERRACOTTA:
-                return new ItemStack(Material.PURPLE_GLAZED_TERRACOTTA);
-            case BLUE_TERRACOTTA:
-                return new ItemStack(Material.BLUE_GLAZED_TERRACOTTA);
-            case BROWN_TERRACOTTA:
-                return new ItemStack(Material.BROWN_GLAZED_TERRACOTTA);
-            case GREEN_TERRACOTTA:
-                return new ItemStack(Material.GREEN_GLAZED_TERRACOTTA);
-            case RED_TERRACOTTA:
-                return new ItemStack(Material.RED_GLAZED_TERRACOTTA);
-            case BLACK_TERRACOTTA:
-                return new ItemStack(Material.BLACK_GLAZED_TERRACOTTA);
-            case STONE:
-                return new ItemStack(Material.SMOOTH_STONE);
-            case QUARTZ_BLOCK:
-                return new ItemStack(Material.SMOOTH_QUARTZ);
-            case SANDSTONE:
-                return new ItemStack(Material.SMOOTH_SANDSTONE);
-            case RED_SANDSTONE:
-                return new ItemStack(Material.SMOOTH_RED_SANDSTONE);
-            case CHORUS_FRUIT:
-                return new ItemStack(Material.POPPED_CHORUS_FRUIT);
-            case SEA_PICKLE:
-                return new ItemStack(Material.LIME_DYE);
-            case RESIN_CLUMP:
-                return new ItemStack(Material.RESIN_BRICK);
-            default:
-                if (Tag.LOGS_THAT_BURN.isTagged(item.getType())) {
-                    return new ItemStack(Material.CHARCOAL);
-                }
-                if (Tag.LEAVES.isTagged(item.getType())) {
-                    return new ItemStack(Material.LEAF_LITTER);
-                }
-                return getBlastSmeltedResult(item);
-        }
+        return furnaceResults.get(item.getType());
     }
 
     public static boolean isBlastSmeltable(ItemStack item) {
@@ -596,69 +507,7 @@ public final class ItemUtil {
     }
 
     public static ItemStack getBlastSmeltedResult(ItemStack item) {
-
-        switch (item.getType()) {
-            case IRON_ORE:
-            case DEEPSLATE_IRON_ORE:
-            case RAW_IRON:
-                return new ItemStack(Material.IRON_INGOT);
-            case COAL_ORE:
-            case DEEPSLATE_COAL_ORE:
-                return new ItemStack(Material.COAL);
-            case LAPIS_ORE:
-            case DEEPSLATE_LAPIS_ORE:
-                return new ItemStack(Material.LAPIS_LAZULI);
-            case REDSTONE_ORE:
-            case DEEPSLATE_REDSTONE_ORE:
-                return new ItemStack(Material.REDSTONE, 4);
-            case EMERALD_ORE:
-            case DEEPSLATE_EMERALD_ORE:
-                return new ItemStack(Material.EMERALD);
-            case GOLD_ORE:
-            case DEEPSLATE_GOLD_ORE:
-            case RAW_GOLD:
-            case NETHER_GOLD_ORE:
-                return new ItemStack(Material.GOLD_INGOT);
-            case ANCIENT_DEBRIS:
-                return new ItemStack(Material.NETHERITE_SCRAP);
-            case COPPER_ORE:
-            case DEEPSLATE_COPPER_ORE:
-            case RAW_COPPER:
-                return new ItemStack(Material.COPPER_INGOT);
-            case DIAMOND_ORE:
-            case DEEPSLATE_DIAMOND_ORE:
-                return new ItemStack(Material.DIAMOND);
-            case NETHER_QUARTZ_ORE:
-                return new ItemStack(Material.QUARTZ);
-            case IRON_SWORD:
-            case IRON_PICKAXE:
-            case IRON_AXE:
-            case IRON_SHOVEL:
-            case IRON_HOE:
-            case CHAINMAIL_HELMET:
-            case CHAINMAIL_CHESTPLATE:
-            case CHAINMAIL_LEGGINGS:
-            case CHAINMAIL_BOOTS:
-            case IRON_HELMET:
-            case IRON_CHESTPLATE:
-            case IRON_LEGGINGS:
-            case IRON_BOOTS:
-            case IRON_HORSE_ARMOR:
-                return new ItemStack(Material.IRON_NUGGET);
-            case GOLDEN_SWORD:
-            case GOLDEN_PICKAXE:
-            case GOLDEN_AXE:
-            case GOLDEN_SHOVEL:
-            case GOLDEN_HOE:
-            case GOLDEN_HELMET:
-            case GOLDEN_CHESTPLATE:
-            case GOLDEN_LEGGINGS:
-            case GOLDEN_BOOTS:
-            case GOLDEN_HORSE_ARMOR:
-                return new ItemStack(Material.GOLD_NUGGET);
-            default:
-                return null;
-        }
+        return blastFurnaceResults.get(item.getType());
     }
 
     public static Material getWoolFromColour(DyeColor color) {
