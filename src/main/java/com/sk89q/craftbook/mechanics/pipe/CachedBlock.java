@@ -5,7 +5,6 @@ import org.bukkit.Tag;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.Directional;
-import org.bukkit.block.data.type.Piston;
 
 public class CachedBlock {
 
@@ -66,7 +65,7 @@ public class CachedBlock {
         return getTubeColorOrdinal(cachedBlock) != TubeColor.NONE.ordinal();
     }
 
-    private static int getTubeColorOrdinal(int cachedBlock) {
+    public static int getTubeColorOrdinal(int cachedBlock) {
         return (cachedBlock >> 6) & (32 - 1);
     }
 
