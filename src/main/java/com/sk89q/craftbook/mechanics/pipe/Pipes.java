@@ -657,13 +657,13 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
         if (sourceHolder instanceof BlockInventoryHolder blockInventoryHolder) {
             sourceBlock = blockInventoryHolder.getBlock();
         }
+        // Double-chests are, once again, a very special case. When using the "recommended" way of accessing
+        // halves via #getLeftSide and #getRightSide, one implicitly calls #getHolder, which can cause a
+        // chunk-load (create-snapshot, for each call) if the chest sits exactly on a chunk-boundary whose
+        // neighbor is unloaded. By convention, #getLocation returns the center, so by calling #getBlock, we
+        // implicitly floor and get either half - the rest is taken care of by #startPipe anyway.
         else if (sourceHolder instanceof DoubleChest doubleChest) {
-            if (doubleChest.getLeftSide() instanceof Chest chest)
-                sourceBlock = chest.getBlock();
-            else if (doubleChest.getRightSide() instanceof Chest chest)
-                sourceBlock = chest.getBlock();
-            else
-                return;
+            sourceBlock = doubleChest.getLocation().getBlock();
         }
         else
             return;
