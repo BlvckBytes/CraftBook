@@ -32,6 +32,12 @@ import java.util.*;
 
 public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
 
+    private static final BlockFace[] DROP_ITEM_FACES = new BlockFace[] {
+      BlockFace.UP, BlockFace.DOWN,
+      BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST,
+      BlockFace.NORTH_EAST, BlockFace.NORTH_WEST, BlockFace.SOUTH_EAST, BlockFace.SOUTH_WEST
+    };
+
     private int currentTubeBlockCounter;
     private int currentPistonBlockCounter;
 
@@ -524,11 +530,21 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
         itemsInPipe.clear();
 
         if (!leftovers.isEmpty()) {
+            var dropBlock = containerBlock;
+            var nextFaceIndex = 0;
+
+            // Try to drop the item at a block that is not going to make it shoot out due to collision
+            while (nextFaceIndex < DROP_ITEM_FACES.length && !dropBlock.isPassable())
+                dropBlock = containerBlock.getRelative(DROP_ITEM_FACES[nextFaceIndex++]);
+
+            var dropLocation = dropBlock.getLocation().add(.5, .5, .5);
+            var dropWorld = containerBlock.getWorld();
+
             for (ItemStack item : leftovers) {
                 if (!ItemUtil.isStackValid(item))
                     continue;
 
-                inputPistonBlock.getWorld().dropItemNaturally(inputPistonBlock.getLocation().add(0.5, 0.5, 0.5), item);
+                dropWorld.dropItemNaturally(dropLocation, item);
             }
         }
 
@@ -641,13 +657,13 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
         if (sourceHolder instanceof BlockInventoryHolder blockInventoryHolder) {
             sourceBlock = blockInventoryHolder.getBlock();
         }
+        // Double-chests are, once again, a very special case. When using the "recommended" way of accessing
+        // halves via #getLeftSide and #getRightSide, one implicitly calls #getHolder, which can cause a
+        // chunk-load (create-snapshot, for each call) if the chest sits exactly on a chunk-boundary whose
+        // neighbor is unloaded. By convention, #getLocation returns the center, so by calling #getBlock, we
+        // implicitly floor and get either half - the rest is taken care of by #startPipe anyway.
         else if (sourceHolder instanceof DoubleChest doubleChest) {
-            if (doubleChest.getLeftSide() instanceof Chest chest)
-                sourceBlock = chest.getBlock();
-            else if (doubleChest.getRightSide() instanceof Chest chest)
-                sourceBlock = chest.getBlock();
-            else
-                return;
+            sourceBlock = doubleChest.getLocation().getBlock();
         }
         else
             return;
