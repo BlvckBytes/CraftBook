@@ -17,6 +17,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.*;
 import org.bukkit.block.data.Directional;
+import org.bukkit.block.data.Levelled;
 import org.bukkit.block.data.type.Piston;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -407,6 +408,7 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
 
         InventoryHolder inventoryHolder = null;
         Jukebox jukebox = null;
+        Levelled levelled = null;
 
         if (
             CachedBlock.hasHandledInputInventory(cachedContainerBlock)
@@ -463,6 +465,14 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
                 jukebox.setRecord(null);
                 jukebox.update();
             }
+        } else if (CachedBlock.isMaterial(cachedContainerBlock, Material.COMPOSTER)) {
+            levelled = (Levelled) containerBlock.getBlockData();
+
+            if (levelled.getLevel() == levelled.getMaximumLevel()) {
+                itemsInPipe.add(new ItemStack(Material.BONE_MEAL, 1));
+                levelled.setLevel(0);
+                containerBlock.setBlockData(levelled);
+            }
         }
 
         PipeSuckEvent suckEvent = new PipeSuckEvent(inputPistonBlock, new ArrayList<>(itemsInPipe), containerBlock, cachedContainerBlock);
@@ -515,6 +525,21 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
 
                     jukebox.setRecord(item);
                     jukebox.update();
+                }
+            } else if (levelled != null) {
+                for (ItemStack item : itemsInPipe) {
+                    if (levelled.getLevel() == levelled.getMaximumLevel() || item.getType() != Material.BONE_MEAL) {
+                        leftovers.add(item);
+                        continue;
+                    }
+
+                    levelled.setLevel(levelled.getMaximumLevel());
+                    containerBlock.setBlockData(levelled);
+
+                    if (item.getAmount() > 1) {
+                        item.setAmount(item.getAmount() - 1);
+                        leftovers.add(item);
+                    }
                 }
             } else {
                 leftovers.addAll(itemsInPipe);
