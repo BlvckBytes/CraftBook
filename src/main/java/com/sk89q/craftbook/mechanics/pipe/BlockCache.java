@@ -11,7 +11,9 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.Sign;
 import org.bukkit.block.data.BlockData;
+import org.bukkit.block.data.Powerable;
 import org.bukkit.block.data.type.WallSign;
+import org.bukkit.scheduler.BukkitTask;
 
 import java.util.List;
 import java.util.function.Consumer;
@@ -28,6 +30,7 @@ public class BlockCache {
     private final Long2ObjectMap<ChunkTicket> chunkTicketByCompactId;
     private final Long2IntMap cachedBlockByCompactId;
     private final Long2ObjectMap<PipeSign> pipeSignByPistonCompactId;
+    private final Long2ObjectMap<BukkitTask> tempPowerResetTaskByCompactId;
 
     private int cacheLoadCounter = 0;
 
@@ -38,6 +41,24 @@ public class BlockCache {
         this.cachedBlockByCompactId = new Long2IntOpenHashMap();
         this.cachedBlockByCompactId.defaultReturnValue(CachedBlock.NULL_SENTINEL);
         this.pipeSignByPistonCompactId = new Long2ObjectOpenHashMap<>();
+        this.tempPowerResetTaskByCompactId = new Long2ObjectOpenHashMap<>();
+    }
+
+    public void temporarilyPowerBlock(Block block, int ticks) {
+        if (!setBlockPower(block, true))
+            return;
+
+        var compactId = CompactId.computeWorldlessBlockId(block);
+
+        var resetTask = Bukkit.getScheduler().runTaskLater(CraftBookPlugin.inst(), () -> {
+            tempPowerResetTaskByCompactId.remove(compactId);
+            setBlockPower(block, false);
+        }, ticks);
+
+        var priorResetTask = tempPowerResetTaskByCompactId.put(compactId, resetTask);
+
+        if (priorResetTask != null)
+            priorResetTask.cancel();
     }
 
     public void removeExpiredChunkTickets(boolean all) {
@@ -221,5 +242,23 @@ public class BlockCache {
 
         if (!chunk.addPluginChunkTicket(CraftBookPlugin.inst()))
             CraftBookPlugin.logger().log(Level.WARNING, "Could not add plugin-ticket to chunk at " + chunk.getX() + " " + chunk.getZ());
+    }
+
+    private boolean setBlockPower(Block block, boolean state) {
+        if (!block.getWorld().isChunkLoaded(block.getX() >> 4, block.getZ() >> 4))
+            return false;
+
+        var blockData = block.getBlockData();
+
+        if (!(blockData instanceof Powerable powerable))
+            return false;
+
+        // No-op; no need to overwrite an already reflected state.
+        if (powerable.isPowered() == state)
+            return true;
+
+        powerable.setPowered(state);
+        block.setBlockData(powerable);
+        return true;
     }
 }

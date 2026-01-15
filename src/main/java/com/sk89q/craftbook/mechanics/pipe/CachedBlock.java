@@ -5,6 +5,7 @@ import org.bukkit.Tag;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.Directional;
+import org.bukkit.block.data.Powerable;
 
 public class CachedBlock {
 
@@ -17,6 +18,10 @@ public class CachedBlock {
 
     public static boolean isPane(int cachedBlock) {
         return (cachedBlock & 1) != 0;
+    }
+
+    public static boolean isPowerable(int cachedBlock) {
+        return (cachedBlock & (1 << 29)) != 0;
     }
 
     public static boolean hasHandledInputInventory(int cachedBlock) {
@@ -87,16 +92,21 @@ public class CachedBlock {
     }
 
     public static int fromBlock(Block block) {
-        Material material = block.getType();
-        BlockFace facing = BlockFace.SELF;
+        var blockData = block.getBlockData();
+        var material = blockData.getMaterial();
 
         int preset = getPreset(material);
 
-        if (material == Material.PISTON || material == Material.STICKY_PISTON || isWallSign(preset))
-            facing = ((Directional) block.getBlockData()).getFacing();
+        var facing = BlockFace.SELF;
+
+        if (blockData instanceof Directional directional)
+            facing = directional.getFacing();
+
+        var powerable = blockData instanceof Powerable;
 
         return (
             preset
+                | ((powerable ? 1 : 0) << 29)
                 | ((material.ordinal() & (8192 - 1)) << 16)
                 | ((facing.ordinal() & (32 - 1)) << 11)
         );

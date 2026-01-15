@@ -191,6 +191,9 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
                 subWalkResult = locateExitNodesForItems(putBlock, visitedBlocks, flags, subPipeItems, notification);
                 leftovers.addAll(subPipeItems);
             } else {
+                if (CachedBlock.isPowerable(cachedPutBlock))
+                    currentBlockCache.temporarilyPowerBlock(putBlock, 5);
+
                 leftovers.addAll(itemsToPut);
             }
 
