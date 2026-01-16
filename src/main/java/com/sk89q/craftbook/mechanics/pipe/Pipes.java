@@ -312,20 +312,20 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
                                 continue;
 
                             if (!CachedBlock.isTube(cachedEnumeratedBlock)) {
-                                // Pistons are treated with higher priority.
-                                if (CachedBlock.isMaterial(cachedEnumeratedBlock, Material.PISTON)) {
-                                    if (!behaviorFlags.contains(EnumerationBehavior.IGNORE_CHECK_VALVES)) {
-                                        var oppositePistonFacing = CachedBlock.getFacing(cachedEnumeratedBlock).getOppositeFace();
+                                if (!CachedBlock.isMaterial(cachedEnumeratedBlock, Material.PISTON))
+                                    continue;
 
-                                        // Do not walk into the extending side of a piston - this makes it behave
-                                        // like a check-valve, which has numerous helpful applications.
-                                        if (oppositePistonFacing.getModX() == x && oppositePistonFacing.getModY() == y && oppositePistonFacing.getModZ() == z)
-                                            continue;
-                                    }
+                                if (!behaviorFlags.contains(EnumerationBehavior.IGNORE_CHECK_VALVES)) {
+                                    var oppositePistonFacing = CachedBlock.getFacing(cachedEnumeratedBlock).getOppositeFace();
 
-                                    searchQueue.addFirst(enumeratedBlock);
+                                    // Do not walk into the extending side of a piston - this makes it behave
+                                    // like a check-valve, which has numerous helpful applications.
+                                    if (oppositePistonFacing.getModX() == x && oppositePistonFacing.getModY() == y && oppositePistonFacing.getModZ() == z)
+                                        continue;
                                 }
 
+                                // Pistons are treated with higher priority when coming from tubes.
+                                searchQueue.addFirst(enumeratedBlock);
                                 continue;
                             }
 
