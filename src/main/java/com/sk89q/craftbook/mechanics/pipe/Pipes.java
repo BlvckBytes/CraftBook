@@ -7,9 +7,6 @@ import com.sk89q.craftbook.mechanics.pipe.notification.*;
 import com.sk89q.craftbook.util.*;
 import com.sk89q.craftbook.util.events.SourcedBlockRedstoneEvent;
 import com.sk89q.util.yaml.YAMLProcessor;
-import com.sk89q.worldedit.bukkit.BukkitAdapter;
-import com.sk89q.worldedit.world.block.BlockType;
-import com.sk89q.worldedit.world.block.BlockTypes;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import org.bukkit.Bukkit;
@@ -264,37 +261,9 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
                     for (int y = -1; y < 2; y++) {
                         for (int z = -1; z < 2; z++) {
                             if (x == 0 && y == 0 && z == 0) continue;
-
-                            if (!pipesDiagonal) {
-                                if (x != 0 && y != 0) continue;
-                                if (x != 0 && z != 0) continue;
-                                if (y != 0 && z != 0) continue;
-                            } else if (pipeInsulator != null) {
-                                boolean xIsY = Math.abs(x) == Math.abs(y);
-                                boolean xIsZ = Math.abs(x) == Math.abs(z);
-                                if (xIsY && xIsZ) {
-                                    if (CachedBlock.isMaterial(currentBlockCache.getCachedBlock(pipeBlock.getRelative(x, 0, 0)), pipeInsulator)
-                                      && CachedBlock.isMaterial(currentBlockCache.getCachedBlock(pipeBlock.getRelative(0, y, 0)), pipeInsulator)
-                                      && CachedBlock.isMaterial(currentBlockCache.getCachedBlock(pipeBlock.getRelative(0, 0, z)), pipeInsulator)) {
-                                        continue;
-                                    }
-                                } else if (xIsY) {
-                                    if (CachedBlock.isMaterial(currentBlockCache.getCachedBlock(pipeBlock.getRelative(x, 0, 0)), pipeInsulator)
-                                      && CachedBlock.isMaterial(currentBlockCache.getCachedBlock(pipeBlock.getRelative(0, y, 0)), pipeInsulator)) {
-                                        continue;
-                                    }
-                                } else if (xIsZ) {
-                                    if (CachedBlock.isMaterial(currentBlockCache.getCachedBlock(pipeBlock.getRelative(x, 0, 0)), pipeInsulator)
-                                      && CachedBlock.isMaterial(currentBlockCache.getCachedBlock(pipeBlock.getRelative(0, 0, z)), pipeInsulator)) {
-                                        continue;
-                                    }
-                                } else {
-                                    if (CachedBlock.isMaterial(currentBlockCache.getCachedBlock(pipeBlock.getRelative(0, y, 0)), pipeInsulator)
-                                      && CachedBlock.isMaterial(currentBlockCache.getCachedBlock(pipeBlock.getRelative(0, 0, z)), pipeInsulator)) {
-                                        continue;
-                                    }
-                                }
-                            }
+                            if (x != 0 && y != 0) continue;
+                            if (x != 0 && z != 0) continue;
+                            if (y != 0 && z != 0) continue;
 
                             Block enumeratedBlock = pipeBlock.getRelative(x, y, z);
                             int cachedEnumeratedBlock = currentBlockCache.getCachedBlock(enumeratedBlock);
@@ -733,8 +702,6 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
         notificationDebouncer.removePlayer(event.getPlayer());
     }
 
-    private boolean pipesDiagonal;
-    private @Nullable Material pipeInsulator;
     private boolean pipeStackPerPull;
     private boolean pipeRequireSign;
     private boolean dropExceededLimits;
@@ -749,13 +716,6 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
 
     @Override
     public void loadConfiguration(YAMLProcessor config, String path) {
-
-        config.setComment(path + "allow-diagonal", "Allow pipes to work diagonally. Required for insulators to work.");
-        pipesDiagonal = config.getBoolean(path + "allow-diagonal", false);
-
-        config.setComment(path + "insulator-block", "When pipes work diagonally, this block allows the pipe to be insulated to not work diagonally.");
-        BlockType insulatorType = BlockTypes.get(config.getString(path + "insulator-block", BlockTypes.WHITE_WOOL.id()));
-        pipeInsulator = insulatorType == null ? null : BukkitAdapter.adapt(insulatorType);
 
         config.setComment(path + "stack-per-move", "This option stops the pipes taking the entire chest on power, and makes it just take a single stack.");
         pipeStackPerPull = config.getBoolean(path + "stack-per-move", true);
