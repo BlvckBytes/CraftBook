@@ -27,6 +27,7 @@ import org.bukkit.inventory.*;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.logging.Level;
 
 public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
 
@@ -463,8 +464,16 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
         if (sign != PipeSign.NO_SIGN)
             locateFlags.add(LocateFlag.ENCOUNTERED_SIGN);
 
-        if (!suckEvent.isCancelled())
-            enumerationResult = locateExitNodesForItems(inputPistonBlock, visitedBlocks, locateFlags, itemsInPipe, notifications);
+        var threwError = false;
+
+        if (!suckEvent.isCancelled()) {
+            try {
+                enumerationResult = locateExitNodesForItems(inputPistonBlock, visitedBlocks, locateFlags, itemsInPipe, notifications);
+            } catch (Throwable e) {
+                threwError = true;
+                CraftBookPlugin.logger().log(Level.SEVERE, "An error occurred while trying to locate exit-nodes for an item in a pipe", e);
+            }
+        }
 
         // Try to put leftovers back into the block and drop the rest at the input-piston.
 
@@ -478,7 +487,7 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
             boolean exceededLimits = enumerationResult == EnumerationResult.EXCEEDED_TUBE_COUNT_LIMIT || enumerationResult == EnumerationResult.EXCEEDED_PISTON_COUNT_LIMIT;
 
             // Drop leftovers for "malformed" pipes, if configured.
-            if ((dropNoSign && missedSign) || (dropExceededLimits && exceededLimits)) {
+            if ((dropNoSign && missedSign) || (dropExceededLimits && exceededLimits) || threwError) {
                 leftovers.addAll(itemsInPipe);
             } else if (inventoryHolder != null) {
                 // Allow to put items that have been sucked from the result-slot back into the furnace.
