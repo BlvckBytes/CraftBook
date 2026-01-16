@@ -116,11 +116,14 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
     }
 
     private EnumerationResult locateExitNodesForItems(Block inputPistonBlock, LongSet visitedBlocks, EnumSet<LocateFlag> flags, List<ItemStack> itemsInPipe, List<PipeNotification> notification) {
+        var enumerationFlags = EnumSet.of(EnumerationBehavior.DO_NOT_RESET_CACHE_AND_MAX_COUNTERS);
+
         // Only reset the limit-counters once, at the very top of the call-stack, seeing
         // how they do apply to the pipe as a whole, including sub-pipes.
-        boolean resetCounters = flags.remove(LocateFlag.RESET_COUNTERS);
+        if (flags.remove(LocateFlag.RESET_COUNTERS))
+            enumerationFlags.remove(EnumerationBehavior.DO_NOT_RESET_CACHE_AND_MAX_COUNTERS);
 
-        return _enumeratePipeBlocks(inputPistonBlock, visitedBlocks, EnumSet.noneOf(EnumerationBehavior.class), resetCounters, (pipeBlock, cachedPipeBlock) -> {
+        return enumeratePipeBlocks(inputPistonBlock, visitedBlocks, enumerationFlags, (pipeBlock, cachedPipeBlock, cache) -> {
             if (itemsInPipe.isEmpty())
                 return EnumerationDecision.STOP;
 
@@ -209,10 +212,6 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
 
     @Override
     public EnumerationResult enumeratePipeBlocks(Block firstBlock, @Nullable LongSet visitedBlocks, EnumSet<EnumerationBehavior> behaviorFlags, PipeEnumerationHandler enumerationHandler) {
-        return _enumeratePipeBlocks(firstBlock, visitedBlocks, behaviorFlags, true, enumerationHandler);
-    }
-
-    private EnumerationResult _enumeratePipeBlocks(Block firstBlock, @Nullable LongSet visitedBlocks, EnumSet<EnumerationBehavior> behaviorFlags, boolean resetCounters, PipeEnumerationHandler enumerationHandler) {
         if (!Bukkit.isPrimaryThread())
             throw new IllegalStateException("This method must be called on the main server thread");
 
@@ -224,7 +223,7 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
             if (visitedBlocks == null)
                 visitedBlocks = new LongOpenHashSet();
 
-            if (resetCounters) {
+            if (!behaviorFlags.contains(EnumerationBehavior.DO_NOT_RESET_CACHE_AND_MAX_COUNTERS)) {
                 currentTubeBlockCounter = currentPistonBlockCounter = 0;
                 currentBlockCache.resetCacheLoadCounter();
             }
@@ -251,7 +250,7 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
                         return EnumerationResult.EXCEEDED_PISTON_COUNT_LIMIT;
                 }
 
-                EnumerationDecision handleResult = enumerationHandler.handle(pipeBlock, cachedPipeBlock);
+                EnumerationDecision handleResult = enumerationHandler.handle(pipeBlock, cachedPipeBlock, currentBlockCache);
 
                 if (handleResult != EnumerationDecision.CONTINUE)
                     return EnumerationResult.COMPLETED;
