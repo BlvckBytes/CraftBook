@@ -235,8 +235,27 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
             searchQueue.addFirst(firstBlock);
             visitedBlocks.add(CompactId.computeWorldlessBlockId(firstBlock));
 
-            while (!searchQueue.isEmpty()) {
-                Block pipeBlock = searchQueue.poll();
+            var pendingPistons = new ArrayList<Block>();
+            var nextPistonIndex = 0;
+
+            while (true) {
+                Block pipeBlock;
+
+                if (nextPistonIndex < pendingPistons.size()) {
+                    pipeBlock = pendingPistons.get(nextPistonIndex++);
+
+                    // Avoid this buffer getting needlessly large over time by clearing it
+                    // out once prioritized pistons have been completely processed.
+                    if (nextPistonIndex >= pendingPistons.size()) {
+                        pendingPistons.clear();
+                        nextPistonIndex = 0;
+                    }
+                }
+                else if (!searchQueue.isEmpty())
+                    pipeBlock = searchQueue.poll();
+                else
+                    break;
+
                 int cachedPipeBlock = currentBlockCache.getCachedBlock(pipeBlock);
 
                 if (CachedBlock.isTube(cachedPipeBlock)) {
@@ -293,7 +312,7 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
                         }
 
                         // Pistons are treated with higher priority.
-                        searchQueue.addFirst(enumeratedBlock);
+                        greedilyEnumerateSelfAndConnectedPistons(enumeratedBlock, visitedBlocks, pendingPistons);
                         continue;
                     }
 
@@ -323,6 +342,31 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
             return EnumerationResult.COMPLETED;
         } catch (LoadingChunkException e) {
             return EnumerationResult.NEEDS_CHUNK_LOADING;
+        }
+    }
+
+    private void greedilyEnumerateSelfAndConnectedPistons(Block firstPiston, LongSet visitedBlocks, List<Block> output) throws LoadingChunkException {
+        output.add(firstPiston);
+
+        // Essentially, we're using the output as a queue to expand outwards, but without deletion,
+        // seeing how our caller will still need to handle pistons properly once we complete.
+        var nextPistonIndex = output.size() - 2;
+
+        while (++nextPistonIndex < output.size()) {
+            var pistonBlock = output.get(nextPistonIndex);
+
+            for (var neighborFace : PIPE_NEIGHBOR_FACES) {
+                Block enumeratedBlock = pistonBlock.getRelative(neighborFace);
+                int cachedEnumeratedBlock = currentBlockCache.getCachedBlock(enumeratedBlock);
+
+                if (!CachedBlock.isMaterial(cachedEnumeratedBlock, Material.PISTON))
+                    continue;
+
+                if (!visitedBlocks.add(CompactId.computeWorldlessBlockId(enumeratedBlock)))
+                    continue;
+
+                output.add(enumeratedBlock);
+            }
         }
     }
 
