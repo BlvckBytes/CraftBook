@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.logging.Level;
 
-public class BlockCache {
+public class BlockCache implements CachedBlockResolver {
 
     private static final BlockFace[] DIRECT_FACES = new BlockFace[] {
       BlockFace.UP, BlockFace.DOWN, BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST
@@ -116,6 +116,7 @@ public class BlockCache {
             Bukkit.getPluginManager().callEvent(new PipeSignCacheInvalidedEvent(pistonBlock));
     }
 
+    @Override
     public int getCachedBlock(Block block) throws LoadingChunkException {
         var compactId = CompactId.computeWorldlessBlockId(block);
         var cachedBlock = cachedBlockByCompactId.get(compactId);

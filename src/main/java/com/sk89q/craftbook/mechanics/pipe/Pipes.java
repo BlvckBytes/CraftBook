@@ -7,9 +7,6 @@ import com.sk89q.craftbook.mechanics.pipe.notification.*;
 import com.sk89q.craftbook.util.*;
 import com.sk89q.craftbook.util.events.SourcedBlockRedstoneEvent;
 import com.sk89q.util.yaml.YAMLProcessor;
-import com.sk89q.worldedit.bukkit.BukkitAdapter;
-import com.sk89q.worldedit.world.block.BlockType;
-import com.sk89q.worldedit.world.block.BlockTypes;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import org.bukkit.Bukkit;
@@ -30,6 +27,7 @@ import org.bukkit.inventory.*;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.logging.Level;
 
 public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
 
@@ -37,6 +35,11 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
       BlockFace.UP, BlockFace.DOWN,
       BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST,
       BlockFace.NORTH_EAST, BlockFace.NORTH_WEST, BlockFace.SOUTH_EAST, BlockFace.SOUTH_WEST
+    };
+
+    private static final BlockFace[] PIPE_NEIGHBOR_FACES = new BlockFace[] {
+      BlockFace.UP, BlockFace.DOWN,
+      BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST
     };
 
     private int currentTubeBlockCounter;
@@ -116,11 +119,14 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
     }
 
     private EnumerationResult locateExitNodesForItems(Block inputPistonBlock, LongSet visitedBlocks, EnumSet<LocateFlag> flags, List<ItemStack> itemsInPipe, List<PipeNotification> notification) {
+        var enumerationFlags = EnumSet.of(EnumerationBehavior.DO_NOT_RESET_CACHE_AND_MAX_COUNTERS);
+
         // Only reset the limit-counters once, at the very top of the call-stack, seeing
         // how they do apply to the pipe as a whole, including sub-pipes.
-        boolean resetCounters = flags.remove(LocateFlag.RESET_COUNTERS);
+        if (flags.remove(LocateFlag.RESET_COUNTERS))
+            enumerationFlags.remove(EnumerationBehavior.DO_NOT_RESET_CACHE_AND_MAX_COUNTERS);
 
-        return _enumeratePipeBlocks(inputPistonBlock, visitedBlocks, EnumSet.noneOf(EnumerationBehavior.class), resetCounters, (pipeBlock, cachedPipeBlock) -> {
+        return enumeratePipeBlocks(inputPistonBlock, visitedBlocks, enumerationFlags, (pipeBlock, cachedPipeBlock, cache) -> {
             if (itemsInPipe.isEmpty())
                 return EnumerationDecision.STOP;
 
@@ -209,10 +215,6 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
 
     @Override
     public EnumerationResult enumeratePipeBlocks(Block firstBlock, @Nullable LongSet visitedBlocks, EnumSet<EnumerationBehavior> behaviorFlags, PipeEnumerationHandler enumerationHandler) {
-        return _enumeratePipeBlocks(firstBlock, visitedBlocks, behaviorFlags, true, enumerationHandler);
-    }
-
-    private EnumerationResult _enumeratePipeBlocks(Block firstBlock, @Nullable LongSet visitedBlocks, EnumSet<EnumerationBehavior> behaviorFlags, boolean resetCounters, PipeEnumerationHandler enumerationHandler) {
         if (!Bukkit.isPrimaryThread())
             throw new IllegalStateException("This method must be called on the main server thread");
 
@@ -224,7 +226,7 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
             if (visitedBlocks == null)
                 visitedBlocks = new LongOpenHashSet();
 
-            if (resetCounters) {
+            if (!behaviorFlags.contains(EnumerationBehavior.DO_NOT_RESET_CACHE_AND_MAX_COUNTERS)) {
                 currentTubeBlockCounter = currentPistonBlockCounter = 0;
                 currentBlockCache.resetCacheLoadCounter();
             }
@@ -233,8 +235,27 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
             searchQueue.addFirst(firstBlock);
             visitedBlocks.add(CompactId.computeWorldlessBlockId(firstBlock));
 
-            while (!searchQueue.isEmpty()) {
-                Block pipeBlock = searchQueue.poll();
+            var pendingPistons = new ArrayList<Block>();
+            var nextPistonIndex = 0;
+
+            while (true) {
+                Block pipeBlock;
+
+                if (nextPistonIndex < pendingPistons.size()) {
+                    pipeBlock = pendingPistons.get(nextPistonIndex++);
+
+                    // Avoid this buffer getting needlessly large over time by clearing it
+                    // out once prioritized pistons have been completely processed.
+                    if (nextPistonIndex >= pendingPistons.size()) {
+                        pendingPistons.clear();
+                        nextPistonIndex = 0;
+                    }
+                }
+                else if (!searchQueue.isEmpty())
+                    pipeBlock = searchQueue.poll();
+                else
+                    break;
+
                 int cachedPipeBlock = currentBlockCache.getCachedBlock(pipeBlock);
 
                 if (CachedBlock.isTube(cachedPipeBlock)) {
@@ -251,7 +272,7 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
                         return EnumerationResult.EXCEEDED_PISTON_COUNT_LIMIT;
                 }
 
-                EnumerationDecision handleResult = enumerationHandler.handle(pipeBlock, cachedPipeBlock);
+                EnumerationDecision handleResult = enumerationHandler.handle(pipeBlock, cachedPipeBlock, currentBlockCache);
 
                 if (handleResult != EnumerationDecision.CONTINUE)
                     return EnumerationResult.COMPLETED;
@@ -261,103 +282,91 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
                 if (maxCacheLoadCount >= 0 && currentBlockCache.getCacheLoadCounter() >= maxCacheLoadCount)
                     return EnumerationResult.EXCEEDED_CACHE_LOAD_LIMIT;
 
-                for (int x = -1; x < 2; x++) {
-                    for (int y = -1; y < 2; y++) {
-                        for (int z = -1; z < 2; z++) {
-                            if (x == 0 && y == 0 && z == 0) continue;
+                for (var neighborFace : PIPE_NEIGHBOR_FACES) {
+                    Block enumeratedBlock = pipeBlock.getRelative(neighborFace);
+                    int cachedEnumeratedBlock = currentBlockCache.getCachedBlock(enumeratedBlock);
 
-                            if (!pipesDiagonal) {
-                                if (x != 0 && y != 0) continue;
-                                if (x != 0 && z != 0) continue;
-                                if (y != 0 && z != 0) continue;
-                            } else if (pipeInsulator != null) {
-                                boolean xIsY = Math.abs(x) == Math.abs(y);
-                                boolean xIsZ = Math.abs(x) == Math.abs(z);
-                                if (xIsY && xIsZ) {
-                                    if (CachedBlock.isMaterial(currentBlockCache.getCachedBlock(pipeBlock.getRelative(x, 0, 0)), pipeInsulator)
-                                      && CachedBlock.isMaterial(currentBlockCache.getCachedBlock(pipeBlock.getRelative(0, y, 0)), pipeInsulator)
-                                      && CachedBlock.isMaterial(currentBlockCache.getCachedBlock(pipeBlock.getRelative(0, 0, z)), pipeInsulator)) {
-                                        continue;
-                                    }
-                                } else if (xIsY) {
-                                    if (CachedBlock.isMaterial(currentBlockCache.getCachedBlock(pipeBlock.getRelative(x, 0, 0)), pipeInsulator)
-                                      && CachedBlock.isMaterial(currentBlockCache.getCachedBlock(pipeBlock.getRelative(0, y, 0)), pipeInsulator)) {
-                                        continue;
-                                    }
-                                } else if (xIsZ) {
-                                    if (CachedBlock.isMaterial(currentBlockCache.getCachedBlock(pipeBlock.getRelative(x, 0, 0)), pipeInsulator)
-                                      && CachedBlock.isMaterial(currentBlockCache.getCachedBlock(pipeBlock.getRelative(0, 0, z)), pipeInsulator)) {
-                                        continue;
-                                    }
-                                } else {
-                                    if (CachedBlock.isMaterial(currentBlockCache.getCachedBlock(pipeBlock.getRelative(0, y, 0)), pipeInsulator)
-                                      && CachedBlock.isMaterial(currentBlockCache.getCachedBlock(pipeBlock.getRelative(0, 0, z)), pipeInsulator)) {
-                                        continue;
-                                    }
-                                }
-                            }
+                    if (!CachedBlock.isValidPipeBlock(cachedEnumeratedBlock))
+                        continue;
 
-                            Block enumeratedBlock = pipeBlock.getRelative(x, y, z);
-                            int cachedEnumeratedBlock = currentBlockCache.getCachedBlock(enumeratedBlock);
+                    // Ensure that the block we came from is of the same color as the one we're enumerating.
+                    // [1]: Do this first, as to not mark blocks as visited that have not been walked into.
+                    //      This could become a problem if that other-colored block is a part of the future path.
+                    if (CachedBlock.doTubeColorsMismatch(cachedPipeBlock, cachedEnumeratedBlock))
+                        continue;
 
-                            if (!CachedBlock.isValidPipeBlock(cachedEnumeratedBlock))
+                    if (!visitedBlocks.add(CompactId.computeWorldlessBlockId(enumeratedBlock)))
+                        continue;
+
+                    if (!CachedBlock.isTube(cachedEnumeratedBlock)) {
+                        if (!CachedBlock.isMaterial(cachedEnumeratedBlock, Material.PISTON))
+                            continue;
+
+                        if (!behaviorFlags.contains(EnumerationBehavior.IGNORE_CHECK_VALVES)) {
+                            var oppositePistonFacing = CachedBlock.getFacing(cachedEnumeratedBlock).getOppositeFace();
+
+                            // Do not walk into the extending side of a piston - this makes it behave
+                            // like a check-valve, which has numerous helpful applications.
+                            if (oppositePistonFacing == neighborFace)
                                 continue;
-
-                            // Ensure that the block we came from is of the same color as the one we're enumerating.
-                            // [1]: Do this first, as to not mark blocks as visited that have not been walked into.
-                            //      This could become a problem if that other-colored block is a part of the future path.
-                            if (CachedBlock.doTubeColorsMismatch(cachedPipeBlock, cachedEnumeratedBlock))
-                                continue;
-
-                            if (!visitedBlocks.add(CompactId.computeWorldlessBlockId(enumeratedBlock)))
-                                continue;
-
-                            if (!CachedBlock.isTube(cachedEnumeratedBlock)) {
-                                // Pistons are treated with higher priority.
-                                if (CachedBlock.isMaterial(cachedEnumeratedBlock, Material.PISTON)) {
-                                    if (!behaviorFlags.contains(EnumerationBehavior.IGNORE_CHECK_VALVES)) {
-                                        var oppositePistonFacing = CachedBlock.getFacing(cachedEnumeratedBlock).getOppositeFace();
-
-                                        // Do not walk into the extending side of a piston - this makes it behave
-                                        // like a check-valve, which has numerous helpful applications.
-                                        if (oppositePistonFacing.getModX() == x && oppositePistonFacing.getModY() == y && oppositePistonFacing.getModZ() == z)
-                                            continue;
-                                    }
-
-                                    searchQueue.addFirst(enumeratedBlock);
-                                }
-
-                                continue;
-                            }
-
-                            if (!CachedBlock.isPane(cachedEnumeratedBlock)) {
-                                searchQueue.add(enumeratedBlock);
-                                continue;
-                            }
-
-                            Block nextEnumeratedBlock = enumeratedBlock.getRelative(x, y, z);
-                            int cachedNextEnumeratedBlock = currentBlockCache.getCachedBlock(nextEnumeratedBlock);
-
-                            if (!CachedBlock.isValidPipeBlock(cachedNextEnumeratedBlock))
-                                continue;
-
-                            // Ensure that the pane is allowed to link with the block we're jumping across to
-                            // Same reasoning here as with [1]
-                            if (CachedBlock.doTubeColorsMismatch(cachedEnumeratedBlock, cachedNextEnumeratedBlock))
-                                continue;
-
-                            if (!visitedBlocks.add(CompactId.computeWorldlessBlockId(nextEnumeratedBlock)))
-                                continue;
-
-                            searchQueue.add(nextEnumeratedBlock);
                         }
+
+                        // Pistons are treated with higher priority.
+                        greedilyEnumerateSelfAndConnectedPistons(enumeratedBlock, visitedBlocks, pendingPistons);
+                        continue;
                     }
+
+                    if (!CachedBlock.isPane(cachedEnumeratedBlock)) {
+                        searchQueue.add(enumeratedBlock);
+                        continue;
+                    }
+
+                    Block nextEnumeratedBlock = enumeratedBlock.getRelative(neighborFace);
+                    int cachedNextEnumeratedBlock = currentBlockCache.getCachedBlock(nextEnumeratedBlock);
+
+                    if (!CachedBlock.isValidPipeBlock(cachedNextEnumeratedBlock))
+                        continue;
+
+                    // Ensure that the pane is allowed to link with the block we're jumping across to
+                    // Same reasoning here as with [1]
+                    if (CachedBlock.doTubeColorsMismatch(cachedEnumeratedBlock, cachedNextEnumeratedBlock))
+                        continue;
+
+                    if (!visitedBlocks.add(CompactId.computeWorldlessBlockId(nextEnumeratedBlock)))
+                        continue;
+
+                    searchQueue.add(nextEnumeratedBlock);
                 }
             }
 
             return EnumerationResult.COMPLETED;
         } catch (LoadingChunkException e) {
             return EnumerationResult.NEEDS_CHUNK_LOADING;
+        }
+    }
+
+    private void greedilyEnumerateSelfAndConnectedPistons(Block firstPiston, LongSet visitedBlocks, List<Block> output) throws LoadingChunkException {
+        output.add(firstPiston);
+
+        // Essentially, we're using the output as a queue to expand outwards, but without deletion,
+        // seeing how our caller will still need to handle pistons properly once we complete.
+        var nextPistonIndex = output.size() - 2;
+
+        while (++nextPistonIndex < output.size()) {
+            var pistonBlock = output.get(nextPistonIndex);
+
+            for (var neighborFace : PIPE_NEIGHBOR_FACES) {
+                Block enumeratedBlock = pistonBlock.getRelative(neighborFace);
+                int cachedEnumeratedBlock = currentBlockCache.getCachedBlock(enumeratedBlock);
+
+                if (!CachedBlock.isMaterial(cachedEnumeratedBlock, Material.PISTON))
+                    continue;
+
+                if (!visitedBlocks.add(CompactId.computeWorldlessBlockId(enumeratedBlock)))
+                    continue;
+
+                output.add(enumeratedBlock);
+            }
         }
     }
 
@@ -499,8 +508,16 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
         if (sign != PipeSign.NO_SIGN)
             locateFlags.add(LocateFlag.ENCOUNTERED_SIGN);
 
-        if (!suckEvent.isCancelled())
-            enumerationResult = locateExitNodesForItems(inputPistonBlock, visitedBlocks, locateFlags, itemsInPipe, notifications);
+        var threwError = false;
+
+        if (!suckEvent.isCancelled()) {
+            try {
+                enumerationResult = locateExitNodesForItems(inputPistonBlock, visitedBlocks, locateFlags, itemsInPipe, notifications);
+            } catch (Throwable e) {
+                threwError = true;
+                CraftBookPlugin.logger().log(Level.SEVERE, "An error occurred while trying to locate exit-nodes for an item in a pipe", e);
+            }
+        }
 
         // Try to put leftovers back into the block and drop the rest at the input-piston.
 
@@ -514,7 +531,7 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
             boolean exceededLimits = enumerationResult == EnumerationResult.EXCEEDED_TUBE_COUNT_LIMIT || enumerationResult == EnumerationResult.EXCEEDED_PISTON_COUNT_LIMIT;
 
             // Drop leftovers for "malformed" pipes, if configured.
-            if ((dropNoSign && missedSign) || (dropExceededLimits && exceededLimits)) {
+            if ((dropNoSign && missedSign) || (dropExceededLimits && exceededLimits) || threwError) {
                 leftovers.addAll(itemsInPipe);
             } else if (inventoryHolder != null) {
                 // Allow to put items that have been sucked from the result-slot back into the furnace.
@@ -734,8 +751,6 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
         notificationDebouncer.removePlayer(event.getPlayer());
     }
 
-    private boolean pipesDiagonal;
-    private @Nullable Material pipeInsulator;
     private boolean pipeStackPerPull;
     private boolean pipeRequireSign;
     private boolean dropExceededLimits;
@@ -750,13 +765,6 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
 
     @Override
     public void loadConfiguration(YAMLProcessor config, String path) {
-
-        config.setComment(path + "allow-diagonal", "Allow pipes to work diagonally. Required for insulators to work.");
-        pipesDiagonal = config.getBoolean(path + "allow-diagonal", false);
-
-        config.setComment(path + "insulator-block", "When pipes work diagonally, this block allows the pipe to be insulated to not work diagonally.");
-        BlockType insulatorType = BlockTypes.get(config.getString(path + "insulator-block", BlockTypes.WHITE_WOOL.id()));
-        pipeInsulator = insulatorType == null ? null : BukkitAdapter.adapt(insulatorType);
 
         config.setComment(path + "stack-per-move", "This option stops the pipes taking the entire chest on power, and makes it just take a single stack.");
         pipeStackPerPull = config.getBoolean(path + "stack-per-move", true);
