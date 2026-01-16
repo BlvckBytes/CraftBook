@@ -36,6 +36,11 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
       BlockFace.NORTH_EAST, BlockFace.NORTH_WEST, BlockFace.SOUTH_EAST, BlockFace.SOUTH_WEST
     };
 
+    private static final BlockFace[] PIPE_NEIGHBOR_FACES = new BlockFace[] {
+      BlockFace.UP, BlockFace.DOWN,
+      BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST
+    };
+
     private int currentTubeBlockCounter;
     private int currentPistonBlockCounter;
 
@@ -257,69 +262,60 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
                 if (maxCacheLoadCount >= 0 && currentBlockCache.getCacheLoadCounter() >= maxCacheLoadCount)
                     return EnumerationResult.EXCEEDED_CACHE_LOAD_LIMIT;
 
-                for (int x = -1; x < 2; x++) {
-                    for (int y = -1; y < 2; y++) {
-                        for (int z = -1; z < 2; z++) {
-                            if (x == 0 && y == 0 && z == 0) continue;
-                            if (x != 0 && y != 0) continue;
-                            if (x != 0 && z != 0) continue;
-                            if (y != 0 && z != 0) continue;
+                for (var neighborFace : PIPE_NEIGHBOR_FACES) {
+                    Block enumeratedBlock = pipeBlock.getRelative(neighborFace);
+                    int cachedEnumeratedBlock = currentBlockCache.getCachedBlock(enumeratedBlock);
 
-                            Block enumeratedBlock = pipeBlock.getRelative(x, y, z);
-                            int cachedEnumeratedBlock = currentBlockCache.getCachedBlock(enumeratedBlock);
+                    if (!CachedBlock.isValidPipeBlock(cachedEnumeratedBlock))
+                        continue;
 
-                            if (!CachedBlock.isValidPipeBlock(cachedEnumeratedBlock))
+                    // Ensure that the block we came from is of the same color as the one we're enumerating.
+                    // [1]: Do this first, as to not mark blocks as visited that have not been walked into.
+                    //      This could become a problem if that other-colored block is a part of the future path.
+                    if (CachedBlock.doTubeColorsMismatch(cachedPipeBlock, cachedEnumeratedBlock))
+                        continue;
+
+                    if (!visitedBlocks.add(CompactId.computeWorldlessBlockId(enumeratedBlock)))
+                        continue;
+
+                    if (!CachedBlock.isTube(cachedEnumeratedBlock)) {
+                        if (!CachedBlock.isMaterial(cachedEnumeratedBlock, Material.PISTON))
+                            continue;
+
+                        if (!behaviorFlags.contains(EnumerationBehavior.IGNORE_CHECK_VALVES)) {
+                            var oppositePistonFacing = CachedBlock.getFacing(cachedEnumeratedBlock).getOppositeFace();
+
+                            // Do not walk into the extending side of a piston - this makes it behave
+                            // like a check-valve, which has numerous helpful applications.
+                            if (oppositePistonFacing == neighborFace)
                                 continue;
-
-                            // Ensure that the block we came from is of the same color as the one we're enumerating.
-                            // [1]: Do this first, as to not mark blocks as visited that have not been walked into.
-                            //      This could become a problem if that other-colored block is a part of the future path.
-                            if (CachedBlock.doTubeColorsMismatch(cachedPipeBlock, cachedEnumeratedBlock))
-                                continue;
-
-                            if (!visitedBlocks.add(CompactId.computeWorldlessBlockId(enumeratedBlock)))
-                                continue;
-
-                            if (!CachedBlock.isTube(cachedEnumeratedBlock)) {
-                                if (!CachedBlock.isMaterial(cachedEnumeratedBlock, Material.PISTON))
-                                    continue;
-
-                                if (!behaviorFlags.contains(EnumerationBehavior.IGNORE_CHECK_VALVES)) {
-                                    var oppositePistonFacing = CachedBlock.getFacing(cachedEnumeratedBlock).getOppositeFace();
-
-                                    // Do not walk into the extending side of a piston - this makes it behave
-                                    // like a check-valve, which has numerous helpful applications.
-                                    if (oppositePistonFacing.getModX() == x && oppositePistonFacing.getModY() == y && oppositePistonFacing.getModZ() == z)
-                                        continue;
-                                }
-
-                                // Pistons are treated with higher priority when coming from tubes.
-                                searchQueue.addFirst(enumeratedBlock);
-                                continue;
-                            }
-
-                            if (!CachedBlock.isPane(cachedEnumeratedBlock)) {
-                                searchQueue.add(enumeratedBlock);
-                                continue;
-                            }
-
-                            Block nextEnumeratedBlock = enumeratedBlock.getRelative(x, y, z);
-                            int cachedNextEnumeratedBlock = currentBlockCache.getCachedBlock(nextEnumeratedBlock);
-
-                            if (!CachedBlock.isValidPipeBlock(cachedNextEnumeratedBlock))
-                                continue;
-
-                            // Ensure that the pane is allowed to link with the block we're jumping across to
-                            // Same reasoning here as with [1]
-                            if (CachedBlock.doTubeColorsMismatch(cachedEnumeratedBlock, cachedNextEnumeratedBlock))
-                                continue;
-
-                            if (!visitedBlocks.add(CompactId.computeWorldlessBlockId(nextEnumeratedBlock)))
-                                continue;
-
-                            searchQueue.add(nextEnumeratedBlock);
                         }
+
+                        // Pistons are treated with higher priority.
+                        searchQueue.addFirst(enumeratedBlock);
+                        continue;
                     }
+
+                    if (!CachedBlock.isPane(cachedEnumeratedBlock)) {
+                        searchQueue.add(enumeratedBlock);
+                        continue;
+                    }
+
+                    Block nextEnumeratedBlock = enumeratedBlock.getRelative(neighborFace);
+                    int cachedNextEnumeratedBlock = currentBlockCache.getCachedBlock(nextEnumeratedBlock);
+
+                    if (!CachedBlock.isValidPipeBlock(cachedNextEnumeratedBlock))
+                        continue;
+
+                    // Ensure that the pane is allowed to link with the block we're jumping across to
+                    // Same reasoning here as with [1]
+                    if (CachedBlock.doTubeColorsMismatch(cachedEnumeratedBlock, cachedNextEnumeratedBlock))
+                        continue;
+
+                    if (!visitedBlocks.add(CompactId.computeWorldlessBlockId(nextEnumeratedBlock)))
+                        continue;
+
+                    searchQueue.add(nextEnumeratedBlock);
                 }
             }
 
