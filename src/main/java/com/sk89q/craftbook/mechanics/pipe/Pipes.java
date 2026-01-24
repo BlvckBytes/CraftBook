@@ -13,7 +13,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.*;
-import org.bukkit.block.data.Directional;
 import org.bukkit.block.data.Levelled;
 import org.bukkit.block.data.type.Piston;
 import org.bukkit.entity.Player;
@@ -649,42 +648,63 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
         // Used to let hoppers become mediators for starting the pipe if moveable
         // contents reside in their connected input-container.
 
-        // Move *into* a hopper's inventory
-        if (!(event.getDestination().getHolder() instanceof Hopper hopper))
-            return;
-
-        var sourceHolder = event.getSource().getHolder();
+        var destinationLocation = event.getDestination().getLocation();
 
         // Move *from* a block's inventory
-        Block sourceBlock;
-
-        if (sourceHolder instanceof BlockInventoryHolder blockInventoryHolder) {
-            sourceBlock = blockInventoryHolder.getBlock();
-        }
-        // Double-chests are, once again, a very special case. When using the "recommended" way of accessing
-        // halves via #getLeftSide and #getRightSide, one implicitly calls #getHolder, which can cause a
-        // chunk-load (create-snapshot, for each call) if the chest sits exactly on a chunk-boundary whose
-        // neighbor is unloaded. By convention, #getLocation returns the center, so by calling #getBlock, we
-        // implicitly floor and get either half - the rest is taken care of by #startPipe anyway.
-        else if (sourceHolder instanceof DoubleChest doubleChest) {
-            sourceBlock = doubleChest.getLocation().getBlock();
-        }
-        else
+        if (destinationLocation == null)
             return;
 
-        var hopperBlock = hopper.getBlock();
-        var hopperFacing = ((Directional) hopperBlock.getBlockData()).getFacing();
+        var destinationWorld = destinationLocation.getWorld();
+
+        if (destinationWorld == null)
+            return;
+
+        var worldBlockCache = cacheRegistry.getBlockCache(destinationWorld);
+        var destinationBlock = destinationLocation.getBlock();
+
+        int cachedDestinationBlock;
+
+        try {
+            cachedDestinationBlock = worldBlockCache.getCachedBlock(destinationBlock);
+        } catch (LoadingChunkException e) {
+            event.setCancelled(true);
+            return;
+        }
+
+        // Not moving *into* a hopper's inventory
+        if (!CachedBlock.isMaterial(cachedDestinationBlock, Material.HOPPER))
+            return;
+
+        var hopperFacing = CachedBlock.getFacing(cachedDestinationBlock);
 
         // The block the hopper is facing into - N|E|S|W|D
-        var hopperTarget = hopperBlock.getRelative(hopperFacing);
+        var hopperTargetBlock = destinationBlock.getRelative(hopperFacing);
+
+        int cachedHopperTargetBlock;
+
+        try {
+            cachedHopperTargetBlock = worldBlockCache.getCachedBlock(hopperTargetBlock);
+        } catch (LoadingChunkException e) {
+            event.setCancelled(true);
+            return;
+        }
 
         // Not facing into a sticky-piston
-        if (hopperTarget.getType() != Material.STICKY_PISTON)
+        if (!CachedBlock.isMaterial(cachedHopperTargetBlock, Material.STICKY_PISTON))
             return;
 
+        var hopperTargetFacing = CachedBlock.getFacing(cachedHopperTargetBlock);
+
         // The sticky-piston is not facing the output of the hopper directly
-        if (((Directional) hopperTarget.getBlockData()).getFacing() != hopperFacing.getOppositeFace())
+        if (hopperTargetFacing != hopperFacing.getOppositeFace())
             return;
+
+        var sourceLocation = event.getSource().getLocation();
+
+        if (sourceLocation == null)
+            return;
+
+        var sourceBlock = sourceLocation.getBlock();
 
         // If all constraints of the above hold, there is no reason to move into the hopper, seeing
         // how the intention of the setup is rather unambiguous. This hopper is but a mediator.
@@ -696,13 +716,13 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
         // tick (instead every 8), so we're absolutely safe to postpone this action by
         // one tick, as to get access to the unmanipulated inventory again for sucking.
 
-        Bukkit.getScheduler().runTaskLater(CraftBookPlugin.inst(), () -> startPipeAndHandleNotifications(hopperTarget, sourceBlock, null, false), 1);
+        Bukkit.getScheduler().runTaskLater(CraftBookPlugin.inst(), () -> startPipeAndHandleNotifications(hopperTargetBlock, sourceBlock, null, false), 1);
 
         // Then, also call once more after 5 ticks, meaning 4 ticks later than the first attempt to suck,
         // as to make it become a steady 200ms clock if there are more items to transport, instead
         // of the 400ms as the 8 ticks would yield, which is actually noticeably slower.
 
-        Bukkit.getScheduler().runTaskLater(CraftBookPlugin.inst(), () -> startPipeAndHandleNotifications(hopperTarget, sourceBlock, null, false), 5);
+        Bukkit.getScheduler().runTaskLater(CraftBookPlugin.inst(), () -> startPipeAndHandleNotifications(hopperTargetBlock, sourceBlock, null, false), 5);
     }
 
     @EventHandler
