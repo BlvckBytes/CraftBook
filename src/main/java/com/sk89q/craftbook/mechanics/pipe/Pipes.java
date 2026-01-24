@@ -767,10 +767,10 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
         maxCacheLoadCount = config.getInt(path + "max-cache-load-count", 500);
 
         config.setComment(path + "initial-chunk-retain-duration", "For how long, in seconds, to retain chunks in memory after having loaded them while traversing pipes; -1 for no retainment at all.");
-        cacheRegistry.setInitialChunkTicketDuration(config.getInt(path + "initial-chunk-retain-duration", BlockCacheRegistry.DEFAULT_INITIAL_CHUNK_TICKET_DURATION) * 1000);
+        cacheRegistry.setInitialChunkTicketDurationTicks(config.getInt(path + "initial-chunk-retain-duration", BlockCacheRegistry.DEFAULT_INITIAL_CHUNK_TICKET_DURATION_S) * 20);
 
         config.setComment(path + "continued-chunk-retain-duration", "For how long, in seconds, to retain chunks in memory that contain regularly accessed blocks; -1 for no continued retainment.");
-        cacheRegistry.setContinuedChunkTicketDuration(config.getInt(path + "continued-chunk-retain-duration", BlockCacheRegistry.DEFAULT_CONTINUED_CHUNK_TICKET_DURATION) * 1000);
+        cacheRegistry.setContinuedChunkTicketDurationTicks(config.getInt(path + "continued-chunk-retain-duration", BlockCacheRegistry.DEFAULT_CONTINUED_CHUNK_TICKET_DURATION_S) * 20);
 
         config.setComment(path + "notification-radius", "In what radius around an input-block to send notifications to player's action-bars; -1 to hide them");
         notificationRadiusSquared = config.getInt(path + "notification-radius", 5);

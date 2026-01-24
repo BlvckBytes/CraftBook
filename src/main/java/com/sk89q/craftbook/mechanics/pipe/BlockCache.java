@@ -62,12 +62,12 @@ public class BlockCache implements CachedBlockResolver {
     }
 
     public void removeExpiredChunkTickets(boolean all) {
-        var now = System.currentTimeMillis();
+        var now = registry.getRelativeTimeTicks();
 
         for (var iterator = chunkTicketByCompactId.values().iterator(); iterator.hasNext(); ) {
             var chunkTicket = iterator.next();
 
-            if (all || (now >= chunkTicket.getExpiryStamp())) {
+            if (all || (now >= chunkTicket.expiryTicksStamp)) {
                 iterator.remove();
 
                 if (!chunkTicket.chunk.removePluginChunkTicket(CraftBookPlugin.inst()))
@@ -228,18 +228,20 @@ public class BlockCache implements CachedBlockResolver {
         var existingTicket = chunkTicketByCompactId.get(compactChunkId);
 
         if (existingTicket != null) {
-            if (registry.getContinuedChunkTicketDuration() > 0)
-                existingTicket.touch(registry.getContinuedChunkTicketDuration());
+            if (registry.getContinuedChunkTicketDurationTicks() > 0)
+                existingTicket.expiryTicksStamp = registry.getRelativeTimeTicks() + registry.getContinuedChunkTicketDurationTicks();
 
             return;
         }
 
-        if (registry.getInitialChunkTicketDuration() <= 0)
+        if (registry.getInitialChunkTicketDurationTicks() <= 0)
             return;
 
         var chunk = block.getChunk();
 
-        chunkTicketByCompactId.put(compactChunkId, new ChunkTicket(chunk, registry.getInitialChunkTicketDuration()));
+        var expiryStamp = registry.getRelativeTimeTicks() + registry.getInitialChunkTicketDurationTicks();
+
+        chunkTicketByCompactId.put(compactChunkId, new ChunkTicket(chunk, expiryStamp));
 
         if (!chunk.addPluginChunkTicket(CraftBookPlugin.inst()))
             CraftBookPlugin.logger().log(Level.WARNING, "Could not add plugin-ticket to chunk at " + chunk.getX() + " " + chunk.getZ());

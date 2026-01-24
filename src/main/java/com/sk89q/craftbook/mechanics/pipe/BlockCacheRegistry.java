@@ -27,8 +27,8 @@ import java.util.logging.Level;
 
 public class BlockCacheRegistry implements Listener {
 
-  public static final int DEFAULT_INITIAL_CHUNK_TICKET_DURATION = 20;
-  public static final int DEFAULT_CONTINUED_CHUNK_TICKET_DURATION = 20;
+  public static final int DEFAULT_INITIAL_CHUNK_TICKET_DURATION_S = 20;
+  public static final int DEFAULT_CONTINUED_CHUNK_TICKET_DURATION_S = 20;
 
   static {
     CachedBlock.setupPresetTable();
@@ -38,14 +38,18 @@ public class BlockCacheRegistry implements Listener {
   private final BukkitTask chunkTicketTask;
   private final Map<UUID, BlockCache> blockCacheByWorldUid;
 
-  private int initialChunkTicketDuration = DEFAULT_INITIAL_CHUNK_TICKET_DURATION;
-  private int continuedChunkTicketDuration = DEFAULT_CONTINUED_CHUNK_TICKET_DURATION;
+  private int initialChunkTicketDurationTicks = DEFAULT_INITIAL_CHUNK_TICKET_DURATION_S * 20;
+  private int continuedChunkTicketDurationTicks = DEFAULT_CONTINUED_CHUNK_TICKET_DURATION_S * 20;
+
+  private int relativeTimeTicks;
 
   public BlockCacheRegistry() {
     this.getChunkAtAsync = findGetChunkAtAsync();
     this.blockCacheByWorldUid = new HashMap<>();
 
     this.chunkTicketTask = Bukkit.getScheduler().runTaskTimer(CraftBookPlugin.inst(), () -> {
+      relativeTimeTicks += 20;
+
       for (var cache : blockCacheByWorldUid.values())
         cache.removeExpiredChunkTickets(false);
     }, 0, 20);
@@ -54,6 +58,10 @@ public class BlockCacheRegistry implements Listener {
       CraftBookPlugin.logger().log(Level.WARNING, "[Pipes] Could not find API to load chunks asynchronously; use Paper to experience better performance.");
 
     Bukkit.getServer().getPluginManager().registerEvents(this, CraftBookPlugin.inst());
+  }
+
+  public int getRelativeTimeTicks() {
+    return relativeTimeTicks;
   }
 
   public BlockCache getBlockCache(World world) {
@@ -70,20 +78,20 @@ public class BlockCacheRegistry implements Listener {
     blockCacheByWorldUid.clear();
   }
 
-  public void setInitialChunkTicketDuration(int duration) {
-    this.initialChunkTicketDuration = duration;
+  public void setInitialChunkTicketDurationTicks(int duration) {
+    this.initialChunkTicketDurationTicks = duration;
   }
 
-  public void setContinuedChunkTicketDuration(int duration) {
-    this.continuedChunkTicketDuration = duration;
+  public void setContinuedChunkTicketDurationTicks(int duration) {
+    this.continuedChunkTicketDurationTicks = duration;
   }
 
-  public int getInitialChunkTicketDuration() {
-    return initialChunkTicketDuration;
+  public int getInitialChunkTicketDurationTicks() {
+    return initialChunkTicketDurationTicks;
   }
 
-  public int getContinuedChunkTicketDuration() {
-    return continuedChunkTicketDuration;
+  public int getContinuedChunkTicketDurationTicks() {
+    return continuedChunkTicketDurationTicks;
   }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
