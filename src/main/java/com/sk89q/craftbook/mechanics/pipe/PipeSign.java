@@ -1,6 +1,5 @@
 package com.sk89q.craftbook.mechanics.pipe;
 
-import com.sk89q.craftbook.bukkit.CraftBookPlugin;
 import com.sk89q.craftbook.mechanics.pipe.notification.MalformedSignNotification;
 import com.sk89q.craftbook.mechanics.pipe.notification.PipeNotification;
 import com.sk89q.craftbook.util.ItemSyntax;
@@ -8,9 +7,9 @@ import com.sk89q.craftbook.util.ParsingUtil;
 import com.sk89q.craftbook.util.RegexUtil;
 import org.bukkit.block.Sign;
 import org.bukkit.inventory.ItemStack;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
-import java.util.logging.Level;
 
 public class PipeSign {
 
@@ -26,17 +25,17 @@ public class PipeSign {
         this.excludeFilters = Collections.unmodifiableList(excludeFilters);
     }
 
-    public static PipeSign fromSign(Sign sign, String[] lines, List<PipeNotification> notifications) {
+    public static PipeSign fromSign(Sign sign, String[] lines, @Nullable List<PipeNotification> notificationOutput) {
         List<ItemStack> includeFilters = new ArrayList<>();
         List<ItemStack> excludeFilters = new ArrayList<>();
 
-        parseLineItems(sign, lines, 2, includeFilters, notifications);
-        parseLineItems(sign, lines, 3, excludeFilters, notifications);
+        parseLineItems(sign, lines, 2, includeFilters, notificationOutput);
+        parseLineItems(sign, lines, 3, excludeFilters, notificationOutput);
 
         return new PipeSign(includeFilters, excludeFilters);
     }
 
-    private static void parseLineItems(Sign sign, String[] lines, int lineId, List<ItemStack> output, List<PipeNotification> notifications) {
+    private static void parseLineItems(Sign sign, String[] lines, int lineId, List<ItemStack> output, @Nullable List<PipeNotification> notificationOutput) {
         String preprocessedLine = ParsingUtil.parseLine(lines[lineId], null);
 
         for (String token : RegexUtil.COMMA_PATTERN.split(preprocessedLine)) {
@@ -55,7 +54,9 @@ public class PipeSign {
                 // justified and, in combination with notifications, represents a great way for players to get feedback.
                 item = ItemSyntax.getItem(token);
             } catch (Throwable e) {
-                notifications.add(new MalformedSignNotification(sign.getLocation(), token, lineId + 1));
+                if (notificationOutput != null)
+                    notificationOutput.add(new MalformedSignNotification(sign.getLocation(), token, lineId + 1));
+
                 continue;
             }
 
