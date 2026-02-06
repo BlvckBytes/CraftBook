@@ -117,7 +117,7 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
         return type == Material.PISTON || type == Material.STICKY_PISTON;
     }
 
-    private EnumerationResult locateExitNodesForItems(Block inputPistonBlock, LongSet visitedBlocks, EnumSet<LocateFlag> flags, List<ItemStack> itemsInPipe, List<PipeNotification> notification) {
+    private EnumerationResult locateExitNodesForItems(Block inputPistonBlock, LongSet visitedBlocks, EnumSet<LocateFlag> flags, List<ItemStack> itemsInPipe, List<PipeNotification> notificationOutput) {
         var enumerationFlags = EnumSet.of(EnumerationBehavior.DO_NOT_RESET_CACHE_AND_MAX_COUNTERS);
 
         // Only reset the limit-counters once, at the very top of the call-stack, seeing
@@ -141,7 +141,7 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
             if (isSubPipe)
                 visitedBlocks.add(CompactId.computeWorldlessBlockId(putBlock));
 
-            PipeSign sign = currentBlockCache.getSignOnPiston(pipeBlock, cachedPipeBlock, notification);
+            PipeSign sign = currentBlockCache.getSignOnPiston(pipeBlock, cachedPipeBlock, notificationOutput);
 
             if (pipeRequireSign) {
                 if (sign != PipeSign.NO_SIGN)
@@ -193,7 +193,7 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
             } else if (isSubPipe) {
                 // Handle sub-pipes which continue the walk from here on forwards with a (possibly) limited set of items.
                 List<ItemStack> subPipeItems = new ArrayList<>(itemsToPut);
-                subWalkResult = locateExitNodesForItems(putBlock, visitedBlocks, flags, subPipeItems, notification);
+                subWalkResult = locateExitNodesForItems(putBlock, visitedBlocks, flags, subPipeItems, notificationOutput);
                 leftovers.addAll(subPipeItems);
             } else {
                 if (CachedBlock.isPowerable(cachedPutBlock))
@@ -253,6 +253,9 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
 
                     if (maxPistonBlockCount >= 0 && currentPistonBlockCounter > maxPistonBlockCount)
                         return EnumerationResult.EXCEEDED_PISTON_COUNT_LIMIT;
+
+                    if (behaviorFlags.contains(EnumerationBehavior.LOAD_PISTON_SIGNS))
+                        currentBlockCache.getSignOnPiston(pipeBlock, cachedPipeBlock, null);
                 }
 
                 EnumerationDecision handleResult = enumerationHandler.handle(pipeBlock, cachedPipeBlock, currentBlockCache);
@@ -343,7 +346,7 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
         return maxCacheLoadCount;
     }
 
-    private void startPipe(Block inputPistonBlock, @Nullable Block overrideContainerBlock, @Nullable List<ItemStack> itemsInPipe, boolean wasRequest, List<PipeNotification> notifications) {
+    private void startPipe(Block inputPistonBlock, @Nullable Block overrideContainerBlock, @Nullable List<ItemStack> itemsInPipe, boolean wasRequest, List<PipeNotification> notificationOutput) {
         this.currentBlockCache = cacheRegistry.getBlockCache(inputPistonBlock.getWorld());
 
         PipeSign sign;
@@ -356,7 +359,7 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
             if (!CachedBlock.isMaterial(cachedInputPistonBlock, Material.STICKY_PISTON))
                 return;
 
-            sign = currentBlockCache.getSignOnPiston(inputPistonBlock, cachedInputPistonBlock, notifications);
+            sign = currentBlockCache.getSignOnPiston(inputPistonBlock, cachedInputPistonBlock, notificationOutput);
 
             containerBlock = overrideContainerBlock != null ? overrideContainerBlock : inputPistonBlock.getRelative(CachedBlock.getFacing(cachedInputPistonBlock));
             cachedContainerBlock = currentBlockCache.getCachedBlock(containerBlock);
@@ -364,7 +367,7 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
         // If the very beginning of the pipe already (partially) is within an unloaded chunk,
         // there's no need to start the process at all.
         catch (LoadingChunkException ignored) {
-            notifications.add(new WarmupNotification(currentPistonBlockCounter, currentTubeBlockCounter));
+            notificationOutput.add(new WarmupNotification(currentPistonBlockCounter, currentTubeBlockCounter));
             return;
         }
 
@@ -470,7 +473,7 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
 
         if (!suckEvent.isCancelled()) {
             try {
-                enumerationResult = locateExitNodesForItems(inputPistonBlock, visitedBlocks, locateFlags, itemsInPipe, notifications);
+                enumerationResult = locateExitNodesForItems(inputPistonBlock, visitedBlocks, locateFlags, itemsInPipe, notificationOutput);
             } catch (Throwable e) {
                 threwError = true;
                 CraftBookPlugin.logger().log(Level.SEVERE, "An error occurred while trying to locate exit-nodes for an item in a pipe", e);
@@ -552,14 +555,14 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
         }
 
         if (missedSign) {
-            notifications.add(new NoSignNotification());
+            notificationOutput.add(new NoSignNotification());
             return;
         }
 
         switch (enumerationResult) {
-            case NEEDS_CHUNK_LOADING, EXCEEDED_CACHE_LOAD_LIMIT -> notifications.add(new WarmupNotification(currentPistonBlockCounter, currentTubeBlockCounter));
-            case EXCEEDED_PISTON_COUNT_LIMIT -> notifications.add(new PistonLimitNotification(maxPistonBlockCount));
-            case EXCEEDED_TUBE_COUNT_LIMIT -> notifications.add(new TubeLimitNotification(maxTubeBlockCount));
+            case NEEDS_CHUNK_LOADING, EXCEEDED_CACHE_LOAD_LIMIT -> notificationOutput.add(new WarmupNotification(currentPistonBlockCounter, currentTubeBlockCounter));
+            case EXCEEDED_PISTON_COUNT_LIMIT -> notificationOutput.add(new PistonLimitNotification(maxPistonBlockCount));
+            case EXCEEDED_TUBE_COUNT_LIMIT -> notificationOutput.add(new TubeLimitNotification(maxTubeBlockCount));
         }
     }
 

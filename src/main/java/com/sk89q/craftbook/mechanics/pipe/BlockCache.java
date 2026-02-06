@@ -12,6 +12,7 @@ import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.Powerable;
 import org.bukkit.block.data.type.WallSign;
 import org.bukkit.scheduler.BukkitTask;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import java.util.List;
@@ -158,7 +159,7 @@ public class BlockCache implements CachedBlockResolver {
         return cachedBlock;
     }
 
-    public PipeSign getSignOnPiston(Block pistonBlock, int cachedPistonBlock, List<PipeNotification> notifications) throws LoadingChunkException {
+    public PipeSign getSignOnPiston(Block pistonBlock, int cachedPistonBlock, @Nullable List<PipeNotification> notificationOutput) throws LoadingChunkException {
         long pistonCompactId = CompactId.computeWorldlessBlockId(pistonBlock);
 
         PipeSign cachedSign = pipeSignByPistonCompactId.get(pistonCompactId);
@@ -200,7 +201,7 @@ public class BlockCache implements CachedBlockResolver {
             if (!lines[1].equalsIgnoreCase("[Pipe]"))
                 continue;
 
-            cachedSign = PipeSign.fromSign(sign, lines, notifications);
+            cachedSign = PipeSign.fromSign(sign, lines, notificationOutput);
             Bukkit.getPluginManager().callEvent(new PipeSignCacheCreatedEvent(pistonBlock, sign, lines));
             break;
         }
