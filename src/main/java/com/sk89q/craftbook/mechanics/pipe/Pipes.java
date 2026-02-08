@@ -303,6 +303,11 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
                     }
 
                     if (!CachedBlock.isPane(cachedEnumeratedBlock)) {
+                        if (behaviorFlags.contains(EnumerationBehavior.DEPTH_FIRST)) {
+                            searchQueue.addFirst(enumeratedBlock);
+                            continue;
+                        }
+
                         searchQueue.add(enumeratedBlock);
                         continue;
                     }
@@ -320,6 +325,11 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
 
                     if (!visitedBlocks.add(CompactId.computeWorldlessBlockId(nextEnumeratedBlock)))
                         continue;
+
+                    if (behaviorFlags.contains(EnumerationBehavior.DEPTH_FIRST)) {
+                        searchQueue.addFirst(nextEnumeratedBlock);
+                        continue;
+                    }
 
                     searchQueue.add(nextEnumeratedBlock);
                 }
