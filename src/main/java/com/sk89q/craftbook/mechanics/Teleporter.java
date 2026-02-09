@@ -101,6 +101,7 @@ public class Teleporter extends AbstractCraftBookMechanic {
         Block trigger = null;
 
         boolean noBack = false;
+        boolean isPressurePlate = false;
 
         if (event.getAction() == Action.RIGHT_CLICK_BLOCK && SignUtil.isSign(event.getClickedBlock())) {
             if (event.getHand() != EquipmentSlot.HAND) return;
@@ -143,6 +144,7 @@ public class Teleporter extends AbstractCraftBookMechanic {
                 if (!s.getLine(1).equals("[Teleporter]")) return;
                 String[] pos = RegexUtil.COLON_PATTERN.split(s.getLine(2));
                 noBack = s.getLine(3).equalsIgnoreCase("no-back");
+                isPressurePlate = true;
                 if (pos.length <= 2) {
                     localPlayer.printError("mech.teleport.invalidcoords");
                     return;
@@ -166,12 +168,12 @@ public class Teleporter extends AbstractCraftBookMechanic {
             return;
         }
 
-        makeItSo(localPlayer, trigger, noBack);
+        makeItSo(localPlayer, trigger, noBack, isPressurePlate);
 
         event.setCancelled(true);
     }
 
-    private void makeItSo(CraftBookPlayer player, Block trigger, boolean noBack) {
+    private void makeItSo(CraftBookPlayer player, Block trigger, boolean noBack, boolean isPressurePlate) {
         // start with the block shifted vertically from the player
         // to the destination sign's height (plus one).
         // check if this looks at all like something we're interested in first
@@ -221,7 +223,12 @@ public class Teleporter extends AbstractCraftBookMechanic {
             }
         }
 
-        Block floor = trigger.getWorld().getBlockAt((int) Math.floor(toX), (int) (Math.floor(toY) + 1),
+        int dy = 1;
+
+        if (isPressurePlate)
+            ++dy;
+
+        Block floor = trigger.getWorld().getBlockAt((int) Math.floor(toX), (int) (Math.floor(toY) + dy),
                 (int) Math.floor(toZ));
         // well, unless that's already a ceiling.
         if (floor.getType().isSolid())
