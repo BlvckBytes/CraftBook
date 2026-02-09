@@ -356,14 +356,9 @@ public class Elevator extends AbstractCraftBookMechanic {
     }
 
     private void makeItSo(CraftBookPlayer player, Block destination, BlockFace shift, boolean noBack) {
-        int dy = 1;
-
-        if (Tag.PRESSURE_PLATES.isTagged(destination.getType()))
-            ++dy;
-
         // start with the block shifted vertically from the player
         // to the destination sign's height (plus one).
-        Block floor = destination.getWorld().getBlockAt((int) Math.floor(player.getLocation().getX()), destination.getY() + dy,
+        Block floor = destination.getWorld().getBlockAt((int) Math.floor(player.getLocation().getX()), destination.getY() + 1,
                 (int) Math.floor(player.getLocation().getZ()));
         // well, unless that's already a ceiling.
         if (floor.getType().isSolid()) {
@@ -375,7 +370,8 @@ public class Elevator extends AbstractCraftBookMechanic {
         int foundFree = 0;
         boolean foundGround = false;
         for (int i = 0; i < 5; i++) {
-            if (!floor.getType().isSolid() || SignUtil.isSign(floor)) {
+            var floorType = floor.getType();
+            if (!floorType.isSolid() || SignUtil.isSign(floor) || Tag.PRESSURE_PLATES.isTagged(floorType)) {
                 foundFree++;
             } else {
                 foundGround = true;

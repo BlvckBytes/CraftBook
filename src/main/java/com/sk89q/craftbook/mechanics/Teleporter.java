@@ -168,12 +168,12 @@ public class Teleporter extends AbstractCraftBookMechanic {
             return;
         }
 
-        makeItSo(localPlayer, trigger, noBack, isPressurePlate);
+        makeItSo(localPlayer, trigger, noBack);
 
         event.setCancelled(true);
     }
 
-    private void makeItSo(CraftBookPlayer player, Block trigger, boolean noBack, boolean isPressurePlate) {
+    private void makeItSo(CraftBookPlayer player, Block trigger, boolean noBack) {
         // start with the block shifted vertically from the player
         // to the destination sign's height (plus one).
         // check if this looks at all like something we're interested in first
@@ -223,12 +223,7 @@ public class Teleporter extends AbstractCraftBookMechanic {
             }
         }
 
-        int dy = 1;
-
-        if (isPressurePlate)
-            ++dy;
-
-        Block floor = trigger.getWorld().getBlockAt((int) Math.floor(toX), (int) (Math.floor(toY) + dy),
+        Block floor = trigger.getWorld().getBlockAt((int) Math.floor(toX), (int) (Math.floor(toY) + 1),
                 (int) Math.floor(toZ));
         // well, unless that's already a ceiling.
         if (floor.getType().isSolid())
@@ -238,7 +233,9 @@ public class Teleporter extends AbstractCraftBookMechanic {
         // or until we're 5 blocks away, which we consider too far.
         int foundFree = 0;
         for (int i = 0; i < 5; i++) {
-            if (!floor.getType().isSolid() || SignUtil.isSign(floor))
+            var floorType = floor.getType();
+
+            if (!floorType.isSolid() || SignUtil.isSign(floor) || Tag.PRESSURE_PLATES.isTagged(floorType))
                 foundFree++;
             else
                 break;
