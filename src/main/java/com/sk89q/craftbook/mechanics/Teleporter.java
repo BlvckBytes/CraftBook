@@ -24,7 +24,12 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.EquipmentSlot;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * Teleporter Mechanism. Based off Elevator
@@ -34,6 +39,8 @@ import org.bukkit.inventory.EquipmentSlot;
  * @author Me4502
  */
 public class Teleporter extends AbstractCraftBookMechanic {
+
+    private final Map<UUID, Long> lastTeleportByPlayerId = new HashMap<>();
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onSignChange(SignChangeEvent event) {
@@ -74,6 +81,11 @@ public class Teleporter extends AbstractCraftBookMechanic {
 
         if(event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
         onCommonClick(event);
+    }
+
+    @EventHandler
+    public void onPlayerLeave(PlayerQuitEvent event) {
+        lastTeleportByPlayerId.remove(event.getPlayer().getUniqueId());
     }
 
     public void onCommonClick(PlayerInteractEvent event) {
@@ -120,6 +132,12 @@ public class Teleporter extends AbstractCraftBookMechanic {
         } else if (Tag.PRESSURE_PLATES.isTagged(event.getClickedBlock().getType())) {
             localPlayer = CraftBookPlugin.inst().wrapPlayer(event.getPlayer());
             Block sign = event.getClickedBlock().getRelative(0, -2, 0);
+
+            var lastTeleport = lastTeleportByPlayerId.get(event.getPlayer().getUniqueId());
+
+            if (lastTeleport != null && System.currentTimeMillis() - lastTeleport < 1000)
+                return;
+
             if (SignUtil.isSign(sign)) {
                 ChangedSign s = CraftBookBukkitUtil.toChangedSign(sign);
                 if (!s.getLine(1).equals("[Teleporter]")) return;
@@ -237,6 +255,8 @@ public class Teleporter extends AbstractCraftBookMechanic {
                 return;
             }
         }
+
+        lastTeleportByPlayerId.put(player.getUniqueId(), System.currentTimeMillis());
 
         if (player.isInsideVehicle()) {
             org.bukkit.Location newLocation = CraftBookBukkitUtil.toLocation(subspaceRift);
