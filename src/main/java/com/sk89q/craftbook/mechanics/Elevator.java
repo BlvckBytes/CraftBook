@@ -53,11 +53,7 @@ import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Locale;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * The default elevator mechanism -- wall signs in a vertical column that teleport the player vertically when triggered.
@@ -67,10 +63,16 @@ import java.util.UUID;
  */
 public class Elevator extends AbstractCraftBookMechanic {
 
-    private record LiftData(Elevator.Direction direction, boolean noBack) {}
+    private static final BlockFace[] SIGN_MOUNT_FACES = new BlockFace[] {
+      BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST
+    };
+
+    private record LiftData(Elevator.Direction direction, boolean noBack, ChangedSign sign) {}
 
     private HashSet<UUID> flyingPlayers;
     private HashMap<UUID, Entity> playerVehicles;
+
+    private final Map<UUID, Long> lastTeleportByPlayerId = new HashMap<>();
 
     @Override
     public boolean enable() {
@@ -115,6 +117,7 @@ public class Elevator extends AbstractCraftBookMechanic {
 
     @EventHandler
     public void onPlayerLeave(PlayerQuitEvent event) {
+        lastTeleportByPlayerId.remove(event.getPlayer().getUniqueId());
 
         if(!elevatorSlowMove) return;
         //Clean up mechanics that store players that we don't want anymore.
@@ -218,25 +221,43 @@ public class Elevator extends AbstractCraftBookMechanic {
     }
 
     @EventHandler(priority = EventPriority.HIGH)
-    public void onRightClick(PlayerInteractEvent event) {
+    public void onInteract(PlayerInteractEvent event) {
+        var block = event.getClickedBlock();
 
-        if(event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
-        if(!elevatorButtonEnabled) return;
-        if(SignUtil.isSign(event.getClickedBlock())) return;
+        if (block == null)
+            return;
 
-        onCommonClick(event);
+        var blockType = block.getType();
+
+        if(event.getAction() == Action.RIGHT_CLICK_BLOCK) {
+            if(event.getHand() != EquipmentSlot.HAND) return;
+            if (!(Tag.BUTTONS.isTagged(blockType))) return;
+            onCommonClick(event, false);
+        }
+
+        if (event.getAction() == Action.PHYSICAL) {
+            if (!(Tag.PRESSURE_PLATES.isTagged(blockType))) return;
+            onCommonClick(event, true);
+        }
     }
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onRightClick(SignClickEvent event) {
 
         if(event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
-        onCommonClick(event);
+        if(event.getHand() != EquipmentSlot.HAND) return;
+        onCommonClick(event, false);
     }
 
-    public void onCommonClick(PlayerInteractEvent event) {
+    public void onCommonClick(PlayerInteractEvent event, boolean isPressurePlate) {
+        if (isPressurePlate) {
+            var lastTeleport = lastTeleportByPlayerId.get(event.getPlayer().getUniqueId());
 
-        if (!EventUtil.passesFilter(event) || event.getHand() != EquipmentSlot.HAND)
+            if (lastTeleport != null && System.currentTimeMillis() - lastTeleport < 1000)
+                return;
+        }
+
+        if (!EventUtil.passesFilter(event))
             return;
 
         CraftBookPlayer localPlayer = CraftBookPlugin.inst().wrapPlayer(event.getPlayer());
@@ -335,9 +356,14 @@ public class Elevator extends AbstractCraftBookMechanic {
     }
 
     private void makeItSo(CraftBookPlayer player, Block destination, BlockFace shift, boolean noBack) {
+        int dy = 1;
+
+        if (Tag.PRESSURE_PLATES.isTagged(destination.getType()))
+            ++dy;
+
         // start with the block shifted vertically from the player
         // to the destination sign's height (plus one).
-        Block floor = destination.getWorld().getBlockAt((int) Math.floor(player.getLocation().getX()), destination.getY() + 1,
+        Block floor = destination.getWorld().getBlockAt((int) Math.floor(player.getLocation().getX()), destination.getY() + dy,
                 (int) Math.floor(player.getLocation().getZ()));
         // well, unless that's already a ceiling.
         if (floor.getType().isSolid()) {
@@ -527,22 +553,19 @@ public class Elevator extends AbstractCraftBookMechanic {
         }
     }
 
-    public static void teleportFinish(CraftBookPlayer player, Block destination, BlockFace shift) {
+    public void teleportFinish(CraftBookPlayer player, Block destination, BlockFace shift) {
+        lastTeleportByPlayerId.put(player.getUniqueId(), System.currentTimeMillis());
+
         // Now, we want to read the sign so we can tell the player
         // his or her floor, but as that may not be avilable, we can
         // just print a generic message
-        ChangedSign info = null;
-        if (!SignUtil.isSign(destination)) {
-            if (Tag.BUTTONS.isTagged(destination.getType())) {
-                Switch attachable = (Switch) destination.getBlockData();
-                if (SignUtil.isSign(destination.getRelative(attachable.getFacing().getOppositeFace(), 2)))
-                    info = CraftBookBukkitUtil.toChangedSign(destination.getRelative(attachable.getFacing().getOppositeFace(), 2));
-            }
-            if (info == null)
-                return;
-        } else
-            info = CraftBookBukkitUtil.toChangedSign(destination);
-        String title = info.getLines()[0];
+        var sign = getLiftData(destination).sign;
+
+        if (sign == null)
+            return;
+
+        String title = sign.getLines()[0];
+
         if (!title.isEmpty()) {
             player.print(player.translate("mech.lift.floor") + ": " + title);
         } else {
@@ -566,15 +589,30 @@ public class Elevator extends AbstractCraftBookMechanic {
     private LiftData getLiftData(Block block) {
 
         if (!SignUtil.isSign(block)) {
-            if (elevatorButtonEnabled && Tag.BUTTONS.isTagged(block.getType())) {
+            var blockType = block.getType();
+
+            if (elevatorButtonEnabled && Tag.BUTTONS.isTagged(blockType)) {
                 Switch b = (Switch) block.getBlockData();
-                if(b == null || b.getFacing() == null)
-                    return new LiftData(Direction.NONE, false);
                 Block sign = block.getRelative(b.getFacing().getOppositeFace(), 2);
                 if (SignUtil.isSign(sign))
                     return getLiftData(CraftBookBukkitUtil.toChangedSign(sign));
             }
-            return new LiftData(Direction.NONE, false);
+
+            if (elevatorPressurePlateEnabled && Tag.PRESSURE_PLATES.isTagged(blockType)) {
+                for (var mountFace : SIGN_MOUNT_FACES) {
+                    var attachedSign = block.getRelative(mountFace.getModX() * 2, 0, mountFace.getModZ() * 2);
+
+                    if (!SignUtil.isSign(attachedSign))
+                        continue;
+
+                    var data = getLiftData(CraftBookBukkitUtil.toChangedSign(attachedSign));
+
+                    if (data.direction != Direction.NONE)
+                        return data;
+                }
+            }
+
+            return new LiftData(Direction.NONE, false, null);
         }
 
         return getLiftData(CraftBookBukkitUtil.toChangedSign(block));
@@ -587,15 +625,16 @@ public class Elevator extends AbstractCraftBookMechanic {
 
         boolean noBack = sign.getLine(3).equalsIgnoreCase("no-back");
 
-        if (sign.getLine(1).equalsIgnoreCase("[Lift Up]")) return new LiftData(Direction.UP, noBack);
-        if (sign.getLine(1).equalsIgnoreCase("[Lift Down]")) return new LiftData(Direction.DOWN, noBack);
-        if (sign.getLine(1).equalsIgnoreCase("[Lift]")) return new LiftData(Direction.RECV, noBack);
-        return new LiftData(Direction.NONE, false);
+        if (sign.getLine(1).equalsIgnoreCase("[Lift Up]")) return new LiftData(Direction.UP, noBack, sign);
+        if (sign.getLine(1).equalsIgnoreCase("[Lift Down]")) return new LiftData(Direction.DOWN, noBack, sign);
+        if (sign.getLine(1).equalsIgnoreCase("[Lift]")) return new LiftData(Direction.RECV, noBack, sign);
+        return new LiftData(Direction.NONE, false, sign);
     }
 
     private boolean elevatorAllowRedstone;
     private int elevatorRedstoneRadius;
     private boolean elevatorButtonEnabled;
+    private boolean elevatorPressurePlateEnabled;
     private boolean elevatorLoop;
     private boolean elevatorSlowMove;
     private double elevatorMoveSpeed;
@@ -612,6 +651,9 @@ public class Elevator extends AbstractCraftBookMechanic {
 
         config.setComment(path + "enable-buttons", "Allow elevators to be used by a button on the other side of the block.");
         elevatorButtonEnabled = config.getBoolean(path + "enable-buttons", true);
+
+        config.setComment(path + "enable-pressure-plates", "Allow elevators to be used by a pressure-plate above the sign or on the block of the sign itself.");
+        elevatorPressurePlateEnabled = config.getBoolean(path + "enable-pressure-plates", true);
 
         config.setComment(path + "allow-looping", "Allows elevators to loop the world height. The heighest lift up will go to the next lift on the bottom of the world and vice versa.");
         elevatorLoop = config.getBoolean(path + "allow-looping", false);

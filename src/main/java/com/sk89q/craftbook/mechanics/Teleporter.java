@@ -64,9 +64,7 @@ public class Teleporter extends AbstractCraftBookMechanic {
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onRightClick(PlayerInteractEvent event) {
-
-        if(event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
-        if(SignUtil.isSign(event.getClickedBlock())) return;
+        if(event.getClickedBlock() != null && SignUtil.isSign(event.getClickedBlock())) return;
 
         onCommonClick(event);
     }
@@ -80,16 +78,21 @@ public class Teleporter extends AbstractCraftBookMechanic {
 
     public void onCommonClick(PlayerInteractEvent event) {
 
-        if (!EventUtil.passesFilter(event) || event.getHand() != EquipmentSlot.HAND)
+        if (!EventUtil.passesFilter(event))
             return;
 
-        CraftBookPlayer localPlayer = CraftBookPlugin.inst().wrapPlayer(event.getPlayer());
+        if (event.getClickedBlock() == null)
+            return;
+
+        CraftBookPlayer localPlayer;
 
         Block trigger = null;
 
         boolean noBack = false;
 
-        if (SignUtil.isSign(event.getClickedBlock())) {
+        if (event.getAction() == Action.RIGHT_CLICK_BLOCK && SignUtil.isSign(event.getClickedBlock())) {
+            if (event.getHand() != EquipmentSlot.HAND) return;
+            localPlayer = CraftBookPlugin.inst().wrapPlayer(event.getPlayer());
             ChangedSign s = CraftBookBukkitUtil.toChangedSign(event.getClickedBlock());
             if (!s.getLine(1).equals("[Teleporter]")) return;
             String[] pos = RegexUtil.COLON_PATTERN.split(s.getLine(2));
@@ -100,9 +103,23 @@ public class Teleporter extends AbstractCraftBookMechanic {
             }
             trigger = event.getClickedBlock();
         } else if (Tag.BUTTONS.isTagged(event.getClickedBlock().getType())) {
+            localPlayer = CraftBookPlugin.inst().wrapPlayer(event.getPlayer());
             Directional b = (Directional) event.getClickedBlock().getBlockData();
-            if(b == null || b.getFacing() == null) return;
             Block sign = event.getClickedBlock().getRelative(b.getFacing().getOppositeFace(), 2);
+            if (SignUtil.isSign(sign)) {
+                ChangedSign s = CraftBookBukkitUtil.toChangedSign(sign);
+                if (!s.getLine(1).equals("[Teleporter]")) return;
+                String[] pos = RegexUtil.COLON_PATTERN.split(s.getLine(2));
+                noBack = s.getLine(3).equalsIgnoreCase("no-back");
+                if (pos.length <= 2) {
+                    localPlayer.printError("mech.teleport.invalidcoords");
+                    return;
+                }
+                trigger = sign;
+            }
+        } else if (Tag.PRESSURE_PLATES.isTagged(event.getClickedBlock().getType())) {
+            localPlayer = CraftBookPlugin.inst().wrapPlayer(event.getPlayer());
+            Block sign = event.getClickedBlock().getRelative(0, -2, 0);
             if (SignUtil.isSign(sign)) {
                 ChangedSign s = CraftBookBukkitUtil.toChangedSign(sign);
                 if (!s.getLine(1).equals("[Teleporter]")) return;
@@ -172,6 +189,11 @@ public class Teleporter extends AbstractCraftBookMechanic {
             } else if (Tag.BUTTONS.isTagged(location.getType())) {
                 Directional b = (Directional) location.getBlockData();
                 Block sign = location.getRelative(b.getFacing(), 2);
+                if (!checkTeleportSign(player, sign)) {
+                    return;
+                }
+            } else if (Tag.PRESSURE_PLATES.isTagged(location.getType())) {
+                Block sign = location.getRelative(0, -2, 0);
                 if (!checkTeleportSign(player, sign)) {
                     return;
                 }
