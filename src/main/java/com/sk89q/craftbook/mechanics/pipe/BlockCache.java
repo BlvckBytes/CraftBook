@@ -15,6 +15,7 @@ import org.bukkit.scheduler.BukkitTask;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
 
 public class BlockCache implements CachedBlockResolver {
@@ -115,6 +116,10 @@ public class BlockCache implements CachedBlockResolver {
 
     @Override
     public int getCachedBlock(Block block) throws LoadingChunkException {
+        return getCachedBlock(block, EnumSet.noneOf(BlockCacheFlag.class));
+    }
+
+    public int getCachedBlock(Block block, EnumSet<BlockCacheFlag> flags) throws LoadingChunkException {
         var bucketId = computeChunkBucketId(block);
 
         var chunkBucket = cachedBlockByRelativeIdByChunkBucketId.computeIfAbsent(bucketId, key -> {

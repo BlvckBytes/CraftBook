@@ -364,7 +364,7 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
         int cachedContainerBlock;
 
         try {
-            int cachedInputPistonBlock = currentBlockCache.getCachedBlock(inputPistonBlock);
+            int cachedInputPistonBlock = currentBlockCache.getCachedBlock(inputPistonBlock, EnumSet.of(BlockCacheFlag.ONLY_TOUCH_CHUNK_TICKETS_FOR_INPUT_PISTONS, BlockCacheFlag.POSSIBLE_MEMBER_OF_PIPE_START));
 
             if (!CachedBlock.isMaterial(cachedInputPistonBlock, Material.STICKY_PISTON))
                 return;
@@ -372,7 +372,7 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
             sign = currentBlockCache.getSignOnPiston(inputPistonBlock, cachedInputPistonBlock, notificationOutput);
 
             containerBlock = overrideContainerBlock != null ? overrideContainerBlock : inputPistonBlock.getRelative(CachedBlock.getFacing(cachedInputPistonBlock));
-            cachedContainerBlock = currentBlockCache.getCachedBlock(containerBlock);
+            cachedContainerBlock = currentBlockCache.getCachedBlock(containerBlock, EnumSet.of(BlockCacheFlag.POSSIBLE_MEMBER_OF_PIPE_START));
         }
         // If the very beginning of the pipe already (partially) is within an unloaded chunk,
         // there's no need to start the process at all.
@@ -678,7 +678,7 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
         int cachedDestinationBlock;
 
         try {
-            cachedDestinationBlock = worldBlockCache.getCachedBlock(destinationBlock);
+            cachedDestinationBlock = worldBlockCache.getCachedBlock(destinationBlock, EnumSet.of(BlockCacheFlag.DO_NOT_TOUCH_CHUNK_TICKETS));
         } catch (LoadingChunkException e) {
             event.setCancelled(true);
             return;
@@ -696,7 +696,7 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
         int cachedHopperTargetBlock;
 
         try {
-            cachedHopperTargetBlock = worldBlockCache.getCachedBlock(hopperTargetBlock);
+            cachedHopperTargetBlock = worldBlockCache.getCachedBlock(hopperTargetBlock, EnumSet.of(BlockCacheFlag.DO_NOT_TOUCH_CHUNK_TICKETS));
         } catch (LoadingChunkException e) {
             event.setCancelled(true);
             return;
