@@ -16,14 +16,9 @@ import org.bukkit.event.block.*;
 import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.scheduler.BukkitTask;
 
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import java.util.function.Consumer;
-import java.util.logging.Level;
 
 public class BlockCacheRegistry implements Listener {
 
@@ -34,7 +29,6 @@ public class BlockCacheRegistry implements Listener {
     CachedBlock.setupPresetTable();
   }
 
-  public final MethodHandle getChunkAtAsync;
   private final BukkitTask chunkTicketTask;
   private final Map<UUID, BlockCache> blockCacheByWorldUid;
 
@@ -44,7 +38,6 @@ public class BlockCacheRegistry implements Listener {
   private int relativeTimeTicks;
 
   public BlockCacheRegistry() {
-    this.getChunkAtAsync = findGetChunkAtAsync();
     this.blockCacheByWorldUid = new HashMap<>();
 
     this.chunkTicketTask = Bukkit.getScheduler().runTaskTimer(CraftBookPlugin.inst(), () -> {
@@ -53,9 +46,6 @@ public class BlockCacheRegistry implements Listener {
       for (var cache : blockCacheByWorldUid.values())
         cache.removeExpiredChunkTickets(false);
     }, 0, 20);
-
-    if (getChunkAtAsync == null)
-      CraftBookPlugin.logger().log(Level.WARNING, "[Pipes] Could not find API to load chunks asynchronously; use Paper to experience better performance.");
 
     Bukkit.getServer().getPluginManager().registerEvents(this, CraftBookPlugin.inst());
   }
@@ -169,17 +159,5 @@ public class BlockCacheRegistry implements Listener {
 
     if (blockCache != null)
       blockCache.invalidateCache(block);
-  }
-
-  private MethodHandle findGetChunkAtAsync() {
-    try {
-      return MethodHandles.lookup().findVirtual(
-        World.class,
-        "getChunkAtAsync",
-        MethodType.methodType(void.class, int.class, int.class, boolean.class, Consumer.class)
-      );
-    } catch (NoSuchMethodException | IllegalAccessException e) {
-      return null;
-    }
   }
 }

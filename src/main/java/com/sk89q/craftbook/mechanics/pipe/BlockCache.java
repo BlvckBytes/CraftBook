@@ -127,13 +127,11 @@ public class BlockCache implements CachedBlockResolver {
     public int getCachedBlock(Block block) throws LoadingChunkException {
         var bucketId = computeChunkBucketId(block);
 
-        var chunkBucket = cachedBlockByRelativeIdByChunkBucketId.get(bucketId);
-
-        if (chunkBucket == null) {
-            chunkBucket = new int[CHUNK_BUCKET_SIZE];
-            Arrays.fill(chunkBucket, CachedBlock.NULL_SENTINEL);
-            cachedBlockByRelativeIdByChunkBucketId.put(bucketId, chunkBucket);
-        }
+        var chunkBucket = cachedBlockByRelativeIdByChunkBucketId.computeIfAbsent(bucketId, key -> {
+            var newBucket = new int[CHUNK_BUCKET_SIZE];
+            Arrays.fill(newBucket, CachedBlock.NULL_SENTINEL);
+            return newBucket;
+        });
 
         var relativeId = computeRelativeId(block);
         var cachedBlock = chunkBucket[relativeId];
@@ -226,18 +224,10 @@ public class BlockCache implements CachedBlockResolver {
             return;
         }
 
-        if (registry.getChunkAtAsync != null) {
-            try {
-                registry.getChunkAtAsync.invoke(world, chunkX, chunkZ, true, (Consumer<Chunk>) chunk -> addOrTouchChunkTicket(block, compactChunkId));
-            } catch (Throwable e) {
-                CraftBookPlugin.logger().log(Level.SEVERE, "An error occurred while trying to load the chunk at " + chunkX + "," + chunkZ + " asynchronously ", e);
-                return;
-            }
-        } else {
+        world.getChunkAtAsync(chunkX, chunkZ, true, chunk -> {
             addOrTouchChunkTicket(block, compactChunkId);
-        }
+        });
 
-        // Stop walking the pipe despite loading sync also, as to not completely starve the tick-loop
         throw new LoadingChunkException();
     }
 
