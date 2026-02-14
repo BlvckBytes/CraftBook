@@ -132,10 +132,13 @@ public class BlockCache implements CachedBlockResolver {
         var cachedBlock = chunkBucket[relativeId];
 
         if (cachedBlock != CachedBlock.NULL_SENTINEL) {
+            if (flags.contains(BlockCacheFlag.DO_NOT_TOUCH_CHUNK_TICKETS))
+                return cachedBlock;
+
             if (CachedBlock.shouldContinueToRetainChunks(cachedBlock))
-                ensureChunkIsLoaded(block, () -> addOrTouchChunkTicket(block, cachedBlock, flags, false));
+                ensureChunkIsLoaded(block, () -> addOrTouchChunkTicket(block, false));
             else
-                addOrTouchChunkTicket(block, cachedBlock, flags, true);
+                addOrTouchChunkTicket(block, true);
 
             return cachedBlock;
         }
@@ -150,7 +153,8 @@ public class BlockCache implements CachedBlockResolver {
                 ++cacheLoadCounter;
             }
 
-            addOrTouchChunkTicket(block, loadedBlock, flags, false);
+            if (!flags.contains(BlockCacheFlag.DO_NOT_TOUCH_CHUNK_TICKETS))
+                addOrTouchChunkTicket(block, false);
         });
 
         return chunkBucket[relativeId];
@@ -243,15 +247,7 @@ public class BlockCache implements CachedBlockResolver {
         throw new LoadingChunkException();
     }
 
-    private void addOrTouchChunkTicket(Block block, int cachedBlock, EnumSet<BlockCacheFlag> flags, boolean doNotCreate) {
-        if (flags.contains(BlockCacheFlag.DO_NOT_TOUCH_CHUNK_TICKETS))
-            return;
-
-        if (flags.contains(BlockCacheFlag.ONLY_TOUCH_CHUNK_TICKETS_FOR_INPUT_PISTONS)) {
-            if (!CachedBlock.isMaterial(cachedBlock, Material.STICKY_PISTON))
-                return;
-        }
-
+    private void addOrTouchChunkTicket(Block block, boolean doNotCreate) {
         var chunkTicket = accessChunkTicket(block);
 
         if (chunkTicket.hasChunkSet()) {
