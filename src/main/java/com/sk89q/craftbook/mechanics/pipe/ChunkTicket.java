@@ -30,8 +30,8 @@ public class ChunkTicket {
             CraftBookPlugin.logger().log(Level.WARNING, "Could not add plugin-ticket to chunk at " + chunk.getX() + " " + chunk.getZ());
     }
 
-    public void updateDidStartPipe(boolean value) {
-        didStartPipe |= value;
+    public void onPipeStart() {
+        didStartPipe = true;
     }
 
     public void handleExpiration(int ticksNow, boolean force) {

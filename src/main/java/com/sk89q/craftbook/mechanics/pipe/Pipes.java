@@ -364,7 +364,10 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
         int cachedContainerBlock;
 
         try {
-            int cachedInputPistonBlock = currentBlockCache.getCachedBlock(inputPistonBlock, EnumSet.of(BlockCacheFlag.ONLY_TOUCH_CHUNK_TICKETS_FOR_INPUT_PISTONS, BlockCacheFlag.POSSIBLE_MEMBER_OF_PIPE_START));
+            // Input-blocks (sticky-piston and corresponding container) never touch chunk-tickets by themselves, as to
+            // avoid self-retaining farms that continue to produce transported items unendingly; these will later also
+            // invalidate existing tickets for their corresponding chunks.
+            int cachedInputPistonBlock = currentBlockCache.getCachedBlock(inputPistonBlock, EnumSet.of(BlockCacheFlag.DO_NOT_TOUCH_CHUNK_TICKETS));
 
             if (!CachedBlock.isMaterial(cachedInputPistonBlock, Material.STICKY_PISTON))
                 return;
@@ -372,7 +375,7 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
             sign = currentBlockCache.getSignOnPiston(inputPistonBlock, cachedInputPistonBlock, notificationOutput);
 
             containerBlock = overrideContainerBlock != null ? overrideContainerBlock : inputPistonBlock.getRelative(CachedBlock.getFacing(cachedInputPistonBlock));
-            cachedContainerBlock = currentBlockCache.getCachedBlock(containerBlock, EnumSet.of(BlockCacheFlag.POSSIBLE_MEMBER_OF_PIPE_START));
+            cachedContainerBlock = currentBlockCache.getCachedBlock(containerBlock, EnumSet.of(BlockCacheFlag.DO_NOT_TOUCH_CHUNK_TICKETS));
         }
         // If the very beginning of the pipe already (partially) is within an unloaded chunk,
         // there's no need to start the process at all.
@@ -489,6 +492,13 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
                 CraftBookPlugin.logger().log(Level.SEVERE, "An error occurred while trying to locate exit-nodes for an item in a pipe", e);
             }
         }
+
+        // Do not mark the corresponding chunk-tickets earlier, as to not needlessly unload
+        // chunks which did not even cause a proper item-carrying pipe-start; also, wait for all
+        // other blocks as required for locating exit-nodes to have called into the cache, as to
+        // possibly set-up chunk-tickets which we can then mark as having started a pipe.
+        currentBlockCache.onItemsCarryingPipeStart(inputPistonBlock);
+        currentBlockCache.onItemsCarryingPipeStart(containerBlock);
 
         // Try to put leftovers back into the block and drop the rest at the input-piston.
 

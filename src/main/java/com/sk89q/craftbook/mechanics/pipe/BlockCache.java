@@ -211,6 +211,18 @@ public class BlockCache implements CachedBlockResolver {
         return cachedSign;
     }
 
+    public void onItemsCarryingPipeStart(Block block) {
+        accessChunkTicket(block).onPipeStart();
+    }
+
+    private ChunkTicket accessChunkTicket(Block block) {
+        int chunkX = block.getX() >> 4;
+        int chunkZ = block.getZ() >> 4;
+        var compactChunkId = CompactId.computeWorldlessChunkId(chunkX, chunkZ);
+
+        return chunkTicketByCompactId.computeIfAbsent(compactChunkId, k -> new ChunkTicket());
+    }
+
     private void ensureChunkIsLoaded(Block block, @Nullable Runnable whenLoadedHandler) throws LoadingChunkException {
         int chunkX = block.getX() >> 4;
         int chunkZ = block.getZ() >> 4;
@@ -240,17 +252,12 @@ public class BlockCache implements CachedBlockResolver {
                 return;
         }
 
-        int chunkX = block.getX() >> 4;
-        int chunkZ = block.getZ() >> 4;
-        var compactChunkId = CompactId.computeWorldlessChunkId(chunkX, chunkZ);
-
-        var chunkTicket = chunkTicketByCompactId.computeIfAbsent(compactChunkId, k -> new ChunkTicket());
+        var chunkTicket = accessChunkTicket(block);
 
         if (chunkTicket.hasChunkSet()) {
             if (registry.getContinuedChunkTicketDurationTicks() > 0)
                 chunkTicket.expiryTicksStamp = registry.getRelativeTimeTicks() + registry.getContinuedChunkTicketDurationTicks();
 
-            chunkTicket.updateDidStartPipe(flags.contains(BlockCacheFlag.POSSIBLE_MEMBER_OF_PIPE_START));
             return;
         }
 
@@ -259,7 +266,6 @@ public class BlockCache implements CachedBlockResolver {
 
         chunkTicket.setChunk(block.getChunk());
         chunkTicket.expiryTicksStamp = registry.getRelativeTimeTicks() + registry.getInitialChunkTicketDurationTicks();
-        chunkTicket.updateDidStartPipe(flags.contains(BlockCacheFlag.POSSIBLE_MEMBER_OF_PIPE_START));
     }
 
     private boolean setBlockPower(Block block, boolean state) {
