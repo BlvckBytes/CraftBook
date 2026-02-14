@@ -16,7 +16,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.Consumer;
 import java.util.logging.Level;
 
 public class BlockCache implements CachedBlockResolver {
@@ -138,23 +137,25 @@ public class BlockCache implements CachedBlockResolver {
 
         if (cachedBlock != CachedBlock.NULL_SENTINEL) {
             if (CachedBlock.shouldContinueToRetainChunks(cachedBlock))
-                ensureChunkIsLoaded(block);
+                ensureChunkIsLoaded(block, () -> addOrTouchChunkTicket(block));
 
             return cachedBlock;
         }
 
-        ensureChunkIsLoaded(block);
+        ensureChunkIsLoaded(block, () -> {
+            var loadedBlock = CachedBlock.fromBlock(block);
 
-        cachedBlock = CachedBlock.fromBlock(block);
+            // Do not cache this intermediate state - it can trip the whole system up.
+            // Let's simply get the real state from the world until it finalized.
+            if (!CachedBlock.isMaterial(loadedBlock, Material.MOVING_PISTON)) {
+                chunkBucket[relativeId] = loadedBlock;
+                ++cacheLoadCounter;
+            }
 
-        // Do not cache this intermediate state - it can trip the whole system up.
-        // Let's simply get the real state from the world until it finalized.
-        if (!CachedBlock.isMaterial(cachedBlock, Material.MOVING_PISTON)) {
-            chunkBucket[relativeId] = cachedBlock;
-            ++cacheLoadCounter;
-        }
+            addOrTouchChunkTicket(block);
+        });
 
-        return cachedBlock;
+        return chunkBucket[relativeId];
     }
 
     public PipeSign getSignOnPiston(Block pistonBlock, int cachedPistonBlock, @Nullable List<PipeNotification> notificationOutput) throws LoadingChunkException {
@@ -212,26 +213,31 @@ public class BlockCache implements CachedBlockResolver {
         return cachedSign;
     }
 
-    private void ensureChunkIsLoaded(Block block) throws LoadingChunkException {
+    private void ensureChunkIsLoaded(Block block, @Nullable Runnable whenLoadedHandler) throws LoadingChunkException {
         int chunkX = block.getX() >> 4;
         int chunkZ = block.getZ() >> 4;
         World world = block.getWorld();
 
-        var compactChunkId = CompactId.computeWorldlessChunkId(chunkX, chunkZ);
-
         if (world.isChunkLoaded(chunkX, chunkZ)) {
-            addOrTouchChunkTicket(block, compactChunkId);
+            if (whenLoadedHandler != null)
+                whenLoadedHandler.run();
+
             return;
         }
 
         world.getChunkAtAsync(chunkX, chunkZ, true, chunk -> {
-            addOrTouchChunkTicket(block, compactChunkId);
+            if (whenLoadedHandler != null)
+                whenLoadedHandler.run();
         });
 
         throw new LoadingChunkException();
     }
 
-    private void addOrTouchChunkTicket(Block block, long compactChunkId) {
+    private void addOrTouchChunkTicket(Block block) {
+        int chunkX = block.getX() >> 4;
+        int chunkZ = block.getZ() >> 4;
+        var compactChunkId = CompactId.computeWorldlessChunkId(chunkX, chunkZ);
+
         var existingTicket = chunkTicketByCompactId.get(compactChunkId);
 
         if (existingTicket != null) {
