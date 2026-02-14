@@ -15,7 +15,6 @@ import org.bukkit.scheduler.BukkitTask;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
-import java.util.EnumSet;
 import java.util.List;
 
 public class BlockCache implements CachedBlockResolver {
@@ -116,10 +115,10 @@ public class BlockCache implements CachedBlockResolver {
 
     @Override
     public int getCachedBlock(Block block) throws LoadingChunkException {
-        return getCachedBlock(block, EnumSet.noneOf(BlockCacheFlag.class));
+        return getCachedBlock(block, true);
     }
 
-    public int getCachedBlock(Block block, EnumSet<BlockCacheFlag> flags) throws LoadingChunkException {
+    public int getCachedBlock(Block block, boolean doTouchChunkTickets) throws LoadingChunkException {
         var bucketId = computeChunkBucketId(block);
 
         var chunkBucket = cachedBlockByRelativeIdByChunkBucketId.computeIfAbsent(bucketId, key -> {
@@ -132,7 +131,7 @@ public class BlockCache implements CachedBlockResolver {
         var cachedBlock = chunkBucket[relativeId];
 
         if (cachedBlock != CachedBlock.NULL_SENTINEL) {
-            if (flags.contains(BlockCacheFlag.DO_NOT_TOUCH_CHUNK_TICKETS))
+            if (!doTouchChunkTickets)
                 return cachedBlock;
 
             if (CachedBlock.shouldContinueToRetainChunks(cachedBlock))
@@ -153,7 +152,7 @@ public class BlockCache implements CachedBlockResolver {
                 ++cacheLoadCounter;
             }
 
-            if (!flags.contains(BlockCacheFlag.DO_NOT_TOUCH_CHUNK_TICKETS))
+            if (doTouchChunkTickets)
                 addOrTouchChunkTicket(block, false);
         });
 
