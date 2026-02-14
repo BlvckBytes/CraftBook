@@ -22,6 +22,8 @@ import java.util.UUID;
 
 public class BlockCacheRegistry implements Listener {
 
+  private static final int EXPIRED_TICKET_REMOVAL_INTERVAL_T = 5;
+
   public static final int DEFAULT_INITIAL_CHUNK_TICKET_DURATION_S = 20;
   public static final int DEFAULT_CONTINUED_CHUNK_TICKET_DURATION_S = 20;
 
@@ -41,11 +43,11 @@ public class BlockCacheRegistry implements Listener {
     this.blockCacheByWorldUid = new HashMap<>();
 
     this.chunkTicketTask = Bukkit.getScheduler().runTaskTimer(CraftBookPlugin.inst(), () -> {
-      relativeTimeTicks += 20;
+      relativeTimeTicks += EXPIRED_TICKET_REMOVAL_INTERVAL_T;
 
       for (var cache : blockCacheByWorldUid.values())
-        cache.removeExpiredChunkTickets(false);
-    }, 0, 20);
+        cache.expireChunkTickets(false);
+    }, 0, EXPIRED_TICKET_REMOVAL_INTERVAL_T);
 
     Bukkit.getServer().getPluginManager().registerEvents(this, CraftBookPlugin.inst());
   }

@@ -16,7 +16,6 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.logging.Level;
 
 public class BlockCache implements CachedBlockResolver {
 
@@ -64,25 +63,17 @@ public class BlockCache implements CachedBlockResolver {
             priorResetTask.cancel();
     }
 
-    public void removeExpiredChunkTickets(boolean all) {
+    public void expireChunkTickets(boolean force) {
         var now = registry.getRelativeTimeTicks();
 
-        for (var iterator = chunkTicketByCompactId.values().iterator(); iterator.hasNext(); ) {
-            var chunkTicket = iterator.next();
-
-            if (all || (now >= chunkTicket.expiryTicksStamp)) {
-                iterator.remove();
-
-                if (!chunkTicket.chunk.removePluginChunkTicket(CraftBookPlugin.inst()))
-                    CraftBookPlugin.logger().log(Level.WARNING, "Could not remove plugin-ticket from chunk at " + chunkTicket.chunk.getX() + " " + chunkTicket.chunk.getZ());
-            }
-        }
+        for (var chunkTicket : chunkTicketByCompactId.values())
+            chunkTicket.handleExpiration(now, force);
     }
 
     public void disable() {
         this.cachedBlockByRelativeIdByChunkBucketId.clear();
         this.pipeSignByPistonCompactId.clear();
-        removeExpiredChunkTickets(true);
+        expireChunkTickets(true);
     }
 
     public void resetCacheLoadCounter() {
@@ -137,7 +128,9 @@ public class BlockCache implements CachedBlockResolver {
 
         if (cachedBlock != CachedBlock.NULL_SENTINEL) {
             if (CachedBlock.shouldContinueToRetainChunks(cachedBlock))
-                ensureChunkIsLoaded(block, () -> addOrTouchChunkTicket(block));
+                ensureChunkIsLoaded(block, () -> addOrTouchChunkTicket(block, false));
+            else
+                addOrTouchChunkTicket(block, true);
 
             return cachedBlock;
         }
@@ -152,7 +145,7 @@ public class BlockCache implements CachedBlockResolver {
                 ++cacheLoadCounter;
             }
 
-            addOrTouchChunkTicket(block);
+            addOrTouchChunkTicket(block, false);
         });
 
         return chunkBucket[relativeId];
@@ -233,31 +226,27 @@ public class BlockCache implements CachedBlockResolver {
         throw new LoadingChunkException();
     }
 
-    private void addOrTouchChunkTicket(Block block) {
+    private void addOrTouchChunkTicket(Block block, boolean doNotCreate) {
         int chunkX = block.getX() >> 4;
         int chunkZ = block.getZ() >> 4;
         var compactChunkId = CompactId.computeWorldlessChunkId(chunkX, chunkZ);
 
-        var existingTicket = chunkTicketByCompactId.get(compactChunkId);
+        var chunkTicket = chunkTicketByCompactId.computeIfAbsent(compactChunkId, k -> new ChunkTicket());
 
-        if (existingTicket != null) {
+        if (chunkTicket.hasChunkSet()) {
+
             if (registry.getContinuedChunkTicketDurationTicks() > 0)
-                existingTicket.expiryTicksStamp = registry.getRelativeTimeTicks() + registry.getContinuedChunkTicketDurationTicks();
+                chunkTicket.expiryTicksStamp = registry.getRelativeTimeTicks() + registry.getContinuedChunkTicketDurationTicks();
 
             return;
         }
 
-        if (registry.getInitialChunkTicketDurationTicks() <= 0)
+
+        if (doNotCreate || registry.getInitialChunkTicketDurationTicks() <= 0)
             return;
 
-        var chunk = block.getChunk();
-
-        var expiryStamp = registry.getRelativeTimeTicks() + registry.getInitialChunkTicketDurationTicks();
-
-        chunkTicketByCompactId.put(compactChunkId, new ChunkTicket(chunk, expiryStamp));
-
-        if (!chunk.addPluginChunkTicket(CraftBookPlugin.inst()))
-            CraftBookPlugin.logger().log(Level.WARNING, "Could not add plugin-ticket to chunk at " + chunk.getX() + " " + chunk.getZ());
+        chunkTicket.setChunk(block.getChunk());
+        chunkTicket.expiryTicksStamp = registry.getRelativeTimeTicks() + registry.getInitialChunkTicketDurationTicks();
     }
 
     private boolean setBlockPower(Block block, boolean state) {
