@@ -10,6 +10,8 @@ import java.util.logging.Level;
 public class ChunkTicket {
 
     private @Nullable Chunk chunk;
+    private boolean didStartPipe;
+
     public long expiryTicksStamp;
 
     public boolean hasChunkSet() {
@@ -22,16 +24,21 @@ public class ChunkTicket {
 
         this.chunk = chunk;
         this.expiryTicksStamp = 0;
+        this.didStartPipe = false;
 
         if (!chunk.addPluginChunkTicket(CraftBookPlugin.inst()))
             CraftBookPlugin.logger().log(Level.WARNING, "Could not add plugin-ticket to chunk at " + chunk.getX() + " " + chunk.getZ());
+    }
+
+    public void updateDidStartPipe(boolean value) {
+        didStartPipe |= value;
     }
 
     public void handleExpiration(int ticksNow, boolean force) {
         if (chunk == null)
             return;
 
-        if (!force && ticksNow < expiryTicksStamp)
+        if (!force && !didStartPipe && ticksNow < expiryTicksStamp)
             return;
 
         if (!chunk.removePluginChunkTicket(CraftBookPlugin.inst()))

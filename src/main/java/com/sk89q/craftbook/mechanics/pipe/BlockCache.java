@@ -133,9 +133,9 @@ public class BlockCache implements CachedBlockResolver {
 
         if (cachedBlock != CachedBlock.NULL_SENTINEL) {
             if (CachedBlock.shouldContinueToRetainChunks(cachedBlock))
-                ensureChunkIsLoaded(block, () -> addOrTouchChunkTicket(block, false));
+                ensureChunkIsLoaded(block, () -> addOrTouchChunkTicket(block, cachedBlock, flags, false));
             else
-                addOrTouchChunkTicket(block, true);
+                addOrTouchChunkTicket(block, cachedBlock, flags, true);
 
             return cachedBlock;
         }
@@ -150,7 +150,7 @@ public class BlockCache implements CachedBlockResolver {
                 ++cacheLoadCounter;
             }
 
-            addOrTouchChunkTicket(block, false);
+            addOrTouchChunkTicket(block, loadedBlock, flags, false);
         });
 
         return chunkBucket[relativeId];
@@ -231,7 +231,15 @@ public class BlockCache implements CachedBlockResolver {
         throw new LoadingChunkException();
     }
 
-    private void addOrTouchChunkTicket(Block block, boolean doNotCreate) {
+    private void addOrTouchChunkTicket(Block block, int cachedBlock, EnumSet<BlockCacheFlag> flags, boolean doNotCreate) {
+        if (flags.contains(BlockCacheFlag.DO_NOT_TOUCH_CHUNK_TICKETS))
+            return;
+
+        if (flags.contains(BlockCacheFlag.ONLY_TOUCH_CHUNK_TICKETS_FOR_INPUT_PISTONS)) {
+            if (!CachedBlock.isMaterial(cachedBlock, Material.STICKY_PISTON))
+                return;
+        }
+
         int chunkX = block.getX() >> 4;
         int chunkZ = block.getZ() >> 4;
         var compactChunkId = CompactId.computeWorldlessChunkId(chunkX, chunkZ);
@@ -239,19 +247,19 @@ public class BlockCache implements CachedBlockResolver {
         var chunkTicket = chunkTicketByCompactId.computeIfAbsent(compactChunkId, k -> new ChunkTicket());
 
         if (chunkTicket.hasChunkSet()) {
-
             if (registry.getContinuedChunkTicketDurationTicks() > 0)
                 chunkTicket.expiryTicksStamp = registry.getRelativeTimeTicks() + registry.getContinuedChunkTicketDurationTicks();
 
+            chunkTicket.updateDidStartPipe(flags.contains(BlockCacheFlag.POSSIBLE_MEMBER_OF_PIPE_START));
             return;
         }
-
 
         if (doNotCreate || registry.getInitialChunkTicketDurationTicks() <= 0)
             return;
 
         chunkTicket.setChunk(block.getChunk());
         chunkTicket.expiryTicksStamp = registry.getRelativeTimeTicks() + registry.getInitialChunkTicketDurationTicks();
+        chunkTicket.updateDidStartPipe(flags.contains(BlockCacheFlag.POSSIBLE_MEMBER_OF_PIPE_START));
     }
 
     private boolean setBlockPower(Block block, boolean state) {
