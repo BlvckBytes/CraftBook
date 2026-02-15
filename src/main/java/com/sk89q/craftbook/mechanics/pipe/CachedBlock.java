@@ -6,12 +6,15 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.Directional;
 import org.bukkit.block.data.Powerable;
+import org.bukkit.block.data.type.Chest;
+import org.jetbrains.annotations.Nullable;
 
 public class CachedBlock {
 
     public static final int NULL_SENTINEL = (1 << 31);
 
     private static final BlockFace[] BLOCK_FACE_VALUES = BlockFace.values();
+    private static final Chest.Type[] CHEST_TYPE_VALUES = Chest.Type.values();
 
     private static int[] presetByOffsetMaterialOrdinal;
     private static int presetMaterialOrdinalOffset;
@@ -21,7 +24,7 @@ public class CachedBlock {
     }
 
     public static boolean isPowerable(int cachedBlock) {
-        return (cachedBlock & (1 << 29)) != 0;
+        return (cachedBlock & (1 << 30)) != 0;
     }
 
     public static boolean hasHandledInputInventory(int cachedBlock) {
@@ -84,7 +87,43 @@ public class CachedBlock {
     }
 
     public static boolean isMaterial(int cachedBlock, Material material) {
-        return ((cachedBlock >> 16) & (8192 - 1)) == material.ordinal();
+        return ((cachedBlock >> 16) & (4096 - 1)) == material.ordinal();
+    }
+
+    public static @Nullable Block getOtherChestBlock(Block chestBlock, Chest.Type chestType, BlockFace chestFacing) {
+        if (chestType == Chest.Type.SINGLE)
+            return null;
+
+        int dx = 0, dz = 0;
+
+        // Left and right are relative to the chest itself, i.e. opposite to what
+        // a player placing the appropriate block would see.
+
+        switch (chestFacing) {
+            case NORTH: // -z
+                dx = (chestType == Chest.Type.LEFT) ? 1 : -1;
+                break;
+            case SOUTH: // +z
+                dx = (chestType == Chest.Type.LEFT) ? -1 : 1;
+                break;
+            case EAST: // +x
+                dz = (chestType == Chest.Type.LEFT) ? 1 : -1;
+                break;
+            case WEST: // -x
+                dz = (chestType == Chest.Type.LEFT) ? -1 : 1;
+                break;
+        }
+
+        return chestBlock.getRelative(dx, 0, dz);
+    }
+
+    public static Chest.Type getChestType(int cachedBlock) {
+        var index = (cachedBlock >> 28) & (4 - 1);
+
+        if (index >= CHEST_TYPE_VALUES.length)
+            return Chest.Type.SINGLE;
+
+        return CHEST_TYPE_VALUES[index];
     }
 
     public static boolean shouldContinueToRetainChunks(int cachedBlock) {
@@ -98,16 +137,21 @@ public class CachedBlock {
         int preset = getPreset(material);
 
         var facing = BlockFace.SELF;
+        var chestType = Chest.Type.SINGLE;
 
         if (blockData instanceof Directional directional)
             facing = directional.getFacing();
+
+        if (blockData instanceof Chest chest)
+            chestType = chest.getType();
 
         var powerable = blockData instanceof Powerable;
 
         return (
             preset
-                | ((powerable ? 1 : 0) << 29)
-                | ((material.ordinal() & (8192 - 1)) << 16)
+                | ((powerable ? 1 : 0) << 30)
+                | ((chestType.ordinal() & (4 - 1)) << 28)
+                | ((material.ordinal() & (4096 - 1)) << 16)
                 | ((facing.ordinal() & (32 - 1)) << 11)
         );
     }

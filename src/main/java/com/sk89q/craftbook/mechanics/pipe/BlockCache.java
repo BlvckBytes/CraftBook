@@ -10,14 +10,13 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.block.Sign;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.Powerable;
+import org.bukkit.block.data.type.Chest;
 import org.bukkit.block.data.type.WallSign;
 import org.bukkit.scheduler.BukkitTask;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.function.Consumer;
-import java.util.logging.Level;
 
 public class BlockCache implements CachedBlockResolver {
 
@@ -65,25 +64,17 @@ public class BlockCache implements CachedBlockResolver {
             priorResetTask.cancel();
     }
 
-    public void removeExpiredChunkTickets(boolean all) {
+    public void expireChunkTickets(boolean force) {
         var now = registry.getRelativeTimeTicks();
 
-        for (var iterator = chunkTicketByCompactId.values().iterator(); iterator.hasNext(); ) {
-            var chunkTicket = iterator.next();
-
-            if (all || (now >= chunkTicket.expiryTicksStamp)) {
-                iterator.remove();
-
-                if (!chunkTicket.chunk.removePluginChunkTicket(CraftBookPlugin.inst()))
-                    CraftBookPlugin.logger().log(Level.WARNING, "Could not remove plugin-ticket from chunk at " + chunkTicket.chunk.getX() + " " + chunkTicket.chunk.getZ());
-            }
-        }
+        for (var chunkTicket : chunkTicketByCompactId.values())
+            chunkTicket.handleExpiration(now, force);
     }
 
     public void disable() {
         this.cachedBlockByRelativeIdByChunkBucketId.clear();
         this.pipeSignByPistonCompactId.clear();
-        removeExpiredChunkTickets(true);
+        expireChunkTickets(true);
     }
 
     public void resetCacheLoadCounter() {
@@ -95,10 +86,7 @@ public class BlockCache implements CachedBlockResolver {
     }
 
     public void invalidateCache(Block block) {
-        var chunkBucket = cachedBlockByRelativeIdByChunkBucketId.get(computeChunkBucketId(block));
-
-        if (chunkBucket != null)
-            chunkBucket[computeRelativeId(block)] = CachedBlock.NULL_SENTINEL;
+        invalidateCacheForSingleBlock(block);
 
         // Signs are cached by their corresponding piston's position, so the following
         // tries to resolve that mounted-on block to then invalidate the pipe-sign.
@@ -114,6 +102,20 @@ public class BlockCache implements CachedBlockResolver {
 
         if (data instanceof WallSign wallSign)
             invalidateSignBlock(block, wallSign.getFacing().getOppositeFace());
+
+        if (data instanceof Chest chest) {
+            var otherChestBlock = CachedBlock.getOtherChestBlock(block, chest.getType(), chest.getFacing());
+
+            if (otherChestBlock != null)
+                invalidateCacheForSingleBlock(otherChestBlock);
+        }
+    }
+
+    private void invalidateCacheForSingleBlock(Block block) {
+        var chunkBucket = cachedBlockByRelativeIdByChunkBucketId.get(computeChunkBucketId(block));
+
+        if (chunkBucket != null)
+            chunkBucket[computeRelativeId(block)] = CachedBlock.NULL_SENTINEL;
     }
 
     private void invalidateSignBlock(Block signBlock, BlockFace mountingFace) {
@@ -125,38 +127,48 @@ public class BlockCache implements CachedBlockResolver {
 
     @Override
     public int getCachedBlock(Block block) throws LoadingChunkException {
+        return getCachedBlock(block, true);
+    }
+
+    public int getCachedBlock(Block block, boolean doTouchChunkTickets) throws LoadingChunkException {
         var bucketId = computeChunkBucketId(block);
 
-        var chunkBucket = cachedBlockByRelativeIdByChunkBucketId.get(bucketId);
-
-        if (chunkBucket == null) {
-            chunkBucket = new int[CHUNK_BUCKET_SIZE];
-            Arrays.fill(chunkBucket, CachedBlock.NULL_SENTINEL);
-            cachedBlockByRelativeIdByChunkBucketId.put(bucketId, chunkBucket);
-        }
+        var chunkBucket = cachedBlockByRelativeIdByChunkBucketId.computeIfAbsent(bucketId, key -> {
+            var newBucket = new int[CHUNK_BUCKET_SIZE];
+            Arrays.fill(newBucket, CachedBlock.NULL_SENTINEL);
+            return newBucket;
+        });
 
         var relativeId = computeRelativeId(block);
         var cachedBlock = chunkBucket[relativeId];
 
         if (cachedBlock != CachedBlock.NULL_SENTINEL) {
+            if (!doTouchChunkTickets)
+                return cachedBlock;
+
             if (CachedBlock.shouldContinueToRetainChunks(cachedBlock))
-                ensureChunkIsLoaded(block);
+                ensureChunkIsLoaded(block, () -> addOrTouchChunkTicket(block, false));
+            else
+                addOrTouchChunkTicket(block, true);
 
             return cachedBlock;
         }
 
-        ensureChunkIsLoaded(block);
+        ensureChunkIsLoaded(block, () -> {
+            var loadedBlock = CachedBlock.fromBlock(block);
 
-        cachedBlock = CachedBlock.fromBlock(block);
+            // Do not cache this intermediate state - it can trip the whole system up.
+            // Let's simply get the real state from the world until it finalized.
+            if (!CachedBlock.isMaterial(loadedBlock, Material.MOVING_PISTON)) {
+                chunkBucket[relativeId] = loadedBlock;
+                ++cacheLoadCounter;
+            }
 
-        // Do not cache this intermediate state - it can trip the whole system up.
-        // Let's simply get the real state from the world until it finalized.
-        if (!CachedBlock.isMaterial(cachedBlock, Material.MOVING_PISTON)) {
-            chunkBucket[relativeId] = cachedBlock;
-            ++cacheLoadCounter;
-        }
+            if (doTouchChunkTickets)
+                addOrTouchChunkTicket(block, false);
+        });
 
-        return cachedBlock;
+        return chunkBucket[relativeId];
     }
 
     public PipeSign getSignOnPiston(Block pistonBlock, int cachedPistonBlock, @Nullable List<PipeNotification> notificationOutput) throws LoadingChunkException {
@@ -214,54 +226,53 @@ public class BlockCache implements CachedBlockResolver {
         return cachedSign;
     }
 
-    private void ensureChunkIsLoaded(Block block) throws LoadingChunkException {
+    public void onItemsCarryingPipeStart(Block block) {
+        accessChunkTicket(block).onPipeStart();
+    }
+
+    private ChunkTicket accessChunkTicket(Block block) {
+        int chunkX = block.getX() >> 4;
+        int chunkZ = block.getZ() >> 4;
+        var compactChunkId = CompactId.computeWorldlessChunkId(chunkX, chunkZ);
+
+        return chunkTicketByCompactId.computeIfAbsent(compactChunkId, k -> new ChunkTicket());
+    }
+
+    private void ensureChunkIsLoaded(Block block, @Nullable Runnable whenLoadedHandler) throws LoadingChunkException {
         int chunkX = block.getX() >> 4;
         int chunkZ = block.getZ() >> 4;
         World world = block.getWorld();
 
-        var compactChunkId = CompactId.computeWorldlessChunkId(chunkX, chunkZ);
-
         if (world.isChunkLoaded(chunkX, chunkZ)) {
-            addOrTouchChunkTicket(block, compactChunkId);
+            if (whenLoadedHandler != null)
+                whenLoadedHandler.run();
+
             return;
         }
 
-        if (registry.getChunkAtAsync != null) {
-            try {
-                registry.getChunkAtAsync.invoke(world, chunkX, chunkZ, true, (Consumer<Chunk>) chunk -> addOrTouchChunkTicket(block, compactChunkId));
-            } catch (Throwable e) {
-                CraftBookPlugin.logger().log(Level.SEVERE, "An error occurred while trying to load the chunk at " + chunkX + "," + chunkZ + " asynchronously ", e);
-                return;
-            }
-        } else {
-            addOrTouchChunkTicket(block, compactChunkId);
-        }
+        world.getChunkAtAsync(chunkX, chunkZ, true, chunk -> {
+            if (whenLoadedHandler != null)
+                whenLoadedHandler.run();
+        });
 
-        // Stop walking the pipe despite loading sync also, as to not completely starve the tick-loop
         throw new LoadingChunkException();
     }
 
-    private void addOrTouchChunkTicket(Block block, long compactChunkId) {
-        var existingTicket = chunkTicketByCompactId.get(compactChunkId);
+    private void addOrTouchChunkTicket(Block block, boolean doNotCreate) {
+        var chunkTicket = accessChunkTicket(block);
 
-        if (existingTicket != null) {
+        if (chunkTicket.hasChunkSet()) {
             if (registry.getContinuedChunkTicketDurationTicks() > 0)
-                existingTicket.expiryTicksStamp = registry.getRelativeTimeTicks() + registry.getContinuedChunkTicketDurationTicks();
+                chunkTicket.expiryTicksStamp = registry.getRelativeTimeTicks() + registry.getContinuedChunkTicketDurationTicks();
 
             return;
         }
 
-        if (registry.getInitialChunkTicketDurationTicks() <= 0)
+        if (doNotCreate || registry.getInitialChunkTicketDurationTicks() <= 0)
             return;
 
-        var chunk = block.getChunk();
-
-        var expiryStamp = registry.getRelativeTimeTicks() + registry.getInitialChunkTicketDurationTicks();
-
-        chunkTicketByCompactId.put(compactChunkId, new ChunkTicket(chunk, expiryStamp));
-
-        if (!chunk.addPluginChunkTicket(CraftBookPlugin.inst()))
-            CraftBookPlugin.logger().log(Level.WARNING, "Could not add plugin-ticket to chunk at " + chunk.getX() + " " + chunk.getZ());
+        chunkTicket.setChunk(block.getChunk());
+        chunkTicket.expiryTicksStamp = registry.getRelativeTimeTicks() + registry.getInitialChunkTicketDurationTicks();
     }
 
     private boolean setBlockPower(Block block, boolean state) {

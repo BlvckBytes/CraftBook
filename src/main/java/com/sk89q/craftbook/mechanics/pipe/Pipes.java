@@ -364,7 +364,10 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
         int cachedContainerBlock;
 
         try {
-            int cachedInputPistonBlock = currentBlockCache.getCachedBlock(inputPistonBlock);
+            // Input-blocks (sticky-piston and corresponding container) never touch chunk-tickets by themselves, as to
+            // avoid self-retaining farms that continue to produce transported items unendingly; these will later also
+            // invalidate existing tickets for their corresponding chunks.
+            int cachedInputPistonBlock = currentBlockCache.getCachedBlock(inputPistonBlock, false);
 
             if (!CachedBlock.isMaterial(cachedInputPistonBlock, Material.STICKY_PISTON))
                 return;
@@ -372,7 +375,7 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
             sign = currentBlockCache.getSignOnPiston(inputPistonBlock, cachedInputPistonBlock, notificationOutput);
 
             containerBlock = overrideContainerBlock != null ? overrideContainerBlock : inputPistonBlock.getRelative(CachedBlock.getFacing(cachedInputPistonBlock));
-            cachedContainerBlock = currentBlockCache.getCachedBlock(containerBlock);
+            cachedContainerBlock = currentBlockCache.getCachedBlock(containerBlock, false);
         }
         // If the very beginning of the pipe already (partially) is within an unloaded chunk,
         // there's no need to start the process at all.
@@ -390,6 +393,7 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
         // Suck items from container-block
 
         InventoryHolder inventoryHolder = null;
+        Block secondaryInventoryBlock = null;
         Jukebox jukebox = null;
         Levelled levelled = null;
 
@@ -424,6 +428,12 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
                     }
                 }
             } else {
+                secondaryInventoryBlock = CachedBlock.getOtherChestBlock(
+                  containerBlock,
+                  CachedBlock.getChestType(cachedContainerBlock),
+                  CachedBlock.getFacing(cachedContainerBlock)
+                );
+
                 for (int slot = 0; slot < blockInventory.getSize(); ++slot) {
                     ItemStack stack = blockInventory.getItem(slot);
 
@@ -489,6 +499,18 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
                 CraftBookPlugin.logger().log(Level.SEVERE, "An error occurred while trying to locate exit-nodes for an item in a pipe", e);
             }
         }
+
+        // Do not mark the corresponding chunk-tickets earlier, as to not needlessly unload
+        // chunks which did not even cause a proper item-carrying pipe-start; also, wait for all
+        // other blocks as required for locating exit-nodes to have called into the cache, as to
+        // possibly set-up chunk-tickets which we can then mark as having started a pipe.
+        currentBlockCache.onItemsCarryingPipeStart(inputPistonBlock);
+        currentBlockCache.onItemsCarryingPipeStart(containerBlock);
+
+        // In case of sucking from a double-chest, the container is made up of two individual blocks who
+        // may reside in different chunks that could both have an active ticket which each needs to be marked.
+        if (secondaryInventoryBlock != null)
+            currentBlockCache.onItemsCarryingPipeStart(secondaryInventoryBlock);
 
         // Try to put leftovers back into the block and drop the rest at the input-piston.
 
@@ -678,7 +700,7 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
         int cachedDestinationBlock;
 
         try {
-            cachedDestinationBlock = worldBlockCache.getCachedBlock(destinationBlock);
+            cachedDestinationBlock = worldBlockCache.getCachedBlock(destinationBlock, false);
         } catch (LoadingChunkException e) {
             event.setCancelled(true);
             return;
@@ -696,7 +718,7 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
         int cachedHopperTargetBlock;
 
         try {
-            cachedHopperTargetBlock = worldBlockCache.getCachedBlock(hopperTargetBlock);
+            cachedHopperTargetBlock = worldBlockCache.getCachedBlock(hopperTargetBlock, false);
         } catch (LoadingChunkException e) {
             event.setCancelled(true);
             return;
