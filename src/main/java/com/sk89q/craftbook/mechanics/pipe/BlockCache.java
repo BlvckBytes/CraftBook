@@ -10,6 +10,7 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.block.Sign;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.Powerable;
+import org.bukkit.block.data.type.Chest;
 import org.bukkit.block.data.type.WallSign;
 import org.bukkit.scheduler.BukkitTask;
 import org.jetbrains.annotations.Nullable;
@@ -85,10 +86,7 @@ public class BlockCache implements CachedBlockResolver {
     }
 
     public void invalidateCache(Block block) {
-        var chunkBucket = cachedBlockByRelativeIdByChunkBucketId.get(computeChunkBucketId(block));
-
-        if (chunkBucket != null)
-            chunkBucket[computeRelativeId(block)] = CachedBlock.NULL_SENTINEL;
+        invalidateCacheForSingleBlock(block);
 
         // Signs are cached by their corresponding piston's position, so the following
         // tries to resolve that mounted-on block to then invalidate the pipe-sign.
@@ -104,6 +102,20 @@ public class BlockCache implements CachedBlockResolver {
 
         if (data instanceof WallSign wallSign)
             invalidateSignBlock(block, wallSign.getFacing().getOppositeFace());
+
+        if (data instanceof Chest chest) {
+            var otherChestBlock = CachedBlock.getOtherChestBlock(block, chest.getType(), chest.getFacing());
+
+            if (otherChestBlock != null)
+                invalidateCacheForSingleBlock(otherChestBlock);
+        }
+    }
+
+    private void invalidateCacheForSingleBlock(Block block) {
+        var chunkBucket = cachedBlockByRelativeIdByChunkBucketId.get(computeChunkBucketId(block));
+
+        if (chunkBucket != null)
+            chunkBucket[computeRelativeId(block)] = CachedBlock.NULL_SENTINEL;
     }
 
     private void invalidateSignBlock(Block signBlock, BlockFace mountingFace) {

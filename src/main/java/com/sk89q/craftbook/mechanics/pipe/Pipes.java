@@ -393,6 +393,7 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
         // Suck items from container-block
 
         InventoryHolder inventoryHolder = null;
+        Block secondaryInventoryBlock = null;
         Jukebox jukebox = null;
         Levelled levelled = null;
 
@@ -427,6 +428,12 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
                     }
                 }
             } else {
+                secondaryInventoryBlock = CachedBlock.getOtherChestBlock(
+                  containerBlock,
+                  CachedBlock.getChestType(cachedContainerBlock),
+                  CachedBlock.getFacing(cachedContainerBlock)
+                );
+
                 for (int slot = 0; slot < blockInventory.getSize(); ++slot) {
                     ItemStack stack = blockInventory.getItem(slot);
 
@@ -499,6 +506,11 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
         // possibly set-up chunk-tickets which we can then mark as having started a pipe.
         currentBlockCache.onItemsCarryingPipeStart(inputPistonBlock);
         currentBlockCache.onItemsCarryingPipeStart(containerBlock);
+
+        // In case of sucking from a double-chest, the container is made up of two individual blocks who
+        // may reside in different chunks that could both have an active ticket which each needs to be marked.
+        if (secondaryInventoryBlock != null)
+            currentBlockCache.onItemsCarryingPipeStart(secondaryInventoryBlock);
 
         // Try to put leftovers back into the block and drop the rest at the input-piston.
 
