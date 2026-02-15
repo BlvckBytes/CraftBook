@@ -26,10 +26,19 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
     private static boolean hasWarned = false;
     private static boolean hasWarnedNoResult = false;
 
+    static {
+        if (Material.values().length > 4096)
+            throw new IllegalStateException("There are more than 4K materials, which exceeds our expectation - cannot bit-pack the matrix into two longs without a loss of information!");
+    }
+
     private Block cachedDispenserOrDropperBlock;
     private Inventory cachedDispenserOrDropperInventory;
     private Block cachedOutputBlock;
+
     private CachedRecipe cachedRecipe;
+    private long cachedRecipeMatrixMsb;
+    private long cachedRecipeMatrixLsb;
+    private TriState wasMatrixInvalid = TriState.NULL;
 
     public AutomaticCrafter(Server server, ChangedSign block, ICFactory factory) {
 
@@ -59,8 +68,46 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
         state.setOutput(0, doStuff());
     }
 
+    private long getSlotTypeOrdinal(int slot) {
+        var item = cachedDispenserOrDropperInventory.getItem(slot);
+
+        if (item == null)
+            return Material.AIR.ordinal();
+
+        return item.getType().ordinal();
+    }
+
+    private long computeMatrixMsb() {
+        return (
+          getSlotTypeOrdinal(5)
+            | (getSlotTypeOrdinal(6) << 12)
+            | (getSlotTypeOrdinal(7) << (12 * 2))
+            | (getSlotTypeOrdinal(8) << (12 * 3))
+        );
+    }
+
+    private long computeMatrixLsb() {
+        return (
+          getSlotTypeOrdinal(0)
+            | (getSlotTypeOrdinal(1) << 12)
+            | (getSlotTypeOrdinal(2) << (12 * 2))
+            | (getSlotTypeOrdinal(3) << (12 * 3))
+            | (getSlotTypeOrdinal(4) << (12 * 4))
+        );
+    }
+
     private void computeRecipe() {
         // Only called from craft/collect - caches already setup
+
+        var priorRecipeMatrixMsb = this.cachedRecipeMatrixMsb;
+        var priorRecipeMatrixLsb = this.cachedRecipeMatrixLsb;
+
+        this.cachedRecipeMatrixMsb = computeMatrixMsb();
+        this.cachedRecipeMatrixLsb = computeMatrixLsb();
+
+        // Do not retry malformed matrix-constellations over and over again - remember the failure and only retry after a reconfiguration.
+        if (wasMatrixInvalid == TriState.TRUE && priorRecipeMatrixMsb == cachedRecipeMatrixMsb && priorRecipeMatrixLsb == cachedRecipeMatrixLsb)
+            return;
 
         try {
             for (var cachedRecipe : RecipeCache.getRecipes()) {
@@ -68,13 +115,16 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
                     continue;
 
                 this.cachedRecipe = cachedRecipe;
-                break;
+                this.wasMatrixInvalid = TriState.FALSE;
+                return;
             }
         } catch (Exception e) {
             CraftBookBukkitUtil.printStacktrace(e);
             // I'm not quite sure why we need this, but let's keep it.
             cachedDispenserOrDropperInventory.setContents(cachedDispenserOrDropperInventory.getContents());
         }
+
+        this.wasMatrixInvalid = TriState.TRUE;
     }
 
     public boolean craft() {
@@ -94,7 +144,9 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
 
         if (cachedRecipe == null) return false;
 
-        if (!isValidRecipe(cachedRecipe)) {
+        var doesMatrixEqual = cachedRecipeMatrixMsb == computeMatrixMsb() && cachedRecipeMatrixLsb == computeMatrixLsb();
+
+        if (!doesMatrixEqual && !isValidRecipe(cachedRecipe)) {
             cachedRecipe = null;
             return craft();
         }
