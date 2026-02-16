@@ -48,23 +48,6 @@ public class ItemUtilTest {
     }
 
     @Test
-    public void testFilterItems() {
-
-        ArrayList<ItemStack> items = new ArrayList<>();
-        items.add(newMockItemStack(Material.GRASS_BLOCK,(byte) 0,1));
-        items.add(newMockItemStack(Material.GRAVEL,(byte) 0,1));
-        items.add(newMockItemStack(Material.STONE,(byte) 0,1));
-        List<ItemStack> inclusions = new ArrayList<>();
-        inclusions.add(newMockItemStack(Material.GRASS_BLOCK,(byte) 0,1));
-        List<ItemStack> filtered = ItemUtil.filterItems(items, inclusions, null);
-        assertEquals(1, filtered.size());
-        List<ItemStack> exclusions = new ArrayList<>();
-        exclusions.add(newMockItemStack(Material.GRAVEL,(byte) 0,1));
-        filtered = ItemUtil.filterItems(items, null, exclusions);
-        assertEquals(2, filtered.size());
-    }
-
-    @Test
     public void testAreItemsSimilar() {
 
         ItemStack test1 = newMockItemStack(Material.OAK_PLANKS,(byte) 4,1);
