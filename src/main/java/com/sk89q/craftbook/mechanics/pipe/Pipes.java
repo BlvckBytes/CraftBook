@@ -152,12 +152,15 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
                     return EnumerationDecision.CONTINUE;
             }
 
-            List<ItemStack> filteredPipeItems = new ArrayList<>(VerifyUtil.withoutNulls(ItemUtil.filterItems(itemsInPipe, sign.includeFilters, sign.excludeFilters)));
+            PipePredicateEvent predicateEvent = new PipePredicateEvent(pipeBlock, sign.includeFilters, sign.excludeFilters);
+            Bukkit.getPluginManager().callEvent(predicateEvent);
 
-            PipeFilterEvent filterEvent = new PipeFilterEvent(pipeBlock, itemsInPipe, sign.includeFilters, sign.excludeFilters, filteredPipeItems);
-            Bukkit.getPluginManager().callEvent(filterEvent);
+            List<ItemStack> filteredPipeItems = new ArrayList<>(itemsInPipe.size());
 
-            filteredPipeItems = filterEvent.getFilteredItems();
+            for (var itemInPipe : itemsInPipe) {
+                if (predicateEvent.testItem(itemInPipe))
+                    filteredPipeItems.add(itemInPipe);
+            }
 
             if (filteredPipeItems.isEmpty())
                 return EnumerationDecision.CONTINUE;
@@ -390,6 +393,9 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
         LongSet visitedBlocks = new LongOpenHashSet();
         visitedBlocks.add(CompactId.computeWorldlessBlockId(containerBlock));
 
+        PipePredicateEvent predicateEvent = new PipePredicateEvent(inputPistonBlock, sign.includeFilters, sign.excludeFilters);
+        Bukkit.getPluginManager().callEvent(predicateEvent);
+
         // Suck items from container-block
 
         InventoryHolder inventoryHolder = null;
@@ -407,7 +413,7 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
             if (blockInventory instanceof FurnaceInventory furnaceInventory) {
                 ItemStack result = furnaceInventory.getResult();
 
-                if (ItemUtil.isStackValid(result) && ItemUtil.doesItemPassFilters(result, sign.includeFilters, sign.excludeFilters)) {
+                if (predicateEvent.testItem(result)) {
                     itemsInPipe.add(result);
                     furnaceInventory.setResult(null);
                 }
@@ -418,7 +424,7 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
                     for (int i = 0; i < 3; ++i) {
                         ItemStack item = inventory.getItem(i);
 
-                        if (ItemUtil.isStackValid(item) && ItemUtil.doesItemPassFilters(item, sign.includeFilters, sign.excludeFilters)) {
+                        if (predicateEvent.testItem(item)) {
                             itemsInPipe.add(item);
                             inventory.setItem(i, null);
 
@@ -437,10 +443,7 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
                 for (int slot = 0; slot < blockInventory.getSize(); ++slot) {
                     ItemStack stack = blockInventory.getItem(slot);
 
-                    if (!ItemUtil.isStackValid(stack))
-                        continue;
-
-                    if (!ItemUtil.doesItemPassFilters(stack, sign.includeFilters, sign.excludeFilters))
+                    if (!predicateEvent.testItem(stack))
                         continue;
 
                     itemsInPipe.add(stack);
@@ -454,17 +457,25 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
             jukebox = (Jukebox) containerBlock.getState();
 
             if (jukebox.hasRecord()) {
-                itemsInPipe.add(jukebox.getRecord());
-                jukebox.setRecord(null);
-                jukebox.update();
+                var recordItem = jukebox.getRecord();
+
+                if (predicateEvent.testItem(recordItem)) {
+                    itemsInPipe.add(recordItem);
+                    jukebox.setRecord(null);
+                    jukebox.update();
+                }
             }
         } else if (CachedBlock.isMaterial(cachedContainerBlock, Material.COMPOSTER)) {
             levelled = (Levelled) containerBlock.getBlockData();
 
             if (levelled.getLevel() == levelled.getMaximumLevel()) {
-                itemsInPipe.add(new ItemStack(Material.BONE_MEAL, 1));
-                levelled.setLevel(0);
-                containerBlock.setBlockData(levelled);
+                var boneMealItem = new ItemStack(Material.BONE_MEAL, 1);
+
+                if (predicateEvent.testItem(boneMealItem)) {
+                    itemsInPipe.add(boneMealItem);
+                    levelled.setLevel(0);
+                    containerBlock.setBlockData(levelled);
+                }
             }
         }
 
