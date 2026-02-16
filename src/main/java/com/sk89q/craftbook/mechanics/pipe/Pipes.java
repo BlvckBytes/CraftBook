@@ -418,19 +418,17 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
                     furnaceInventory.setResult(null);
                 }
             } else if (inventoryHolder instanceof BrewingStand brewingStand) {
-                if (brewingStand.getBrewingTime() <= 0) {
-                    BrewerInventory inventory = brewingStand.getInventory();
+                BrewerInventory inventory = brewingStand.getInventory();
 
-                    for (int i = 0; i < 3; ++i) {
-                        ItemStack item = inventory.getItem(i);
+                for (int i = 0; i < 3; ++i) {
+                    ItemStack item = inventory.getItem(i);
 
-                        if (predicateEvent.testItem(item)) {
-                            itemsInPipe.add(item);
-                            inventory.setItem(i, null);
+                    if (predicateEvent.testItem(item)) {
+                        itemsInPipe.add(item);
+                        inventory.setItem(i, null);
 
-                            if (pipeStackPerPull)
-                                break;
-                        }
+                        if (pipeStackPerPull)
+                            break;
                     }
                 }
             } else {
