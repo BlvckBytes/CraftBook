@@ -40,6 +40,28 @@ import java.util.UUID;
  */
 public class Teleporter extends AbstractCraftBookMechanic {
 
+    private record BlockOffset(int modX, int modY, int modZ) {
+        BlockOffset(BlockFace face) {
+            this(face.getModX(), face.getModY(), face.getModZ());
+        }
+
+        BlockOffset add(int modX, int modY, int modZ) {
+            return new BlockOffset(this.modX + modX, this.modY + modY, this.modZ + modZ);
+        }
+
+        Block getRelative(Block origin) {
+            return origin.getRelative(modX, modY, modZ);
+        }
+    }
+
+    private static final BlockOffset[] PRESSURE_PLATE_SIGN_OFFSETS = {
+      new BlockOffset(BlockFace.SELF).add(0, -2, 0),
+      new BlockOffset(BlockFace.NORTH).add(0, -2, 0),
+      new BlockOffset(BlockFace.EAST).add(0, -2, 0),
+      new BlockOffset(BlockFace.SOUTH).add(0, -2, 0),
+      new BlockOffset(BlockFace.WEST).add(0, -2, 0)
+    };
+
     private final Map<UUID, Long> lastTeleportByPlayerId = new HashMap<>();
 
     @EventHandler(priority = EventPriority.HIGH)
@@ -101,7 +123,6 @@ public class Teleporter extends AbstractCraftBookMechanic {
         Block trigger = null;
 
         boolean noBack = false;
-        boolean isPressurePlate = false;
 
         if (event.getAction() == Action.RIGHT_CLICK_BLOCK && SignUtil.isSign(event.getClickedBlock())) {
             if (event.getHand() != EquipmentSlot.HAND) return;
@@ -131,25 +152,33 @@ public class Teleporter extends AbstractCraftBookMechanic {
                 trigger = sign;
             }
         } else if (Tag.PRESSURE_PLATES.isTagged(event.getClickedBlock().getType())) {
-            localPlayer = CraftBookPlugin.inst().wrapPlayer(event.getPlayer());
-            Block sign = event.getClickedBlock().getRelative(0, -2, 0);
-
             var lastTeleport = lastTeleportByPlayerId.get(event.getPlayer().getUniqueId());
 
             if (lastTeleport != null && System.currentTimeMillis() - lastTeleport < 1000)
                 return;
 
-            if (SignUtil.isSign(sign)) {
-                ChangedSign s = CraftBookBukkitUtil.toChangedSign(sign);
-                if (!s.getLine(1).equals("[Teleporter]")) return;
-                String[] pos = RegexUtil.COLON_PATTERN.split(s.getLine(2));
-                noBack = s.getLine(3).equalsIgnoreCase("no-back");
-                isPressurePlate = true;
-                if (pos.length <= 2) {
-                    localPlayer.printError("mech.teleport.invalidcoords");
-                    return;
+            localPlayer = CraftBookPlugin.inst().wrapPlayer(event.getPlayer());
+
+            for (var offset : PRESSURE_PLATE_SIGN_OFFSETS) {
+                var sign = offset.getRelative(event.getClickedBlock());
+
+                if (SignUtil.isSign(sign)) {
+                    ChangedSign s = CraftBookBukkitUtil.toChangedSign(sign);
+
+                    if (!s.getLine(1).equals("[Teleporter]"))
+                        continue;
+
+                    String[] pos = RegexUtil.COLON_PATTERN.split(s.getLine(2));
+                    noBack = s.getLine(3).equalsIgnoreCase("no-back");
+
+                    if (pos.length <= 2) {
+                        localPlayer.printError("mech.teleport.invalidcoords");
+                        return;
+                    }
+
+                    trigger = sign;
+                    break;
                 }
-                trigger = sign;
             }
         } else
             return;
@@ -213,10 +242,19 @@ public class Teleporter extends AbstractCraftBookMechanic {
                     return;
                 }
             } else if (Tag.PRESSURE_PLATES.isTagged(location.getType())) {
-                Block sign = location.getRelative(0, -2, 0);
-                if (!checkTeleportSign(player, sign)) {
-                    return;
+                var hadValidSign = false;
+
+                for (var offset : PRESSURE_PLATE_SIGN_OFFSETS) {
+                    Block sign = offset.getRelative(location);
+
+                    if (checkTeleportSign(player, sign)) {
+                        hadValidSign = true;
+                        break;
+                    }
                 }
+
+                if (!hadValidSign)
+                    return;
             } else {
                 player.printError("mech.teleport.sign");
                 return;
