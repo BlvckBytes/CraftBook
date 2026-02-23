@@ -133,7 +133,7 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
                 return EnumerationDecision.CONTINUE;
 
             Block putBlock = pipeBlock.getRelative(CachedBlock.getFacing(cachedPipeBlock));
-            int cachedPutBlock = currentBlockCache.getCachedBlock(putBlock);
+            int cachedPutBlock = currentBlockCache.getCachedBlock(putBlock, true);
             boolean isSubPipe = CachedBlock.isTube(cachedPutBlock) && !CachedBlock.isPane(cachedPutBlock);
 
             // Add the sub-pipe tube-block to the visited-set as to avoid it being walked into again
@@ -370,7 +370,7 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
             // Input-blocks (sticky-piston and corresponding container) never touch chunk-tickets by themselves, as to
             // avoid self-retaining farms that continue to produce transported items unendingly; these will later also
             // invalidate existing tickets for their corresponding chunks.
-            int cachedInputPistonBlock = currentBlockCache.getCachedBlock(inputPistonBlock, false);
+            int cachedInputPistonBlock = currentBlockCache.getCachedBlock(inputPistonBlock);
 
             if (!CachedBlock.isMaterial(cachedInputPistonBlock, Material.STICKY_PISTON))
                 return;
@@ -378,7 +378,7 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
             sign = currentBlockCache.getSignOnPiston(inputPistonBlock, cachedInputPistonBlock, notificationOutput);
 
             containerBlock = overrideContainerBlock != null ? overrideContainerBlock : inputPistonBlock.getRelative(CachedBlock.getFacing(cachedInputPistonBlock));
-            cachedContainerBlock = currentBlockCache.getCachedBlock(containerBlock, false);
+            cachedContainerBlock = currentBlockCache.getCachedBlock(containerBlock);
         }
         // If the very beginning of the pipe already (partially) is within an unloaded chunk,
         // there's no need to start the process at all.
@@ -709,7 +709,7 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
         int cachedDestinationBlock;
 
         try {
-            cachedDestinationBlock = worldBlockCache.getCachedBlock(destinationBlock, false);
+            cachedDestinationBlock = worldBlockCache.getCachedBlock(destinationBlock);
         } catch (LoadingChunkException e) {
             event.setCancelled(true);
             return;
@@ -727,7 +727,7 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
         int cachedHopperTargetBlock;
 
         try {
-            cachedHopperTargetBlock = worldBlockCache.getCachedBlock(hopperTargetBlock, false);
+            cachedHopperTargetBlock = worldBlockCache.getCachedBlock(hopperTargetBlock);
         } catch (LoadingChunkException e) {
             event.setCancelled(true);
             return;

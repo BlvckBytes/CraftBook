@@ -127,7 +127,7 @@ public class BlockCache implements CachedBlockResolver {
 
     @Override
     public int getCachedBlock(Block block) throws LoadingChunkException {
-        return getCachedBlock(block, true);
+        return getCachedBlock(block, false);
     }
 
     public int getCachedBlock(Block block, boolean doTouchChunkTickets) throws LoadingChunkException {
