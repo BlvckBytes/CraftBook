@@ -151,7 +151,7 @@ public class Teleporter extends AbstractCraftBookMechanic {
                 }
                 trigger = sign;
             }
-        } else if (Tag.PRESSURE_PLATES.isTagged(event.getClickedBlock().getType())) {
+        } else if (event.getAction() == Action.PHYSICAL && Tag.PRESSURE_PLATES.isTagged(event.getClickedBlock().getType())) {
             var lastTeleport = lastTeleportByPlayerId.get(event.getPlayer().getUniqueId());
 
             if (lastTeleport != null && System.currentTimeMillis() - lastTeleport < 1000)
