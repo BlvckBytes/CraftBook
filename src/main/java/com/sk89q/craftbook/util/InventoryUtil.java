@@ -58,6 +58,9 @@ public class InventoryUtil {
         var inventory = container.getInventory();
 
         for (var stack : stacks) {
+            if (stack == null)
+                continue;
+
             // Shulker-boxes do not nest
             if (isAddingToShulkerBox && ItemUtil.isShulkerBox(stack.getType())) {
                 leftovers.add(stack);
