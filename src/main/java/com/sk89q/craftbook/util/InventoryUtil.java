@@ -146,13 +146,13 @@ public class InventoryUtil {
 
         for(ItemStack stack : stacks) {
             BrewerInventory inv = brewingStand.getInventory();
-            if (ItemUtil.isAPotionIngredient(stack) && InventoryUtil.fitsInSlot(stack, inv.getIngredient())) {
+            if (ItemUtil.isAPotionIngredient(stack)) {
                 if (inv.getIngredient() == null) {
                     inv.setIngredient(stack);
                 } else {
                     leftovers.add(ItemUtil.addToStack(inv.getIngredient(), stack));
                 }
-            } else if (stack.getType() == Material.BLAZE_POWDER && InventoryUtil.fitsInSlot(stack, inv.getFuel())) {
+            } else if (stack.getType() == Material.BLAZE_POWDER) {
                 if (inv.getFuel() == null) {
                     inv.setFuel(stack);
                 } else {
@@ -338,18 +338,6 @@ public class InventoryUtil {
         }
 
         return leftovers.isEmpty();
-    }
-
-    /**
-     * Checks whether the itemstack can easily stack onto the other itemstack.
-     * 
-     * @param stack The stack to add.
-     * @param slot The base stack.
-     * @return whether it can be added or not.
-     */
-    public static boolean fitsInSlot(ItemStack stack, ItemStack slot) {
-
-        return slot == null || ItemUtil.areItemsIdentical(stack, slot) && stack.getAmount() + slot.getAmount() <= stack.getMaxStackSize();
     }
 
     /**
