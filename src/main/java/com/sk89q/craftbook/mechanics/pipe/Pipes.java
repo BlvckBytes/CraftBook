@@ -403,7 +403,11 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
         Jukebox jukebox = null;
         Levelled levelled = null;
 
-        if (
+        //noinspection StatementWithEmptyBody
+        if (wasRequest && !itemsInPipe.isEmpty()) {
+            // Do not try to suck a container when an external request provided items already, such
+            // that we are also not going to try to put them back - the caller handles leftovers.
+        } else if (
             CachedBlock.hasHandledInputInventory(cachedContainerBlock)
                 && containerBlock.getState() instanceof InventoryHolder holder
         ) {
