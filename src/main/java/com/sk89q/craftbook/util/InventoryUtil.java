@@ -141,44 +141,55 @@ public class InventoryUtil {
      * @return The stacks that could not be added.
      */
     public static List<ItemStack> addItemsToBrewingStand(BrewingStand brewingStand, Iterable<ItemStack> stacks) {
-
         List<ItemStack> leftovers = new ArrayList<>();
 
-        for(ItemStack stack : stacks) {
+        stackLoop: for (ItemStack stack : stacks) {
             BrewerInventory inv = brewingStand.getInventory();
+
             if (ItemUtil.isAPotionIngredient(stack)) {
                 if (inv.getIngredient() == null) {
                     inv.setIngredient(stack);
-                } else {
-                    leftovers.add(ItemUtil.addToStack(inv.getIngredient(), stack));
+                    continue;
                 }
-            } else if (stack.getType() == Material.BLAZE_POWDER) {
+
+                stack = ItemUtil.addToStack(inv.getIngredient(), stack);
+
+                if (stack == null)
+                    continue;
+            }
+
+            if (stack.getType() == Material.BLAZE_POWDER) {
                 if (inv.getFuel() == null) {
                     inv.setFuel(stack);
-                } else {
-                    leftovers.add(ItemUtil.addToStack(inv.getFuel(), stack));
+                    continue;
                 }
-            } else if (stack.getType() == Material.GLASS_BOTTLE
+
+                stack = ItemUtil.addToStack(inv.getFuel(), stack);
+
+                if (stack == null)
+                    continue;
+            }
+
+            if (stack.getType() == Material.GLASS_BOTTLE
                     || stack.getType() == Material.POTION
                     || stack.getType() == Material.LINGERING_POTION
                     || stack.getType() == Material.SPLASH_POTION) {
                 for (int i = 0; i < 3; i++) {
-                    if (stack == null) {
-                        break;
-                    }
-                    if (inv.getItem(i) == null) {
+                    var currentItem = inv.getItem(i);
+
+                    if (currentItem == null) {
                         inv.setItem(i, stack);
-                        stack = null;
-                    } else {
-                        stack = ItemUtil.addToStack(inv.getItem(i), stack);
+                        continue stackLoop;
                     }
+
+                    stack = ItemUtil.addToStack(currentItem, stack);
+
+                    if (stack == null)
+                        continue stackLoop;
                 }
-                if (stack != null) {
-                    leftovers.add(stack);
-                }
-            } else {
-                leftovers.add(stack);
             }
+
+            leftovers.add(stack);
         }
 
         return leftovers;
