@@ -143,13 +143,8 @@ public class BlockCache implements CachedBlockResolver {
         var cachedBlock = chunkBucket[relativeId];
 
         if (cachedBlock != CachedBlock.NULL_SENTINEL) {
-            if (!doTouchChunkTickets)
-                return cachedBlock;
-
-            if (CachedBlock.shouldContinueToRetainChunks(cachedBlock))
-                ensureChunkIsLoaded(block, () -> addOrTouchChunkTicket(block, false));
-            else
-                addOrTouchChunkTicket(block, true);
+            if (doTouchChunkTickets && CachedBlock.shouldContinueToRetainChunks(cachedBlock))
+                ensureChunkIsLoaded(block, () -> addOrTouchChunkTicket(block));
 
             return cachedBlock;
         }
@@ -164,8 +159,7 @@ public class BlockCache implements CachedBlockResolver {
                 ++cacheLoadCounter;
             }
 
-            if (doTouchChunkTickets)
-                addOrTouchChunkTicket(block, false);
+            addOrTouchChunkTicket(block);
         });
 
         return chunkBucket[relativeId];
@@ -258,7 +252,7 @@ public class BlockCache implements CachedBlockResolver {
         throw new LoadingChunkException();
     }
 
-    private void addOrTouchChunkTicket(Block block, boolean doNotCreate) {
+    private void addOrTouchChunkTicket(Block block) {
         var chunkTicket = accessChunkTicket(block);
 
         if (chunkTicket.hasChunkSet()) {
@@ -268,7 +262,7 @@ public class BlockCache implements CachedBlockResolver {
             return;
         }
 
-        if (doNotCreate || registry.getInitialChunkTicketDurationTicks() <= 0)
+        if (registry.getInitialChunkTicketDurationTicks() <= 0)
             return;
 
         chunkTicket.setChunk(block.getChunk());
