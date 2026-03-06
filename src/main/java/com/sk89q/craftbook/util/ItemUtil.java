@@ -530,6 +530,7 @@ public final class ItemUtil {
             case PHANTOM_MEMBRANE:
             case DRAGON_BREATH:
             case TURTLE_HELMET:
+            case SLIME_BLOCK:
                 return true;
             default:
                 return false;
