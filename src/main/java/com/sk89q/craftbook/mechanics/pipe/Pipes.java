@@ -49,10 +49,14 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
     private BlockCache currentBlockCache;
 
     private final NotificationDebouncer notificationDebouncer;
+    private final PipeTimingsCommand pipeTimingsCommand;
 
     public Pipes() {
         this.cacheRegistry = new BlockCacheRegistry();
         this.notificationDebouncer = new NotificationDebouncer();
+        this.pipeTimingsCommand = new PipeTimingsCommand();
+
+        Objects.requireNonNull(CraftBookPlugin.inst().getCommand("pipetimings")).setExecutor(pipeTimingsCommand);
     }
 
     @Override
@@ -614,7 +618,7 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
     private void startPipeAndHandleNotifications(Block inputPistonBlock, @Nullable Block overrideContainerBlock, @Nullable List<ItemStack> itemsInPipe, boolean wasRequest) {
         var notifications = new ArrayList<PipeNotification>(1);
 
-        startPipe(inputPistonBlock, overrideContainerBlock, itemsInPipe, wasRequest, notifications);
+        pipeTimingsCommand.timeExecutionOf(inputPistonBlock, () -> startPipe(inputPistonBlock, overrideContainerBlock, itemsInPipe, wasRequest, notifications));
 
         if (notifications.isEmpty())
             return;

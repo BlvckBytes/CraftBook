@@ -6,3 +6,5 @@ depend: [WorldEdit]
 softdepend: [WorldGuard, ProtocolLib, Vault]
 api-version: 1.21.3
 commands:
+  pipetimings:
+    permission: craftbook.pipetimings
