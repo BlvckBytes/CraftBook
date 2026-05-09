@@ -4,6 +4,31 @@ import org.bukkit.block.Block;
 
 public class CompactId {
 
+    public static int getXFromBlockXYZChunkId(long compactId) {
+        return (int) ((((compactId >> 22) & 0x3FFFFF) - 1_875_000L) << 4);
+    }
+
+    public static int getYFromBlockXYZChunkId(long compactId) {
+        return (int) ((((compactId >> 44) & 0xF) - 4L) << 4);
+    }
+
+    public static int getZFromBlockXYZChunkId(long compactId) {
+        return (int) (((compactId & 0x3FFFFF) - 1_875_000L) << 4);
+    }
+
+    public static long computeWorldlessBlockXYZChunkId(int x, int y, int z) {
+        // x/z in [-30M;30M] => chunk x/z in [-1.875M;+1.875M], adding 1.875M will result in [0;3.75M], 22 bits
+        // y in [-64;320] => chunk y in [-4;20] adding 4 will result in [0;24], 4 bits
+
+        // 2^22 - 1 = 0x3FFFFF
+        // 2^4 - 1 = 0xF
+        return (
+          ((((y >> 4) + 4L) & 0xF) << 44)
+            | ((((x >> 4) + 1_875_000L) & 0x3FFFFF) << 22)
+            | (((z >> 4) + 1_875_000L) & 0x3FFFFF)
+        );
+    }
+
     public static long computeWorldlessChunkId(int chunkX, int chunkZ) {
         // x/z in [-30M;30M] => chunk x/z in [-1.875M;+1.875M], adding 1.875M will result in [0;3.75M], 22 bits
 
