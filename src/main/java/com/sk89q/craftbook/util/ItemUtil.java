@@ -2,7 +2,10 @@ package com.sk89q.craftbook.util;
 
 import com.sk89q.craftbook.bukkit.CraftBookPlugin;
 import org.bukkit.*;
+import org.bukkit.block.BlastFurnace;
 import org.bukkit.block.Block;
+import org.bukkit.block.Furnace;
+import org.bukkit.block.Smoker;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
@@ -12,6 +15,7 @@ import org.bukkit.inventory.meta.BookMeta;
 import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.EnchantmentStorageMeta;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 import java.util.Map.Entry;
@@ -596,7 +600,7 @@ public final class ItemUtil {
     public static boolean containsRawMaterials(Inventory inv) {
 
         for (ItemStack it : inv.getContents()) {
-            if (isStackValid(it) && isFurnacable(it))
+            if (isStackValid(it) && isFurnacable(it, null))
                 return true;
         }
         return false;
@@ -607,13 +611,20 @@ public final class ItemUtil {
         List<ItemStack> ret = new ArrayList<>();
 
         for (ItemStack it : inv.getContents()) {
-            if (isStackValid(it) && isFurnacable(it))
+            if (isStackValid(it) && isFurnacable(it, null))
                 ret.add(it);
         }
         return ret;
     }
 
-    public static boolean isFurnacable(ItemStack item) {
+    public static boolean isFurnacable(ItemStack item, @Nullable Furnace furnace) {
+        if (furnace instanceof BlastFurnace) {
+            return isBlastSmeltable(item);
+        }
+
+        if (furnace instanceof Smoker) {
+            return isCookable(item);
+        }
 
         return isSmeltable(item) || isCookable(item) || isBlastSmeltable(item);
     }

@@ -90,7 +90,7 @@ public class InventoryUtil {
             if (!ItemUtil.isStackValid(stack))
                 continue;
 
-            if (ItemUtil.isFurnacable(stack)) {
+            if (ItemUtil.isFurnacable(stack, furnace)) {
                 if (inventory.getSmelting() == null) {
                     inventory.setSmelting(stack);
                     continue;
