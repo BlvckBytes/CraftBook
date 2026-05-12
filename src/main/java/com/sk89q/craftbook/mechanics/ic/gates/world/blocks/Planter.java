@@ -268,9 +268,19 @@ public class Planter extends AbstractSelfTriggeredIC {
             case WARPED_FUNGUS:
                 return belowType == Material.CRIMSON_NYLIUM || belowType == Material.WARPED_NYLIUM || Tag.DIRT.isTagged(belowType);
             default:
-                if (Tag.SAPLINGS.isTagged(item.getType()) || Tag.SMALL_FLOWERS.isTagged(item.getType())) {
-                    return Tag.DIRT.isTagged(belowType);
+                if (item.getType() == Material.WITHER_ROSE) {
+                    if (belowType == Material.SOUL_SOIL || belowType == Material.SOUL_SAND)
+                        return true;
                 }
+
+                if (Tag.SAPLINGS.isTagged(item.getType()) || Tag.SMALL_FLOWERS.isTagged(item.getType())) {
+                    return switch (belowType) {
+                        case MOSS_BLOCK, MUD, MYCELIUM, ROOTED_DIRT, PALE_MOSS_BLOCK,
+                             MUDDY_MANGROVE_ROOTS, PODZOL, GRASS_BLOCK, COARSE_DIRT, DIRT -> true;
+                        default -> false;
+                    };
+                }
+
                 return false;
         }
     }
