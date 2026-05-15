@@ -63,9 +63,6 @@ mechanics:
         enable-redstone: false
         item-tracking: false
         require-sign: false
-    ChunkAnchor:
-        enable-redstone: true
-        check-chunks: true
     CookingPot:
         allow-redstone: true
         require-fuel: true

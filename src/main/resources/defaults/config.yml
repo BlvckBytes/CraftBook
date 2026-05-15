@@ -22,7 +22,6 @@ disabled-mechanics:
 - BoatWaterPlaceOnly
 - Bridge
 - Cauldron
-- ChunkAnchor
 - CommandItems
 - CookingPot
 - CustomCrafting
