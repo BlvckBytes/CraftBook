@@ -14,7 +14,6 @@ import com.sk89q.craftbook.mechanics.HiddenSwitch;
 import com.sk89q.craftbook.mechanics.PaintingSwitch;
 import com.sk89q.craftbook.mechanics.Sponge;
 import com.sk89q.craftbook.mechanics.Teleporter;
-import com.sk89q.craftbook.mechanics.TreeLopper;
 import com.sk89q.craftbook.mechanics.XPStorer;
 import com.sk89q.craftbook.mechanics.area.Area;
 import com.sk89q.craftbook.mechanics.area.simple.Bridge;
@@ -209,7 +208,6 @@ public class CraftBookPlugin extends JavaPlugin {
         availableMechanics.put("LegacyCustomDrops", LegacyCustomDrops.class);
         availableMechanics.put("PaintingSwitcher", PaintingSwitch.class);
         availableMechanics.put("HeadDrops", HeadDrops.class);
-        availableMechanics.put("TreeLopper", TreeLopper.class);
         availableMechanics.put("XPStorer", XPStorer.class);
         availableMechanics.put("HiddenSwitch", HiddenSwitch.class);
         availableMechanics.put("SignCopier", SignCopier.class);
