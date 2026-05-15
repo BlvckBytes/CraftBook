@@ -135,13 +135,6 @@ public class LanguageManager {
         put("mech.area.create","Toggle Area Created!");
         put("mech.area.missing","The area or namespace does not exist.");
 
-        put("mech.bridge.create","Bridge Created!");
-        put("mech.bridge.toggle","Bridge Toggled!");
-        put("mech.bridge.end-create","Bridge End Created!");
-        put("mech.bridge.unusable","Material not usable for a bridge!");
-        put("mech.bridge.material","Bridge must be made entirely out of the same material!");
-        put("mech.bridge.other-sign","Bridge sign required on other side (or it was too far away).");
-
         put("mech.cauldron.create","Cauldron Created!");
         put("mech.cauldron.too-small","Cauldron is too small!");
         put("mech.cauldron.leaky","Cauldron has a leak!");
