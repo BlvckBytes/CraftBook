@@ -16,7 +16,6 @@ import com.sk89q.craftbook.mechanics.Sponge;
 import com.sk89q.craftbook.mechanics.Teleporter;
 import com.sk89q.craftbook.mechanics.XPStorer;
 import com.sk89q.craftbook.mechanics.area.Area;
-import com.sk89q.craftbook.mechanics.crafting.CustomCrafting;
 import com.sk89q.craftbook.mechanics.dispenser.DispenserRecipes;
 import com.sk89q.craftbook.mechanics.drops.CustomDrops;
 import com.sk89q.craftbook.mechanics.drops.legacy.LegacyCustomDrops;
@@ -193,7 +192,6 @@ public class CraftBookPlugin extends JavaPlugin {
 
         availableMechanics.put("Variables", VariableManager.class);
         availableMechanics.put("CommandItems", CommandItems.class);
-        availableMechanics.put("CustomCrafting", CustomCrafting.class);
         availableMechanics.put("DispenserRecipes", DispenserRecipes.class);
         availableMechanics.put("CustomDrops", CustomDrops.class);
         availableMechanics.put("LegacyCustomDrops", LegacyCustomDrops.class);

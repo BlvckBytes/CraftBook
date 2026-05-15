@@ -3,7 +3,6 @@ package com.sk89q.craftbook.mechanics.ic.gates.world.items.crafter;
 import com.sk89q.craftbook.ChangedSign;
 import com.sk89q.craftbook.bukkit.CraftBookPlugin;
 import com.sk89q.craftbook.bukkit.util.CraftBookBukkitUtil;
-import com.sk89q.craftbook.mechanics.crafting.CustomCrafting;
 import com.sk89q.craftbook.mechanics.ic.*;
 import com.sk89q.craftbook.mechanics.pipe.PipePutEvent;
 import com.sk89q.craftbook.mechanics.pipe.PipeRequestEvent;
@@ -151,7 +150,7 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
             return craft();
         }
 
-        ItemStack result = CustomCrafting.craftItem(cachedRecipe.getHandle());
+        ItemStack result = cachedRecipe.getHandle().getResult();
 
         if(!ItemUtil.isStackValid(result)) {
             if (!hasWarnedNoResult) {

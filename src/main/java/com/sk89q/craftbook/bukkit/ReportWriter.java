@@ -1,10 +1,6 @@
 package com.sk89q.craftbook.bukkit;
 
 import com.sk89q.craftbook.CraftBookMechanic;
-import com.sk89q.craftbook.mechanics.crafting.CraftingItemStack;
-import com.sk89q.craftbook.mechanics.crafting.RecipeManager;
-import com.sk89q.craftbook.mechanics.crafting.RecipeManager.Recipe;
-import com.sk89q.craftbook.mechanics.crafting.RecipeManager.RecipeType;
 import com.sk89q.craftbook.mechanics.ic.IC;
 import com.sk89q.craftbook.mechanics.ic.ICManager;
 import com.sk89q.craftbook.util.LogListBlock;
@@ -15,7 +11,6 @@ import org.bukkit.plugin.Plugin;
 import java.io.*;
 import java.lang.reflect.Field;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Map.Entry;
@@ -45,7 +40,6 @@ public class ReportWriter {
         appendServerInformation(plugin.getServer());
         appendPluginInformation(plugin.getServer().getPluginManager().getPlugins());
         appendCraftBookInformation(plugin);
-        appendCustomCraftingInformation(plugin);
         appendGlobalConfiguration(plugin.getConfiguration());
         appendMechanicConfiguration(plugin.getMechanics());
         appendln("-------------");
@@ -210,39 +204,6 @@ public class ReportWriter {
             append(log);
             appendln();
         }
-    }
-
-    private void appendCustomCraftingInformation(CraftBookPlugin plugin) {
-        appendHeader("Custom Crafting");
-
-        LogListBlock log = new LogListBlock();
-
-        if(RecipeManager.INSTANCE == null) {
-            log.put("CustomCrafting is disabled!","");
-            append(log);
-            appendln();
-            return;
-        }
-
-        for(Recipe rec : RecipeManager.INSTANCE.getRecipes()) {
-
-            log.put("Recipe ID", "%s", rec.getId());
-            log.put("Recipe Type", "%s", rec.getType().name());
-            if(rec.getType() == RecipeType.SHAPED) {
-                log.put("Recipe Shape", Arrays.toString(rec.getShape()));
-                for(Entry<CraftingItemStack, Character> bits : rec.getShapedIngredients().entrySet()) {
-                    log.put("Ingredient", "%s %c", bits.getKey().toString(), bits.getValue());
-                }
-            } else {
-                for(CraftingItemStack bits : rec.getIngredients())
-                    log.put("Ingredient", "%s", bits.toString());
-            }
-            log.put("Result", "%s", rec.getResult().toString());
-            log.put("Advanced-Data", rec.getAdvancedDataMap());
-        }
-
-        append(log);
-        appendln();
     }
 
     private void appendPluginInformation(Plugin[] plugins) {

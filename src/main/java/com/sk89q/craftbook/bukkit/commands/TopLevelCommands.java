@@ -12,7 +12,6 @@ import com.sk89q.craftbook.bukkit.CraftBookPlugin;
 import com.sk89q.craftbook.bukkit.ReportWriter;
 import com.sk89q.craftbook.bukkit.util.CraftBookBukkitUtil;
 import com.sk89q.craftbook.mechanics.area.AreaCommands;
-import com.sk89q.craftbook.mechanics.crafting.RecipeCommands;
 import com.sk89q.craftbook.mechanics.ic.ICCommands;
 import com.sk89q.craftbook.mechanics.items.CommandItemCommands;
 import com.sk89q.craftbook.mechanics.signcopier.SignEditCommands;
@@ -47,12 +46,6 @@ public class TopLevelCommands {
     @Command(aliases = {"headdrops"}, desc = "Commands to manage Craftbook Head Drops")
     @NestedCommand(HeadDropsCommands.class)
     public void headdrops(CommandContext context, CommandSender sender) {
-    }
-
-    @Command(aliases = {"recp", "recps"}, desc = "Commands to manage Craftbook Custom Recipes")
-    @NestedCommand(RecipeCommands.class)
-    public void recipe(CommandContext context, CommandSender sender) {
-
     }
 
     @Command(aliases = {"comitems", "commanditems", "citems", "commanditem"}, desc = "Commands to manage Craftbook Command Items")
