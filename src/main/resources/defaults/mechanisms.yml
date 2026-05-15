@@ -1,6 +1,4 @@
 mechanics:
-    BoatDecay:
-        time-in-ticks: 20
     BoatRemoveEntities:
         remove-other-boats: false
     BoatSpeedModifiers:
