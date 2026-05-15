@@ -30,60 +30,6 @@ mechanics:
         midi-use-percussion: false
         break-on-error: false
         disable-self-triggered: false
-    MinecartBooster:
-        max-boost-block: minecraft:gold_block
-        25x-boost-block: minecraft:gold_ore
-        50x-slow-block: minecraft:soul_sand
-        20x-slow-block: minecraft:gravel
-    MinecartConstantSpeed:
-        speed: 0.5
-        ignore-powered-rail: false
-    MinecartDecay:
-        time-in-ticks: 20
-    MinecartDeposit:
-        block: minecraft:iron_ore
-    MinecartDispenser:
-        block: minecraft:emerald_ore
-        spawn-infront: false
-        check-for-carts: true
-        propel-cart: false
-    MinecartEjector:
-        block: minecraft:iron_block
-    MinecartElevator:
-        block: minecraft:nether_bricks
-    MinecartExitRemover:
-        give-item: false
-    MinecartFallModifier:
-        vertical-fall-speed: 0.9
-        horizontal-fall-speed: 1.1
-    MinecartMaxSpeed:
-        block: minecraft:coal_block
-    MinecartMessenger:
-        block: minecraft:end_stone
-    MinecartMoreRails:
-        pressure-plate-intersection: false
-        ladder-vertical-rail: false
-        ladder-vertical-rail-velocity: 0.5
-    MinecartNoCollide:
-        empty-carts: true
-        full-carts: false
-    MinecartRemoveEntities:
-        remove-other-minecarts: false
-        allow-empty-carts: false
-        damage-players: true
-    MinecartReverser:
-        block: minecraft:white_wool
-    MinecartSorter:
-        block: minecraft:netherrack
-    MinecartSpeedModifiers:
-        max-speed: 1.0
-        off-rail-speed: 0.0
-    MinecartStation:
-        block: minecraft:obsidian
-    MinecartTeleporter:
-        block: minecraft:emerald_block
-    MinecartVisionSteering:
-        minimum-sensitivity: 3
     Pipes:
         allow-diagonal: false
         insulator-block: minecraft:white_wool

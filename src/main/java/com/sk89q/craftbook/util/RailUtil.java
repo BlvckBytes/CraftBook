@@ -1,6 +1,5 @@
 package com.sk89q.craftbook.util;
 
-import com.sk89q.craftbook.mechanics.minecart.MoreRails;
 import org.bukkit.Material;
 import org.bukkit.Tag;
 import org.bukkit.block.Block;
@@ -49,17 +48,6 @@ public final class RailUtil {
     }
 
     public static boolean isTrack(Material id) {
-
-        if (MoreRails.instance != null && MoreRails.instance.pressurePlate) {
-            if (id == Material.STONE_PRESSURE_PLATE || Tag.WOODEN_PRESSURE_PLATES.isTagged(id) || id == Material.HEAVY_WEIGHTED_PRESSURE_PLATE || id == Material.LIGHT_WEIGHTED_PRESSURE_PLATE)
-                return true;
-        }
-        if (MoreRails.instance != null && MoreRails.instance.ladder) {
-            if (id == Material.LADDER || id == Material.VINE) {
-                return true;
-            }
-        }
-
         return Tag.RAILS.isTagged(id);
     }
 }
