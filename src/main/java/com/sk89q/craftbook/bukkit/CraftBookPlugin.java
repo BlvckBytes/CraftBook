@@ -12,7 +12,6 @@ import com.sk89q.craftbook.core.st.SelfTriggeringManager;
 import com.sk89q.craftbook.mechanics.Elevator;
 import com.sk89q.craftbook.mechanics.HiddenSwitch;
 import com.sk89q.craftbook.mechanics.PaintingSwitch;
-import com.sk89q.craftbook.mechanics.Snow;
 import com.sk89q.craftbook.mechanics.Sponge;
 import com.sk89q.craftbook.mechanics.Teleporter;
 import com.sk89q.craftbook.mechanics.TreeLopper;
@@ -206,7 +205,6 @@ public class CraftBookPlugin extends JavaPlugin {
         availableMechanics.put("CommandItems", CommandItems.class);
         availableMechanics.put("CustomCrafting", CustomCrafting.class);
         availableMechanics.put("DispenserRecipes", DispenserRecipes.class);
-        availableMechanics.put("Snow", Snow.class);
         availableMechanics.put("CustomDrops", CustomDrops.class);
         availableMechanics.put("LegacyCustomDrops", LegacyCustomDrops.class);
         availableMechanics.put("PaintingSwitcher", PaintingSwitch.class);

@@ -248,30 +248,6 @@ mechanics:
         notification-radius: 5
     SignCopier:
         item: minecraft:ink_sac
-    Snow:
-        piling: false
-        trample: false
-        partial-trample-only: false
-        jump-trample: false
-        place: false
-        slowdown: false
-        realistic: false
-        high-piling: false
-        max-pile-height: 3
-        replacable-blocks:
-        - minecraft:dead_bush
-        - minecraft:grass
-        - minecraft:dandelion
-        - minecraft:poppy
-        - minecraft:brown_mushroom
-        - minecraft:red_mushroom
-        - minecraft:fire
-        - minecraft:fern
-        animate-falling: false
-        falldown-animation-speed: 5
-        freeze-water: false
-        melt-in-sunlight: false
-        partial-melt-only: false
     Sponge:
         radius: 5
         circular-radius: true
