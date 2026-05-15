@@ -9,11 +9,6 @@ mechanics:
         max-speed: 0.4
         unnoccupied-deceleration: -1.0
         occupied-deceleration: 0.2
-    BounceBlocks:
-        blocks:
-        - minecraft:diamond_block
-        sensitivity: 0.1
-        auto-blocks: {}
     Bridge:
         enforce-type: true
         allow-redstone: true
