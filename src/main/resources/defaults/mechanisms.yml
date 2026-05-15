@@ -153,8 +153,6 @@ mechanics:
         enforce-type: true
         max-column-height: 12
         gate-search-radius: 3
-    Glowstone:
-        glowstone-off-block: minecraft:glass
     HeadDrops:
         drop-mob-heads: true
         drop-player-heads: true
