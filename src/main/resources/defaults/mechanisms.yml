@@ -1,9 +1,4 @@
 mechanics:
-    Cauldron:
-        spoons: true
-        enable-redstone: false
-        item-tracking: false
-        require-sign: false
     CustomDrops:
         require-permissions: false
         remove-vanilla-drops: false
@@ -54,8 +49,6 @@ mechanics:
         midi-use-percussion: false
         break-on-error: false
         disable-self-triggered: false
-    LegacyCauldron:
-        block: minecraft:stone
     MinecartBooster:
         max-boost-block: minecraft:gold_block
         25x-boost-block: minecraft:gold_ore

@@ -16,8 +16,6 @@ import com.sk89q.craftbook.mechanics.Sponge;
 import com.sk89q.craftbook.mechanics.Teleporter;
 import com.sk89q.craftbook.mechanics.XPStorer;
 import com.sk89q.craftbook.mechanics.area.Area;
-import com.sk89q.craftbook.mechanics.cauldron.ImprovedCauldron;
-import com.sk89q.craftbook.mechanics.cauldron.legacy.Cauldron;
 import com.sk89q.craftbook.mechanics.crafting.CustomCrafting;
 import com.sk89q.craftbook.mechanics.dispenser.DispenserRecipes;
 import com.sk89q.craftbook.mechanics.drops.CustomDrops;
@@ -207,8 +205,6 @@ public class CraftBookPlugin extends JavaPlugin {
         availableMechanics.put("Elevator", Elevator.class);
         availableMechanics.put("Teleporter", Teleporter.class);
         availableMechanics.put("ToggleArea", Area.class);
-        availableMechanics.put("Cauldron", ImprovedCauldron.class);
-        availableMechanics.put("LegacyCauldron", Cauldron.class);
         availableMechanics.put("Sponge", Sponge.class);
         availableMechanics.put("Pipes", Pipes.class);
         availableMechanics.put("ICs", ICMechanic.class);

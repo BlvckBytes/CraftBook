@@ -135,17 +135,6 @@ public class LanguageManager {
         put("mech.area.create","Toggle Area Created!");
         put("mech.area.missing","The area or namespace does not exist.");
 
-        put("mech.cauldron.create","Cauldron Created!");
-        put("mech.cauldron.too-small","Cauldron is too small!");
-        put("mech.cauldron.leaky","Cauldron has a leak!");
-        put("mech.cauldron.no-lava","Cauldron lacks lava!");
-        put("mech.cauldron.legacy-not-a-recipe","Hmm, this doesn't make anything...");
-        put("mech.cauldron.legacy-not-in-group","Doesn't seem as if you have the ability...");
-        put("mech.cauldron.legacy-create","In a poof of smoke, you've made");
-        put("mech.cauldron.stir","You stir the cauldron but nothing happens.");
-        put("mech.cauldron.permissions","You dont have permission to cook this recipe.");
-        put("mech.cauldron.cook", "You have cooked the recipe:");
-
         put("mech.command.create","Command Sign Created!");
 
         put("mech.command-items.out-of-sync", "Inventory became out of sync during usage of command-items!");

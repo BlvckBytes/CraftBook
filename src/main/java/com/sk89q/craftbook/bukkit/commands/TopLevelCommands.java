@@ -12,7 +12,6 @@ import com.sk89q.craftbook.bukkit.CraftBookPlugin;
 import com.sk89q.craftbook.bukkit.ReportWriter;
 import com.sk89q.craftbook.bukkit.util.CraftBookBukkitUtil;
 import com.sk89q.craftbook.mechanics.area.AreaCommands;
-import com.sk89q.craftbook.mechanics.cauldron.CauldronCommands;
 import com.sk89q.craftbook.mechanics.crafting.RecipeCommands;
 import com.sk89q.craftbook.mechanics.ic.ICCommands;
 import com.sk89q.craftbook.mechanics.items.CommandItemCommands;
@@ -59,12 +58,6 @@ public class TopLevelCommands {
     @Command(aliases = {"comitems", "commanditems", "citems", "commanditem"}, desc = "Commands to manage Craftbook Command Items")
     @NestedCommand(CommandItemCommands.class)
     public void commandItems(CommandContext context, CommandSender sender) {
-    }
-
-    @Command(aliases = {"cauldron"}, desc = "Commands to manage the Craftbook Cauldron")
-    @NestedCommand(CauldronCommands.class)
-    public void cauldron(CommandContext context, CommandSender sender) {
-
     }
 
     @Command(aliases = {"sign", "signcopy", "signpaste", "signedit"}, desc = "Commands to manage the Sign Copier")
