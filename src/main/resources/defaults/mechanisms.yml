@@ -1,7 +1,4 @@
 mechanics:
-    CustomDrops:
-        require-permissions: false
-        remove-vanilla-drops: false
     Elevator:
         allow-redstone: false
         redstone-player-search-radius: 3
