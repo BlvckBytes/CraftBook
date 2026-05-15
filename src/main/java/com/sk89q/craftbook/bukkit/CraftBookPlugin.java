@@ -10,7 +10,6 @@ import com.sk89q.craftbook.core.LanguageManager;
 import com.sk89q.craftbook.core.st.MechanicClock;
 import com.sk89q.craftbook.core.st.SelfTriggeringManager;
 import com.sk89q.craftbook.mechanics.AIMechanic;
-import com.sk89q.craftbook.mechanics.Ammeter;
 import com.sk89q.craftbook.mechanics.BetterLeads;
 import com.sk89q.craftbook.mechanics.BetterPhysics;
 import com.sk89q.craftbook.mechanics.BetterPistons;
@@ -239,7 +238,6 @@ public class CraftBookPlugin extends JavaPlugin {
         availableMechanics.put("LightStone", LightStone.class);
         availableMechanics.put("LightSwitch", LightSwitch.class);
         availableMechanics.put("ChunkAnchor", ChunkAnchor.class);
-        availableMechanics.put("Ammeter", Ammeter.class);
         availableMechanics.put("HiddenSwitch", HiddenSwitch.class);
         availableMechanics.put("SignCopier", SignCopier.class);
         availableMechanics.put("Bridge", Bridge.class);

@@ -7,8 +7,6 @@ mechanics:
         - Skeleton
         attack-passive-enable:
         - Zombie
-    Ammeter:
-        item: minecraft:coal
     BetterLeads:
         stop-mob-target: false
         owner-unleash-only: false
