@@ -1,6 +1,4 @@
 mechanics:
-    BoatRemoveEntities:
-        remove-other-boats: false
     BoatSpeedModifiers:
         max-speed: 0.4
         unnoccupied-deceleration: -1.0
