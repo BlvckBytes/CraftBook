@@ -1,12 +1,4 @@
 mechanics:
-    BetterLeads:
-        stop-mob-target: false
-        owner-unleash-only: false
-        hitch-persists: false
-        mob-repel: false
-        allowed-mobs:
-        - ZOMBIE
-        - SPIDER
     BetterPhysics:
         falling-ladders: true
     BetterPistons:

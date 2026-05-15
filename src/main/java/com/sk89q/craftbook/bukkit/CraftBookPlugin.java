@@ -9,7 +9,6 @@ import com.sk89q.craftbook.bukkit.util.CraftBookBukkitUtil;
 import com.sk89q.craftbook.core.LanguageManager;
 import com.sk89q.craftbook.core.st.MechanicClock;
 import com.sk89q.craftbook.core.st.SelfTriggeringManager;
-import com.sk89q.craftbook.mechanics.BetterLeads;
 import com.sk89q.craftbook.mechanics.BetterPhysics;
 import com.sk89q.craftbook.mechanics.BetterPistons;
 import com.sk89q.craftbook.mechanics.BetterPlants;
@@ -228,7 +227,6 @@ public class CraftBookPlugin extends JavaPlugin {
         availableMechanics.put("PaintingSwitcher", PaintingSwitch.class);
         availableMechanics.put("BetterPhysics", BetterPhysics.class);
         availableMechanics.put("HeadDrops", HeadDrops.class);
-        availableMechanics.put("BetterLeads", BetterLeads.class);
         availableMechanics.put("Marquee", Marquee.class);
         availableMechanics.put("TreeLopper", TreeLopper.class);
         availableMechanics.put("MapChanger", MapChanger.class);
