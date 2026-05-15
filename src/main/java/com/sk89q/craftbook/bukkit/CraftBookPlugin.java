@@ -16,7 +16,6 @@ import com.sk89q.craftbook.mechanics.Sponge;
 import com.sk89q.craftbook.mechanics.Teleporter;
 import com.sk89q.craftbook.mechanics.XPStorer;
 import com.sk89q.craftbook.mechanics.area.Area;
-import com.sk89q.craftbook.mechanics.boat.Drops;
 import com.sk89q.craftbook.mechanics.boat.LandBoats;
 import com.sk89q.craftbook.mechanics.boat.Uncrashable;
 import com.sk89q.craftbook.mechanics.boat.WaterPlaceOnly;
@@ -245,7 +244,6 @@ public class CraftBookPlugin extends JavaPlugin {
         availableMechanics.put("MinecartTemporaryCart", TemporaryCart.class);
         availableMechanics.put("BoatRemoveEntities", com.sk89q.craftbook.mechanics.boat.RemoveEntities.class);
         availableMechanics.put("BoatUncrashable", Uncrashable.class);
-        availableMechanics.put("BoatDrops", Drops.class);
         availableMechanics.put("BoatDecay", com.sk89q.craftbook.mechanics.boat.EmptyDecay.class);
         availableMechanics.put("BoatSpeedModifiers", com.sk89q.craftbook.mechanics.boat.SpeedModifiers.class);
         availableMechanics.put("LandBoats", LandBoats.class);
