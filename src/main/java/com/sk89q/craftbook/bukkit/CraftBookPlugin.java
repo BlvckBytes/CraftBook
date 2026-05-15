@@ -15,7 +15,6 @@ import com.sk89q.craftbook.mechanics.BetterLeads;
 import com.sk89q.craftbook.mechanics.BetterPhysics;
 import com.sk89q.craftbook.mechanics.BetterPistons;
 import com.sk89q.craftbook.mechanics.BetterPlants;
-import com.sk89q.craftbook.mechanics.Bookcase;
 import com.sk89q.craftbook.mechanics.BounceBlocks;
 import com.sk89q.craftbook.mechanics.Chair;
 import com.sk89q.craftbook.mechanics.ChunkAnchor;
@@ -245,7 +244,6 @@ public class CraftBookPlugin extends JavaPlugin {
         availableMechanics.put("ChunkAnchor", ChunkAnchor.class);
         availableMechanics.put("Ammeter", Ammeter.class);
         availableMechanics.put("HiddenSwitch", HiddenSwitch.class);
-        availableMechanics.put("Bookcase", Bookcase.class);
         availableMechanics.put("SignCopier", SignCopier.class);
         availableMechanics.put("Bridge", Bridge.class);
         availableMechanics.put("Door", Door.class);

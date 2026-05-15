@@ -61,9 +61,6 @@ mechanics:
         max-speed: 0.4
         unnoccupied-deceleration: -1.0
         occupied-deceleration: 0.2
-    Bookcase:
-        read-when-sneaking: 'no'
-        read-when-holding-block: false
     BounceBlocks:
         blocks:
         - minecraft:diamond_block
