@@ -63,15 +63,6 @@ mechanics:
         enable-redstone: false
         item-tracking: false
         require-sign: false
-    CookingPot:
-        allow-redstone: true
-        require-fuel: true
-        cook-ores: false
-        sign-click-open: true
-        take-buckets: false
-        super-fast-cooking: false
-        heating: false
-        chunk-limit: false
     CustomDrops:
         require-permissions: false
         remove-vanilla-drops: false

@@ -9,7 +9,6 @@ import com.sk89q.craftbook.bukkit.util.CraftBookBukkitUtil;
 import com.sk89q.craftbook.core.LanguageManager;
 import com.sk89q.craftbook.core.st.MechanicClock;
 import com.sk89q.craftbook.core.st.SelfTriggeringManager;
-import com.sk89q.craftbook.mechanics.CookingPot;
 import com.sk89q.craftbook.mechanics.Elevator;
 import com.sk89q.craftbook.mechanics.GlowStone;
 import com.sk89q.craftbook.mechanics.HiddenSwitch;
@@ -236,7 +235,6 @@ public class CraftBookPlugin extends JavaPlugin {
         availableMechanics.put("Cauldron", ImprovedCauldron.class);
         availableMechanics.put("LegacyCauldron", Cauldron.class);
         availableMechanics.put("Gate", Gate.class);
-        availableMechanics.put("CookingPot", CookingPot.class);
         availableMechanics.put("Sponge", Sponge.class);
         availableMechanics.put("Pay", Payment.class);
         availableMechanics.put("Jukebox", RedstoneJukebox.class);
@@ -560,7 +558,7 @@ public class CraftBookPlugin extends JavaPlugin {
                     continue;
                 }
                 getServer().getPluginManager().registerEvents(mech, this);
-                if(mech instanceof CookingPot || mech instanceof XPStorer || (mech instanceof ICMechanic && !((ICMechanic) mech).disableSelfTriggered)) {
+                if(mech instanceof XPStorer || (mech instanceof ICMechanic && !((ICMechanic) mech).disableSelfTriggered)) {
                     //TODO make this a better check.
                     hasSTMechanic = true;
                 }
