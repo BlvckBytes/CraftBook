@@ -2,12 +2,6 @@ mechanics:
     CustomDrops:
         require-permissions: false
         remove-vanilla-drops: false
-    DispenserRecipes:
-        cannon-enable: true
-        fan-enable: true
-        fire-arrows-enable: true
-        snow-shooter-enable: true
-        xp-shooter-enable: true
     Elevator:
         allow-redstone: false
         redstone-player-search-radius: 3

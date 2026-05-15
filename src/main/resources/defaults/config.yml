@@ -15,7 +15,6 @@ enabled-mechanics:
 disabled-mechanics:
 - CommandItems
 - CustomDrops
-- DispenserRecipes
 - Elevator
 - HeadDrops
 - HiddenSwitch
