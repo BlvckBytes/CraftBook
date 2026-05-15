@@ -181,9 +181,6 @@ mechanics:
         disable-self-triggered: false
     LegacyCauldron:
         block: minecraft:stone
-    LightSwitch:
-        max-range: 10
-        max-lights: 20
     MinecartBooster:
         max-boost-block: minecraft:gold_block
         25x-boost-block: minecraft:gold_ore

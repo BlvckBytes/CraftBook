@@ -11,7 +11,6 @@ import com.sk89q.craftbook.core.st.MechanicClock;
 import com.sk89q.craftbook.core.st.SelfTriggeringManager;
 import com.sk89q.craftbook.mechanics.Elevator;
 import com.sk89q.craftbook.mechanics.HiddenSwitch;
-import com.sk89q.craftbook.mechanics.LightSwitch;
 import com.sk89q.craftbook.mechanics.MapChanger;
 import com.sk89q.craftbook.mechanics.Marquee;
 import com.sk89q.craftbook.mechanics.PaintingSwitch;
@@ -220,7 +219,6 @@ public class CraftBookPlugin extends JavaPlugin {
         availableMechanics.put("TreeLopper", TreeLopper.class);
         availableMechanics.put("MapChanger", MapChanger.class);
         availableMechanics.put("XPStorer", XPStorer.class);
-        availableMechanics.put("LightSwitch", LightSwitch.class);
         availableMechanics.put("HiddenSwitch", HiddenSwitch.class);
         availableMechanics.put("SignCopier", SignCopier.class);
         availableMechanics.put("Bridge", Bridge.class);
