@@ -11,7 +11,6 @@ import com.sk89q.craftbook.core.st.MechanicClock;
 import com.sk89q.craftbook.core.st.SelfTriggeringManager;
 import com.sk89q.craftbook.mechanics.Elevator;
 import com.sk89q.craftbook.mechanics.HiddenSwitch;
-import com.sk89q.craftbook.mechanics.Marquee;
 import com.sk89q.craftbook.mechanics.PaintingSwitch;
 import com.sk89q.craftbook.mechanics.Payment;
 import com.sk89q.craftbook.mechanics.RedstoneJukebox;
@@ -214,7 +213,6 @@ public class CraftBookPlugin extends JavaPlugin {
         availableMechanics.put("LegacyCustomDrops", LegacyCustomDrops.class);
         availableMechanics.put("PaintingSwitcher", PaintingSwitch.class);
         availableMechanics.put("HeadDrops", HeadDrops.class);
-        availableMechanics.put("Marquee", Marquee.class);
         availableMechanics.put("TreeLopper", TreeLopper.class);
         availableMechanics.put("XPStorer", XPStorer.class);
         availableMechanics.put("HiddenSwitch", HiddenSwitch.class);
