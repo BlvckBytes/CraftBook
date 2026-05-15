@@ -1,6 +1,4 @@
 mechanics:
-    BetterPhysics:
-        falling-ladders: true
     BetterPistons:
         crushers: true
         crushers-kill-mobs: false
