@@ -28,7 +28,6 @@ import com.sk89q.craftbook.mechanics.LightStone;
 import com.sk89q.craftbook.mechanics.LightSwitch;
 import com.sk89q.craftbook.mechanics.MapChanger;
 import com.sk89q.craftbook.mechanics.Marquee;
-import com.sk89q.craftbook.mechanics.Netherrack;
 import com.sk89q.craftbook.mechanics.PaintingSwitch;
 import com.sk89q.craftbook.mechanics.Payment;
 import com.sk89q.craftbook.mechanics.RedstoneJukebox;
@@ -261,7 +260,6 @@ public class CraftBookPlugin extends JavaPlugin {
         availableMechanics.put("Pay", Payment.class);
         availableMechanics.put("Jukebox", RedstoneJukebox.class);
         availableMechanics.put("Glowstone", GlowStone.class);
-        availableMechanics.put("Netherrack", Netherrack.class);
         availableMechanics.put("JackOLantern", JackOLantern.class);
         availableMechanics.put("Pipes", Pipes.class);
         availableMechanics.put("BounceBlocks", BounceBlocks.class);
