@@ -247,7 +247,6 @@ public class CraftBookPlugin extends JavaPlugin {
         availableMechanics.put("BoatDecay", com.sk89q.craftbook.mechanics.boat.EmptyDecay.class);
         availableMechanics.put("BoatSpeedModifiers", com.sk89q.craftbook.mechanics.boat.SpeedModifiers.class);
         availableMechanics.put("LandBoats", LandBoats.class);
-        availableMechanics.put("BoatExitRemover", com.sk89q.craftbook.mechanics.boat.ExitRemover.class);
         availableMechanics.put("BoatWaterPlaceOnly", WaterPlaceOnly.class);
     }
 
