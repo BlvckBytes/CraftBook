@@ -1,33 +1,4 @@
 mechanics:
-    BetterPistons:
-        crushers: true
-        crushers-kill-mobs: false
-        crusher-blacklist:
-        - minecraft:obsidian
-        - minecraft:bedrock
-        - minecraft:nether_portal
-        - minecraft:end_portal
-        - minecraft:end_portal_frame
-        - minecraft:end_gateway
-        super-sticky: true
-        super-push: true
-        movement-blacklist:
-        - minecraft:obsidian
-        - minecraft:bedrock
-        - minecraft:nether_portal
-        - minecraft:end_portal
-        - minecraft:end_portal_frame
-        - minecraft:end_gateway
-        bounce: true
-        bounce-blacklist:
-        - minecraft:obsidian
-        - minecraft:bedrock
-        - minecraft:nether_portal
-        - minecraft:end_portal
-        - minecraft:end_portal_frame
-        - minecraft:end_gateway
-        max-distance: 12
-        bounce-max-velocity: 5.0
     BetterPlants:
         fern-farming: true
         fast-random-ticks: true
