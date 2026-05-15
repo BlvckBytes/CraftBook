@@ -38,23 +38,6 @@ mechanics:
         - minecraft:snow_block
         - minecraft:ice
         - minecraft:red_sand
-    Gate:
-        allow-redstone: true
-        limit-columns: true
-        max-columns: 14
-        blocks:
-        - minecraft:acacia_fence
-        - minecraft:birch_fence
-        - minecraft:jungle_fence
-        - minecraft:oak_fence
-        - minecraft:spruce_fence
-        - minecraft:dark_oak_fence
-        - minecraft:nether_brick_fence
-        - minecraft:iron_bars
-        - minecraft:glass_pane
-        enforce-type: true
-        max-column-height: 12
-        gate-search-radius: 3
     HeadDrops:
         drop-mob-heads: true
         drop-player-heads: true

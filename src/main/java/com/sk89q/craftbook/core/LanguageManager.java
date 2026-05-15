@@ -158,12 +158,6 @@ public class LanguageManager {
 
         put("mech.custom-crafting.recipe-permission", "You do not have permission to craft this recipe.");
 
-        put("mech.gate.create","Gate Created!");
-        put("mech.gate.toggle","Gate Toggled!");
-        put("mech.gate.not-found","Failed to find a gate!");
-        put("mech.gate.valid-item","Line 1 needs to be a valid block id.");
-        put("mech.dgate.create","Small Gate Created!");
-
         put("mech.hiddenswitch.key","The key did not fit!");
         put("mech.hiddenswitch.toggle","You hear the muffled click of a switch!");
 
