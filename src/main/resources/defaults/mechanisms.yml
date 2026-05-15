@@ -17,19 +17,6 @@ mechanics:
         - minecraft:snow_block
         - minecraft:ice
         - minecraft:red_sand
-    HeadDrops:
-        drop-mob-heads: true
-        drop-player-heads: true
-        require-player-killed: true
-        drop-head-when-mined: true
-        override-natural-head-drops: false
-        drop-rate: 0.05
-        looting-rate-modifier: 0.05
-        show-name-right-click: true
-        drop-rates: {}
-        custom-mob-skins: {}
-        ignored-names:
-        - cscorelib
     HiddenSwitch:
         any-side: true
     ICs:

@@ -16,7 +16,6 @@ disabled-mechanics:
 - CommandItems
 - CustomDrops
 - Elevator
-- HeadDrops
 - HiddenSwitch
 - ICs
 - Jukebox

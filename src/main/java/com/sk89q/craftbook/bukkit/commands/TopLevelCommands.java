@@ -2,7 +2,6 @@ package com.sk89q.craftbook.bukkit.commands;
 import java.io.File;
 import java.io.IOException;
 
-import com.sk89q.craftbook.mechanics.headdrops.HeadDropsCommands;
 import com.sk89q.craftbook.util.ItemSyntax;
 import com.sk89q.minecraft.util.commands.CommandException;
 import org.bukkit.ChatColor;
@@ -41,11 +40,6 @@ public class TopLevelCommands {
     @Command(aliases = {"area", "togglearea"}, desc = "Commands to manage Craftbook Areas")
     @NestedCommand(AreaCommands.class)
     public void area(CommandContext context, CommandSender sender) {
-    }
-
-    @Command(aliases = {"headdrops"}, desc = "Commands to manage Craftbook Head Drops")
-    @NestedCommand(HeadDropsCommands.class)
-    public void headdrops(CommandContext context, CommandSender sender) {
     }
 
     @Command(aliases = {"comitems", "commanditems", "citems", "commanditem"}, desc = "Commands to manage Craftbook Command Items")
