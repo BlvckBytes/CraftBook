@@ -181,8 +181,6 @@ mechanics:
         disable-self-triggered: false
     LegacyCauldron:
         block: minecraft:stone
-    LightStone:
-        item: minecraft:glowstone_dust
     LightSwitch:
         max-range: 10
         max-lights: 20
