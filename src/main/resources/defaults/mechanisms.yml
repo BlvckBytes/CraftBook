@@ -1,12 +1,4 @@
 mechanics:
-    AI:
-        vision-enable:
-        - Zombie
-        - PigZombie
-        crit-bow-enable:
-        - Skeleton
-        attack-passive-enable:
-        - Zombie
     BetterLeads:
         stop-mob-target: false
         owner-unleash-only: false
