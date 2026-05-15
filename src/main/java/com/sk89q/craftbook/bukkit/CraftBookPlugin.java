@@ -16,7 +16,6 @@ import com.sk89q.craftbook.mechanics.Sponge;
 import com.sk89q.craftbook.mechanics.Teleporter;
 import com.sk89q.craftbook.mechanics.XPStorer;
 import com.sk89q.craftbook.mechanics.area.Area;
-import com.sk89q.craftbook.mechanics.area.simple.Door;
 import com.sk89q.craftbook.mechanics.area.simple.Gate;
 import com.sk89q.craftbook.mechanics.boat.Drops;
 import com.sk89q.craftbook.mechanics.boat.LandBoats;
@@ -210,7 +209,6 @@ public class CraftBookPlugin extends JavaPlugin {
         availableMechanics.put("XPStorer", XPStorer.class);
         availableMechanics.put("HiddenSwitch", HiddenSwitch.class);
         availableMechanics.put("SignCopier", SignCopier.class);
-        availableMechanics.put("Door", Door.class);
         availableMechanics.put("Elevator", Elevator.class);
         availableMechanics.put("Teleporter", Teleporter.class);
         availableMechanics.put("ToggleArea", Area.class);

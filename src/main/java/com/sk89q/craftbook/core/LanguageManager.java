@@ -158,12 +158,6 @@ public class LanguageManager {
 
         put("mech.custom-crafting.recipe-permission", "You do not have permission to craft this recipe.");
 
-        put("mech.door.create","Door Created!");
-        put("mech.door.toggle","Door Toggled!");
-        put("mech.door.other-sign","Door sign required on other side (or it was too far away).");
-        put("mech.door.unusable","Material not usable for a door!");
-        put("mech.door.material","Door must be made entirely out of the same material!");
-
         put("mech.gate.create","Gate Created!");
         put("mech.gate.toggle","Gate Toggled!");
         put("mech.gate.not-found","Failed to find a gate!");
