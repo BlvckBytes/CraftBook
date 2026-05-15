@@ -11,7 +11,6 @@ import com.sk89q.craftbook.core.st.MechanicClock;
 import com.sk89q.craftbook.core.st.SelfTriggeringManager;
 import com.sk89q.craftbook.mechanics.Elevator;
 import com.sk89q.craftbook.mechanics.HiddenSwitch;
-import com.sk89q.craftbook.mechanics.JackOLantern;
 import com.sk89q.craftbook.mechanics.LightStone;
 import com.sk89q.craftbook.mechanics.LightSwitch;
 import com.sk89q.craftbook.mechanics.MapChanger;
@@ -237,7 +236,6 @@ public class CraftBookPlugin extends JavaPlugin {
         availableMechanics.put("Sponge", Sponge.class);
         availableMechanics.put("Pay", Payment.class);
         availableMechanics.put("Jukebox", RedstoneJukebox.class);
-        availableMechanics.put("JackOLantern", JackOLantern.class);
         availableMechanics.put("Pipes", Pipes.class);
         availableMechanics.put("ICs", ICMechanic.class);
         availableMechanics.put("MinecartBooster", CartBooster.class);
