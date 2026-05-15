@@ -1,7 +1,4 @@
 mechanics:
-    BetterPlants:
-        fern-farming: true
-        fast-random-ticks: true
     BoatDecay:
         time-in-ticks: 20
     BoatExitRemover:
