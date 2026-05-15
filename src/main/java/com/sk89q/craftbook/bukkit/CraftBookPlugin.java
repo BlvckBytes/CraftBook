@@ -18,7 +18,6 @@ import com.sk89q.craftbook.mechanics.BetterPlants;
 import com.sk89q.craftbook.mechanics.BounceBlocks;
 import com.sk89q.craftbook.mechanics.Chair;
 import com.sk89q.craftbook.mechanics.ChunkAnchor;
-import com.sk89q.craftbook.mechanics.CommandSigns;
 import com.sk89q.craftbook.mechanics.CookingPot;
 import com.sk89q.craftbook.mechanics.Elevator;
 import com.sk89q.craftbook.mechanics.GlowStone;
@@ -238,7 +237,6 @@ public class CraftBookPlugin extends JavaPlugin {
         availableMechanics.put("MapChanger", MapChanger.class);
         availableMechanics.put("XPStorer", XPStorer.class);
         availableMechanics.put("LightStone", LightStone.class);
-        availableMechanics.put("CommandSigns", CommandSigns.class);
         availableMechanics.put("LightSwitch", LightSwitch.class);
         availableMechanics.put("ChunkAnchor", ChunkAnchor.class);
         availableMechanics.put("Ammeter", Ammeter.class);

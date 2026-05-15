@@ -32,7 +32,6 @@ disabled-mechanics:
 - Chairs
 - ChunkAnchor
 - CommandItems
-- CommandSigns
 - CookingPot
 - CustomCrafting
 - CustomDrops

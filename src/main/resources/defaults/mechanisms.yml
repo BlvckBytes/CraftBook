@@ -163,8 +163,6 @@ mechanics:
     ChunkAnchor:
         enable-redstone: true
         check-chunks: true
-    CommandSigns:
-        allow-redstone: true
     CookingPot:
         allow-redstone: true
         require-fuel: true
