@@ -12,7 +12,6 @@ import com.sk89q.craftbook.core.st.SelfTriggeringManager;
 import com.sk89q.craftbook.mechanics.Elevator;
 import com.sk89q.craftbook.mechanics.HiddenSwitch;
 import com.sk89q.craftbook.mechanics.PaintingSwitch;
-import com.sk89q.craftbook.mechanics.Payment;
 import com.sk89q.craftbook.mechanics.RedstoneJukebox;
 import com.sk89q.craftbook.mechanics.Snow;
 import com.sk89q.craftbook.mechanics.Sponge;
@@ -226,7 +225,6 @@ public class CraftBookPlugin extends JavaPlugin {
         availableMechanics.put("LegacyCauldron", Cauldron.class);
         availableMechanics.put("Gate", Gate.class);
         availableMechanics.put("Sponge", Sponge.class);
-        availableMechanics.put("Pay", Payment.class);
         availableMechanics.put("Jukebox", RedstoneJukebox.class);
         availableMechanics.put("Pipes", Pipes.class);
         availableMechanics.put("ICs", ICMechanic.class);
