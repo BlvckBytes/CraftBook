@@ -16,7 +16,6 @@ import com.sk89q.craftbook.mechanics.Sponge;
 import com.sk89q.craftbook.mechanics.Teleporter;
 import com.sk89q.craftbook.mechanics.XPStorer;
 import com.sk89q.craftbook.mechanics.area.Area;
-import com.sk89q.craftbook.mechanics.boat.Uncrashable;
 import com.sk89q.craftbook.mechanics.boat.WaterPlaceOnly;
 import com.sk89q.craftbook.mechanics.cauldron.ImprovedCauldron;
 import com.sk89q.craftbook.mechanics.cauldron.legacy.Cauldron;
@@ -241,7 +240,6 @@ public class CraftBookPlugin extends JavaPlugin {
         availableMechanics.put("MinecartNoCollide", NoCollide.class);
         availableMechanics.put("MinecartPlaceAnywhere", PlaceAnywhere.class);
         availableMechanics.put("MinecartTemporaryCart", TemporaryCart.class);
-        availableMechanics.put("BoatUncrashable", Uncrashable.class);
         availableMechanics.put("BoatWaterPlaceOnly", WaterPlaceOnly.class);
     }
 
