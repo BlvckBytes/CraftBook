@@ -9,7 +9,6 @@ import com.sk89q.craftbook.bukkit.util.CraftBookBukkitUtil;
 import com.sk89q.craftbook.core.LanguageManager;
 import com.sk89q.craftbook.core.st.MechanicClock;
 import com.sk89q.craftbook.core.st.SelfTriggeringManager;
-import com.sk89q.craftbook.mechanics.Chair;
 import com.sk89q.craftbook.mechanics.ChunkAnchor;
 import com.sk89q.craftbook.mechanics.CookingPot;
 import com.sk89q.craftbook.mechanics.Elevator;
@@ -241,7 +240,6 @@ public class CraftBookPlugin extends JavaPlugin {
         availableMechanics.put("Gate", Gate.class);
         availableMechanics.put("CookingPot", CookingPot.class);
         availableMechanics.put("Sponge", Sponge.class);
-        availableMechanics.put("Chairs", Chair.class);
         availableMechanics.put("Pay", Payment.class);
         availableMechanics.put("Jukebox", RedstoneJukebox.class);
         availableMechanics.put("Glowstone", GlowStone.class);
