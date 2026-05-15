@@ -242,7 +242,6 @@ public class CraftBookPlugin extends JavaPlugin {
         availableMechanics.put("MinecartPlaceAnywhere", PlaceAnywhere.class);
         availableMechanics.put("MinecartTemporaryCart", TemporaryCart.class);
         availableMechanics.put("BoatUncrashable", Uncrashable.class);
-        availableMechanics.put("BoatSpeedModifiers", com.sk89q.craftbook.mechanics.boat.SpeedModifiers.class);
         availableMechanics.put("BoatWaterPlaceOnly", WaterPlaceOnly.class);
     }
 

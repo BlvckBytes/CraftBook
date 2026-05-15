@@ -1,8 +1,4 @@
 mechanics:
-    BoatSpeedModifiers:
-        max-speed: 0.4
-        unnoccupied-deceleration: -1.0
-        occupied-deceleration: 0.2
     Cauldron:
         spoons: true
         enable-redstone: false
