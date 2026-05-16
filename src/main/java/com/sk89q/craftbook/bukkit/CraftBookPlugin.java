@@ -20,7 +20,6 @@ import com.sk89q.craftbook.mechanics.ic.gates.world.items.crafter.RecipeCache;
 import com.sk89q.craftbook.mechanics.pipe.Pipes;
 import com.sk89q.craftbook.mechanics.signcopier.SignCopier;
 import com.sk89q.craftbook.mechanics.variables.VariableManager;
-import com.sk89q.craftbook.util.ArrayUtil;
 import com.sk89q.craftbook.util.CompatabilityUtil;
 import com.sk89q.craftbook.util.ItemSyntax;
 import com.sk89q.craftbook.util.RegexUtil;
@@ -808,7 +807,7 @@ public class CraftBookPlugin extends JavaPlugin {
             return PermissionsResolverManager.getInstance().getGroups(player);
         } catch (Throwable t) {
             t.printStackTrace();
-            return ArrayUtil.EMPTY_STRINGS;
+            return new String[0];
         }
     }
 
