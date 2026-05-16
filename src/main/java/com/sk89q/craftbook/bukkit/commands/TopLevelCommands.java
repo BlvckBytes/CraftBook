@@ -10,7 +10,6 @@ import org.bukkit.command.CommandSender;
 import com.sk89q.craftbook.bukkit.CraftBookPlugin;
 import com.sk89q.craftbook.bukkit.ReportWriter;
 import com.sk89q.craftbook.bukkit.util.CraftBookBukkitUtil;
-import com.sk89q.craftbook.mechanics.area.AreaCommands;
 import com.sk89q.craftbook.mechanics.ic.ICCommands;
 import com.sk89q.craftbook.mechanics.items.CommandItemCommands;
 import com.sk89q.craftbook.mechanics.signcopier.SignEditCommands;
@@ -35,11 +34,6 @@ public class TopLevelCommands {
     @NestedCommand(Commands.class)
     public void craftBookCmds(CommandContext context, CommandSender sender) {
 
-    }
-
-    @Command(aliases = {"area", "togglearea"}, desc = "Commands to manage Craftbook Areas")
-    @NestedCommand(AreaCommands.class)
-    public void area(CommandContext context, CommandSender sender) {
     }
 
     @Command(aliases = {"comitems", "commanditems", "citems", "commanditem"}, desc = "Commands to manage Craftbook Command Items")

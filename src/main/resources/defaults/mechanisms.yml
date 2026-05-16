@@ -48,12 +48,6 @@ mechanics:
     Teleporter:
         require-sign: false
         max-range: 0
-    ToggleArea:
-        allow-redstone: true
-        use-schematics: true
-        shorten-long-names: true
-        max-size: 5000
-        max-per-user: 30
     Variables:
         default-to-global: false
         enable-in-console: false
