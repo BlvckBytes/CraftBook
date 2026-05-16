@@ -19,9 +19,6 @@ package com.sk89q.craftbook.mechanics.ic;
 import com.sk89q.craftbook.bukkit.CraftBookPlugin;
 import com.sk89q.craftbook.bukkit.util.CraftBookBukkitUtil;
 import com.sk89q.craftbook.mechanics.ic.families.*;
-import com.sk89q.craftbook.mechanics.ic.gates.variables.IsAtLeast;
-import com.sk89q.craftbook.mechanics.ic.gates.variables.ItemCounter;
-import com.sk89q.craftbook.mechanics.ic.gates.variables.NumericModifier;
 import com.sk89q.craftbook.mechanics.ic.gates.world.blocks.*;
 import com.sk89q.craftbook.mechanics.ic.gates.world.entity.*;
 import com.sk89q.craftbook.mechanics.ic.gates.world.items.*;
@@ -29,7 +26,6 @@ import com.sk89q.craftbook.mechanics.ic.gates.world.items.crafter.AutomaticCraft
 import com.sk89q.craftbook.mechanics.ic.gates.world.miscellaneous.*;
 import com.sk89q.craftbook.mechanics.ic.gates.world.sensors.*;
 import com.sk89q.craftbook.mechanics.ic.gates.world.weather.*;
-import com.sk89q.craftbook.mechanics.variables.VariableManager;
 import com.sk89q.craftbook.util.RegexUtil;
 import com.sk89q.util.yaml.YAMLFormat;
 import com.sk89q.util.yaml.YAMLProcessor;
@@ -52,11 +48,7 @@ public class ICManager {
 
     public static final ICFamily familySISO = new FamilySISO();
     public static final ICFamily family3ISO = new Family3ISO();
-    public static final ICFamily familySI3O = new FamilySI3O();
     public static final ICFamily familyAISO = new FamilyAISO();
-    public static final ICFamily family3I3O = new Family3I3O();
-    public static final ICFamily familyVIVO = new FamilyVIVO();
-    public static final ICFamily familySI5O = new FamilySI5O();
 
     private ICConfiguration icConfiguration;
 
@@ -396,13 +388,6 @@ public class ICManager {
         registerIC("MCX233", "weather set", new WeatherControl.Factory(server), familySISO, familyAISO);
         // 3ISOs
         registerIC("MCT233", "weather set ad", new WeatherControlAdvanced.Factory(server), family3ISO);
-
-        //Variable ICs
-        if(VariableManager.instance != null) {
-            registerIC("VAR100", "num mod", new NumericModifier.Factory(server), familySISO, familyAISO);
-            registerIC("VAR170", "at least", new IsAtLeast.Factory(server), familySISO, familyAISO);
-            registerIC("VAR200", "item count", new ItemCounter.Factory(server), familySISO, familyAISO);
-        }
     }
 
     public String getSearchID(Player p, String search) {

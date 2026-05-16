@@ -5,7 +5,6 @@ import org.apache.commons.lang.StringUtils;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 
-import com.sk89q.craftbook.mechanics.ic.gates.variables.NumericModifier.MathFunction;
 import com.sk89q.craftbook.mechanics.variables.VariableManager;
 import com.sk89q.craftbook.util.RegexUtil;
 
@@ -13,6 +12,57 @@ import com.sk89q.craftbook.util.RegexUtil;
  * An action that can be performed by a {@link CommandItemDefinition}
  */
 public class CommandItemAction {
+
+    public enum MathFunction {
+
+        ADD("+"),SUBTRACT("-"),MULTIPLY("*","x"),DIVIDE("/"),MOD("%");
+
+        String[] mini;
+
+        MathFunction(String ... mini) {
+            this.mini = mini;
+        }
+
+        public static MathFunction parseFunction(String text) {
+
+            for(MathFunction func : values()) {
+                if(func.name().equalsIgnoreCase(text))
+                    return func;
+                for(String min : func.mini)
+                    if(min.equalsIgnoreCase(text))
+                        return func;
+            }
+
+            return null;
+        }
+
+        public double parseNumber(double initial, double amount) {
+            switch(this) {
+                case ADD:
+                    initial += amount;
+                    break;
+                case DIVIDE:
+                    if(amount == 0) {
+                        return initial;
+                    }
+                    initial /= amount;
+                    break;
+                case MULTIPLY:
+                    initial *= amount;
+                    break;
+                case SUBTRACT:
+                    initial -= amount;
+                    break;
+                case MOD:
+                    initial %= amount;
+                    break;
+                default:
+                    break;
+            }
+
+            return initial;
+        }
+    }
 
     protected String name;
     protected ActionType type;
