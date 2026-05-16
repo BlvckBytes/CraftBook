@@ -307,28 +307,13 @@ public class ICManager {
         registerIC("MC1202", "c dispense", new ContainerDispenser.Factory(server), familySISO, familyAISO); // Restricted
         registerIC("MC1203", "strike", new LightningSummon.Factory(server), familySISO, familyAISO); // Restricted
         registerIC("MC1204", "trap", new EntityTrap.Factory(server), familySISO, familyAISO); // Restricted
-        registerIC("MC1205", "set above", new SetBlockAdmin.Factory(server, true), familySISO, familyAISO); // Restricted
-        registerIC("MC1206", "set below", new SetBlockAdmin.Factory(server, false), familySISO, familyAISO); // Restricted
-        registerIC("MC1207", "flex set", new FlexibleSetBlock.Factory(server), familySISO, familyAISO); // Restricted
-        registerIC("MC1208", "mult set", new MultipleSetBlock.Factory(server), familySISO, familyAISO);
         registerIC("MC1209", "collector", new ContainerCollector.Factory(server), familySISO, familyAISO);
         registerIC("MC1210", "emitter", new ParticleEffect.Factory(server), familySISO, familyAISO); // Restricted
-        registerIC("MC1211", "set bridge", new SetBridge.Factory(server), familySISO, familyAISO); // Restricted
-        registerIC("MC1212", "set door", new SetDoor.Factory(server), familySISO, familyAISO); // Restricted
         registerIC("MC1213", "sound", new SoundEffect.Factory(server), familySISO, familyAISO); // Restricted
         registerIC("MC1214", "range coll", new RangedCollector.Factory(server), familySISO, familyAISO);
-        registerIC("MC1215", "set a chest", new SetBlockChest.Factory(server, true), familySISO, familyAISO);
-        registerIC("MC1216", "set b chest", new SetBlockChest.Factory(server, false), familySISO, familyAISO);
         registerIC("MC1217", "pot induce", new PotionInducer.Factory(server), familySISO, familyAISO);
-        registerIC("MC1218", "block launch", new BlockLauncher.Factory(server), familySISO, familyAISO);
         registerIC("MC1219", "auto craft", new AutomaticCrafter.Factory(server), familySISO, familyAISO);
-        registerIC("MC1220", "a b break", new BlockBreaker.Factory(server, false), familySISO, familyAISO);
-        registerIC("MC1221", "b b break", new BlockBreaker.Factory(server, true), familySISO, familyAISO);
-        registerIC("MC1222", "liq flood", new LiquidFlood.Factory(server), familySISO, familyAISO); // Restricted
-        registerIC("MC1223", "terraform", new BonemealTerraformer.Factory(server), familySISO, familyAISO);
         registerIC("MC1224", "time bomb", new TimedExplosion.Factory(server), familySISO, familyAISO); // Restricted
-        registerIC("MC1225", "pump", new Pump.Factory(server), familySISO, familyAISO);
-        registerIC("MC1226", "spigot", new Spigot.Factory(server), familySISO, familyAISO);
         registerIC("MC1227", "avd spawner", new AdvancedEntitySpawner.Factory(server), familySISO, familyAISO); // Restricted
         registerIC("MC1228", "ent cannon", new EntityCannon.Factory(server), familySISO, familyAISO); // Restricted
         registerIC("MC1229", "sorter", new Sorter.Factory(server), familySISO, familyAISO);
@@ -337,11 +322,8 @@ public class ICManager {
         registerIC("MC1232", "time set", new TimeSet.Factory(server), familySISO, familyAISO); // Restricted
         registerIC("MC1233", "item fan", new ItemFan.Factory(server), familySISO, familyAISO);
         registerIC("MC1234", "planter", new Planter.Factory(server), familySISO, familyAISO);
-        registerIC("MC1235", "cultivator", new Cultivator.Factory(server), familySISO, familyAISO);
         registerIC("MC1236", "fake weather", new WeatherFaker.Factory(server), familySISO, familyAISO); // Restricted
         registerIC("MC1237", "fake time", new TimeFaker.Factory(server), familySISO, familyAISO); // Restricted
-        registerIC("MC1238", "irrigate", new Irrigator.Factory(server), familySISO, familyAISO);
-        registerIC("MC1239", "harvester", new CombineHarvester.Factory(server), familySISO, familyAISO);
         registerIC("MC1240", "shoot arrow", new ArrowShooter.Factory(server), familySISO, familyAISO); // Restricted
         registerIC("MC1241", "shoot arrows", new ArrowBarrage.Factory(server), familySISO, familyAISO); // Restricted
         registerIC("MC1242", "stocker", new ContainerStocker.Factory(server), familySISO, familyAISO); // Restricted
@@ -350,8 +332,6 @@ public class ICManager {
         registerIC("MC1245", "cont stkr", new ContainerStacker.Factory(server), familySISO, familyAISO);
         registerIC("MC1246", "xp spawner", new XPSpawner.Factory(server), familySISO, familyAISO); //Restricted
         //TODO Dyed Armour Spawner (MC1247) (Sign Title: DYE ARMOUR)
-        registerIC("MC1248", "driller", new Driller.Factory(server), familySISO, familyAISO); //Restricted
-        registerIC("MC1249", "replacer", new BlockReplacer.Factory(server), familySISO, familyAISO); //Restricted
         registerIC("MC1250", "shoot fire", new FireShooter.Factory(server), familySISO, familyAISO); // Restricted
         registerIC("MC1251", "shoot fires", new FireBarrage.Factory(server), familySISO, familyAISO); // Restricted
         registerIC("MC1252", "flame thower", new FlameThrower.Factory(server), familySISO, familyAISO); // Restricted
