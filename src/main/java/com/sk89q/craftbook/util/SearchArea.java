@@ -9,17 +9,13 @@ import com.sk89q.worldedit.math.Vector3;
 import com.sk89q.worldguard.WorldGuard;
 import com.sk89q.worldguard.protection.regions.ProtectedRegion;
 import org.apache.commons.lang.StringUtils;
-import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -59,11 +55,6 @@ public final class SearchArea {
     private SearchArea(ProtectedRegion region, World world) {
         this.region = region;
         this.world = world;
-    }
-
-    public static SearchArea createEmptyArea() {
-
-        return new SearchArea();
     }
 
     /**
@@ -124,53 +115,19 @@ public final class SearchArea {
         }
     }
 
-    /**
-     * Gets a list of all the players within this SearchArea.
-     * 
-     * @return The list of players.
-     */
-    public List<Player> getPlayersInArea() {
+    public List<Entity> getEntitiesInArea() {
+        var entities = new ArrayList<Entity>();
 
-        List<Player> players = new ArrayList<>();
+        for (var chunk : getChunksInArea()) {
+            for (var entity : chunk.getEntities()) {
+                if (!entity.isValid() || !isWithinArea(entity.getLocation()))
+                    continue;
 
-        for(Player player : Bukkit.getOnlinePlayers())
-            if(isWithinArea(player.getLocation()))
-                players.add(player);
-
-        return players;
-    }
-
-    /**
-     * Gets a list of entities in the area that are of specific types.
-     * 
-     * @param types The list of types.
-     * @return The entities.
-     */
-    public List<Entity> getEntitiesInArea(Collection<EntityType> types) {
-
-        List<Entity> entities = new ArrayList<>();
-
-        for(Chunk chunk : getChunksInArea())
-            for(Entity ent : chunk.getEntities()) {
-                if(!ent.isValid() || !isWithinArea(ent.getLocation())) continue;
-
-                boolean isType = false;
-                for(EntityType type : types) {
-                    if(type.is(ent)) {
-                        isType = true;
-                        break;
-                    }
-                }
-                if(!isType) continue;
-
-                entities.add(ent);
+                entities.add(entity);
             }
+        }
 
         return entities;
-    }
-
-    public List<Entity> getEntitiesInArea() {
-        return getEntitiesInArea(Collections.singletonList(EntityType.ANY));
     }
 
     /**
@@ -284,35 +241,6 @@ public final class SearchArea {
     public boolean hasRadiusAndCenter() {
 
         return radius != null && center != null;
-    }
-
-    /**
-     * Get the center point of the radius.
-     * 
-     * @return The center point.
-     */
-    public Location getCenter() {
-
-        return center;
-    }
-
-    /**
-     * Get the Radius this area contains.
-     * 
-     * @return The radius.
-     */
-    public Vector3 getRadius() {
-        return radius;
-    }
-
-    /**
-     * Get the WorldGuard region that this area contains.
-     * 
-     * @return The region.
-     */
-    public ProtectedRegion getRegion() {
-
-        return region;
     }
 
     /**
