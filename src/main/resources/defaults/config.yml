@@ -16,7 +16,6 @@ disabled-mechanics:
 - Elevator
 - HiddenSwitch
 - ICs
-- PaintingSwitcher
 - Pipes
 - SignCopier
 - Teleporter

@@ -156,11 +156,6 @@ public class LanguageManager {
         put("mech.map.create","Map Changer Created!");
         put("mech.map.invalid","Invalid Map ID!");
 
-        put("mech.painting.editing","You are now editing this painting!");
-        put("mech.painting.stop","You are no longer editing this painting!");
-        put("mech.painting.used","This painting is already being edited by");
-        put("mech.painting.range","You are too far away from the painting!");
-
         put("mech.pistons.crush.created","Piston Crush Mechanic Created!");
         put("mech.pistons.supersticky.created","Piston Super-Sticky Mechanic Created!");
         put("mech.pistons.bounce.created","Piston Bounce Mechanic Created!");
