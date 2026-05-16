@@ -26,8 +26,6 @@
         <fileSet>
             <includes>
                 <include>LICENSE.txt</include>
-                <include>CHANGELOG.txt</include>
-                <include>PERLSTONE-v1.1.txt</include>
             </includes>
         </fileSet>
     </fileSets>

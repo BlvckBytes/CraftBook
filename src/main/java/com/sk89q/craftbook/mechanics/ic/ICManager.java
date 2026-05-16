@@ -30,8 +30,6 @@ import com.sk89q.craftbook.mechanics.ic.gates.world.items.crafter.AutomaticCraft
 import com.sk89q.craftbook.mechanics.ic.gates.world.miscellaneous.*;
 import com.sk89q.craftbook.mechanics.ic.gates.world.sensors.*;
 import com.sk89q.craftbook.mechanics.ic.gates.world.weather.*;
-import com.sk89q.craftbook.mechanics.ic.plc.PlcFactory;
-import com.sk89q.craftbook.mechanics.ic.plc.lang.Perlstone;
 import com.sk89q.craftbook.mechanics.variables.VariableManager;
 import com.sk89q.craftbook.util.RegexUtil;
 import com.sk89q.util.yaml.YAMLFormat;
@@ -452,10 +450,6 @@ public class ICManager {
 
         // SI5Os
         registerIC("MC6020", "random 5", new Random5Bit.Factory(server), familySI5O);
-
-        // PLCs
-        registerIC("MC5000", "perlstone", PlcFactory.fromLang(server, new Perlstone(), false, "MC5000"), familyVIVO);
-        registerIC("MC5001", "perlstone 3i3o", PlcFactory.fromLang(server, new Perlstone(), false, "MC5001"), family3I3O);
 
         // Xtra ICs
         // SISOs
