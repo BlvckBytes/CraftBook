@@ -48,7 +48,7 @@ public final class CraftBookBukkitUtil {
     }
 
     public static ChangedSign toChangedSign(Block block, String[] lines, CraftBookPlayer player) {
-        return CraftBookPlugin.inst().getNmsAdapter().getChangedSign(block, lines, player);
+        return new ChangedSign(block, lines, player);
     }
 
     public static Block toBlock(ChangedSign sign) {

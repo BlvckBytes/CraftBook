@@ -23,7 +23,6 @@ import com.sk89q.craftbook.mechanics.variables.VariableManager;
 import com.sk89q.craftbook.util.ItemSyntax;
 import com.sk89q.craftbook.util.UUIDMappings;
 import com.sk89q.craftbook.util.compat.companion.CompanionPlugins;
-import com.sk89q.craftbook.util.compat.nms.NMSAdapter;
 import com.sk89q.craftbook.util.persistent.PersistentStorage;
 import com.sk89q.minecraft.util.commands.CommandException;
 import com.sk89q.minecraft.util.commands.CommandPermissionsException;
@@ -141,11 +140,6 @@ public class CraftBookPlugin extends JavaPlugin {
      */
     private SelfTriggeringManager selfTriggerManager;
 
-    /**
-     * The NMS Adapter.
-     */
-    private NMSAdapter nmsAdapter;
-
     public static final Map<String, Class<? extends CraftBookMechanic>> availableMechanics;
 
     static {
@@ -215,36 +209,12 @@ public class CraftBookPlugin extends JavaPlugin {
     }
 
     /**
-     * Retrieve the NMS Adapter.
-     *
-     * <p>
-     *     Note: This may not actually be using NMS.
-     * </p>
-     *
-     * @return The NMS Adapter
-     */
-    public NMSAdapter getNmsAdapter() {
-        return this.nmsAdapter;
-    }
-
-    /**
-     * Sets the NMS Adapter.
-     *
-     * @param nmsAdapter The NMS Adapter
-     */
-    public void setNmsAdapter(NMSAdapter nmsAdapter) {
-        this.nmsAdapter = nmsAdapter;
-    }
-
-    /**
      * Called on plugin enable.
      */
     @Override
     public void onEnable() {
 
         ItemSyntax.plugin = this;
-
-        nmsAdapter = new NMSAdapter();
 
         plugins = new CompanionPlugins();
         plugins.initiate(this);
