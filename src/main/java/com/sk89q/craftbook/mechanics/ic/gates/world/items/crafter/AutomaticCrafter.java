@@ -12,6 +12,8 @@ import org.bukkit.Material;
 import org.bukkit.Server;
 import org.bukkit.block.*;
 import org.bukkit.block.data.Directional;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.Item;
 import org.bukkit.inventory.*;
 import org.jetbrains.annotations.NotNull;
 
@@ -238,7 +240,7 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
 
         var matrixContents = cachedDispenserOrDropperInventory.getContents();
 
-        for (var itemEntity : ItemUtil.getItemsAtBlock(getSign().getBlock())) {
+        for (var itemEntity : getItemsAtBlock(getSign().getBlock())) {
             if (itemEntity.isDead() || !itemEntity.isValid())
                 continue;
 
@@ -471,5 +473,29 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
         }
 
         return smallest;
+    }
+
+    private List<Item> getItemsAtBlock(Block block) {
+        var items = new ArrayList<Item>();
+
+        for (Entity nearbyEntity : block.getLocation().getNearbyEntities(2, 2, 2)) {
+            if (!(nearbyEntity instanceof Item item))
+                continue;
+
+            if (item.isDead() || !item.isValid())
+                continue;
+
+            var itemLocation = item.getLocation();
+
+            if (
+              itemLocation.getBlockX() == block.getX()
+                && itemLocation.getBlockY() == block.getY()
+                && itemLocation.getBlockZ() == block.getZ()
+            ) {
+                items.add(item);
+            }
+        }
+
+        return items;
     }
 }

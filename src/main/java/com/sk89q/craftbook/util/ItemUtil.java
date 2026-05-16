@@ -2,11 +2,8 @@ package com.sk89q.craftbook.util;
 
 import org.bukkit.*;
 import org.bukkit.block.BlastFurnace;
-import org.bukkit.block.Block;
 import org.bukkit.block.Furnace;
 import org.bukkit.block.Smoker;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.Item;
 import org.bukkit.inventory.*;
 import org.jetbrains.annotations.Nullable;
 
@@ -178,30 +175,4 @@ public final class ItemUtil {
         return valid;
     }
 
-    /**
-     * Gets all {@link Item}s at a certain {@link Block}.
-     * 
-     * @param block The {@link Block} to check for items at.
-     * @return A {@link ArrayList} of {@link Item}s.
-     */
-    public static List<Item> getItemsAtBlock(Block block) {
-
-        List<Item> items = new ArrayList<>();
-
-        for (Entity en : block.getChunk().getEntities()) {
-            if (!(en instanceof Item)) {
-                continue;
-            }
-            Item item = (Item) en;
-            if (item.isDead() || !item.isValid())
-                continue;
-
-            if (EntityUtil.isEntityInBlock(en, block)) {
-
-                items.add(item);
-            }
-        }
-
-        return items;
-    }
 }
