@@ -12,7 +12,6 @@ import org.bukkit.Material;
 import org.bukkit.Server;
 import org.bukkit.block.*;
 import org.bukkit.block.data.Directional;
-import org.bukkit.entity.Item;
 import org.bukkit.inventory.*;
 import org.jetbrains.annotations.NotNull;
 
@@ -237,35 +236,23 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
             }
         }
 
-        ItemStack[] contents = cachedDispenserOrDropperInventory.getContents();
+        var matrixContents = cachedDispenserOrDropperInventory.getContents();
 
-        for (Item item : ItemUtil.getItemsAtBlock(CraftBookBukkitUtil.toSign(getSign()).getBlock())) {
-            boolean delete = true;
+        for (var itemEntity : ItemUtil.getItemsAtBlock(getSign().getBlock())) {
+            if (itemEntity.isDead() || !itemEntity.isValid())
+                continue;
 
-            ItemStack stack = item.getItemStack();
+            var itemStack = itemEntity.getItemStack();
 
-            int newAmount = stack.getAmount();
-            for (int i = 0; i < stack.getAmount(); i++) {
-                ItemStack it = getSmallestSimilarStack(contents, stack);
-                if (it == null) break;
-                if (it.getAmount() < 64) {
-                    it.setAmount(it.getAmount() + 1);
-                    newAmount -= 1;
-                } else if (newAmount > 0) {
-                    delete = false;
-                    break;
-                }
-            }
+            var remainder = distributeToMakeEvenAndGetRemainder(itemStack, matrixContents);
 
-            if (newAmount > 0) delete = false;
+            itemStack.setAmount(remainder);
+            itemEntity.setItemStack(itemStack);
 
-            if (delete) {
-                item.remove();
-            } else {
-                stack.setAmount(newAmount);
-                item.setItemStack(stack);
-            }
+            if (remainder <= 0)
+                itemEntity.remove();
         }
+
         return true;
     }
 
@@ -420,35 +407,27 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
         if (updateCachesAndGetIfIsMalformed())
             return;
 
-        ItemStack[] contents = cachedDispenserOrDropperInventory.getContents();
+        var matrixContents = cachedDispenserOrDropperInventory.getContents();
+        var remainders = new ArrayList<>(event.getItems());
 
-        boolean delete = true;
-        List<ItemStack> newItems = new ArrayList<>(event.getItems());
-        for (ItemStack ite : event.getItems()) {
-            if (!ItemUtil.isStackValid(ite)) continue;
-            int iteind = newItems.indexOf(ite);
-            int newAmount = ite.getAmount();
-            for (int i = 0; i < ite.getAmount(); i++) {
-                ItemStack it = getSmallestSimilarStack(contents, ite);
-                if (!ItemUtil.isStackValid(it) || !ite.isSimilar(it)) continue;
-                if (it.getAmount() < 64) {
-                    it.setAmount(it.getAmount() + 1);
-                    newAmount -= 1;
-                } else {
-                    if (newAmount > 0) {
-                        delete = false;
-                        break;
-                    }
-                }
+        for (var itemIndex = remainders.size() - 1; itemIndex >= 0; --itemIndex) {
+            var itemToPut = remainders.get(itemIndex);
+
+            if (!ItemUtil.isStackValid(itemToPut)) {
+                remainders.remove(itemIndex);
+                continue;
             }
-            if (newAmount > 0) delete = false;
-            if(newAmount != ite.getAmount())
-                ite.setAmount(newAmount);
-            if (delete) newItems.remove(iteind);
-            else newItems.set(iteind, ite);
+
+            var remainder = distributeToMakeEvenAndGetRemainder(itemToPut, matrixContents);
+
+            itemToPut.setAmount(remainder);
+
+            if (remainder <= 0)
+                remainders.remove(itemIndex);
         }
+
         event.getItems().clear();
-        event.setItems(newItems);
+        event.setItems(remainders);
     }
 
     @Override
@@ -459,6 +438,25 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
         cachedDispenserOrDropperInventory = null;
         cachedOutputBlock = null;
         cachedRecipe = null;
+    }
+
+    private int distributeToMakeEvenAndGetRemainder(ItemStack source, ItemStack[] destinations) {
+        var remainingAmount = source.getAmount();
+
+        while (remainingAmount > 0) {
+            var destination = getSmallestSimilarStack(destinations, source);
+
+            if (destination == null)
+                return remainingAmount;
+
+            if (destination.getAmount() >= 64)
+                return remainingAmount;
+
+            destination.setAmount(destination.getAmount() + 1);
+            --remainingAmount;
+        }
+
+        return remainingAmount;
     }
 
     private ItemStack getSmallestSimilarStack(ItemStack[] candidates, @NotNull ItemStack similarItem) {
