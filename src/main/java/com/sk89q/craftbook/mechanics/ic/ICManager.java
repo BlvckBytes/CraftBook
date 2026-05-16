@@ -20,7 +20,6 @@ import com.sk89q.craftbook.bukkit.CraftBookPlugin;
 import com.sk89q.craftbook.bukkit.util.CraftBookBukkitUtil;
 import com.sk89q.craftbook.mechanics.ic.families.*;
 import com.sk89q.craftbook.mechanics.ic.gates.world.blocks.Planter;
-import com.sk89q.craftbook.mechanics.ic.gates.world.items.*;
 import com.sk89q.craftbook.mechanics.ic.gates.world.items.crafter.AutomaticCrafter;
 import com.sk89q.craftbook.mechanics.ic.gates.world.miscellaneous.*;
 import com.sk89q.craftbook.mechanics.ic.gates.world.sensors.*;
@@ -299,29 +298,20 @@ public class ICManager {
         registerIC("MC1025", "server time", new ServerTimeModulus.Factory(server), familySISO, familyAISO);
         registerIC("MC1110", "transmitter", new WirelessTransmitter.Factory(server), familySISO, familyAISO);
         registerIC("MC1111", "receiver", new WirelessReceiver.Factory(server), familySISO, familyAISO);
-        registerIC("MC1201", "dispenser", new ItemDispenser.Factory(server), familySISO, familyAISO); // Restricted
-        registerIC("MC1202", "c dispense", new ContainerDispenser.Factory(server), familySISO, familyAISO); // Restricted
         registerIC("MC1203", "strike", new LightningSummon.Factory(server), familySISO, familyAISO); // Restricted
-        registerIC("MC1209", "collector", new ContainerCollector.Factory(server), familySISO, familyAISO);
         registerIC("MC1210", "emitter", new ParticleEffect.Factory(server), familySISO, familyAISO); // Restricted
         registerIC("MC1213", "sound", new SoundEffect.Factory(server), familySISO, familyAISO); // Restricted
-        registerIC("MC1214", "range coll", new RangedCollector.Factory(server), familySISO, familyAISO);
         registerIC("MC1217", "pot induce", new PotionInducer.Factory(server), familySISO, familyAISO);
         registerIC("MC1219", "auto craft", new AutomaticCrafter.Factory(server), familySISO, familyAISO);
         registerIC("MC1224", "time bomb", new TimedExplosion.Factory(server), familySISO, familyAISO); // Restricted
-        registerIC("MC1229", "sorter", new Sorter.Factory(server), familySISO, familyAISO);
         registerIC("MC1230", "sense day", new DaySensor.Factory(server), familySISO, familyAISO);
         registerIC("MC1231", "t control", new TimeControl.Factory(server), familySISO, familyAISO); // Restricted
         registerIC("MC1232", "time set", new TimeSet.Factory(server), familySISO, familyAISO); // Restricted
-        registerIC("MC1233", "item fan", new ItemFan.Factory(server), familySISO, familyAISO);
         registerIC("MC1234", "planter", new Planter.Factory(server), familySISO, familyAISO);
         registerIC("MC1236", "fake weather", new WeatherFaker.Factory(server), familySISO, familyAISO); // Restricted
         registerIC("MC1237", "fake time", new TimeFaker.Factory(server), familySISO, familyAISO); // Restricted
         registerIC("MC1240", "shoot arrow", new ArrowShooter.Factory(server), familySISO, familyAISO); // Restricted
         registerIC("MC1241", "shoot arrows", new ArrowBarrage.Factory(server), familySISO, familyAISO); // Restricted
-        registerIC("MC1242", "stocker", new ContainerStocker.Factory(server), familySISO, familyAISO); // Restricted
-        registerIC("MC1243", "distributer", new Distributer.Factory(server), familySISO, familyAISO);
-        registerIC("MC1245", "cont stkr", new ContainerStacker.Factory(server), familySISO, familyAISO);
         registerIC("MC1246", "xp spawner", new XPSpawner.Factory(server), familySISO, familyAISO); //Restricted
         //TODO Dyed Armour Spawner (MC1247) (Sign Title: DYE ARMOUR)
         registerIC("MC1250", "shoot fire", new FireShooter.Factory(server), familySISO, familyAISO); // Restricted
