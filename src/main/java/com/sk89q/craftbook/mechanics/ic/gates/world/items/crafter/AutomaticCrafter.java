@@ -6,7 +6,6 @@ import com.sk89q.craftbook.bukkit.util.CraftBookBukkitUtil;
 import com.sk89q.craftbook.mechanics.ic.*;
 import com.sk89q.craftbook.mechanics.pipe.PipePutEvent;
 import com.sk89q.craftbook.mechanics.pipe.PipeRequestEvent;
-import com.sk89q.craftbook.util.InventoryUtil;
 import com.sk89q.craftbook.util.ItemUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -204,8 +203,8 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
         cachedDispenserOrDropperInventory.setContents(replace);
 
         if(!items.isEmpty()) {
-            if (InventoryUtil.doesBlockHaveInventory(cachedOutputBlock)) {
-                Inventory outputInventory = ((InventoryHolder) cachedOutputBlock.getState()).getInventory();
+            if (cachedOutputBlock.getState() instanceof InventoryHolder inventoryHolder) {
+                var outputInventory = inventoryHolder.getInventory();
 
                 for (ItemStack stack : items)
                     leftovers.addAll(outputInventory.addItem(stack).values());

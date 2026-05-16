@@ -97,7 +97,7 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
             if (pistonBlock != null && isPiston(pistonBlock)) {
                 Piston pis = (Piston) pistonBlock.getBlockData();
                 Block off = pistonBlock.getRelative(pis.getFacing());
-                if (InventoryUtil.doesBlockHaveInventory(off)) {
+                if (off.getState() instanceof Container) {
                     if (!ProtectionUtil.canAccessInventory(event.getPlayer(), off)) {
                         if (CraftBookPlugin.inst().getConfiguration().showPermissionMessages)
                             player.printError("area.use-permission");
