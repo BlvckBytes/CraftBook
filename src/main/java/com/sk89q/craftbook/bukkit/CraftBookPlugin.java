@@ -17,8 +17,6 @@ import com.sk89q.craftbook.mechanics.Teleporter;
 import com.sk89q.craftbook.mechanics.XPStorer;
 import com.sk89q.craftbook.mechanics.ic.ICMechanic;
 import com.sk89q.craftbook.mechanics.ic.gates.world.items.crafter.RecipeCache;
-import com.sk89q.craftbook.mechanics.items.CommandItemDefinition;
-import com.sk89q.craftbook.mechanics.items.CommandItems;
 import com.sk89q.craftbook.mechanics.pipe.Pipes;
 import com.sk89q.craftbook.mechanics.signcopier.SignCopier;
 import com.sk89q.craftbook.mechanics.variables.VariableManager;
@@ -159,7 +157,6 @@ public class CraftBookPlugin extends JavaPlugin {
         availableMechanics = new TreeMap<>();
 
         availableMechanics.put("Variables", VariableManager.class);
-        availableMechanics.put("CommandItems", CommandItems.class);
         availableMechanics.put("PaintingSwitcher", PaintingSwitch.class);
         availableMechanics.put("XPStorer", XPStorer.class);
         availableMechanics.put("HiddenSwitch", HiddenSwitch.class);
@@ -1103,24 +1100,6 @@ public class CraftBookPlugin extends JavaPlugin {
         config.config.setProperty("persistent-storage-type", storage.getType());
 
         config.config.save();
-    }
-
-    /**
-     * Parses more advanced portions of the Item Syntax.
-     * 
-     * @param item The item to parse
-     * @return The parsed string. (Can be the same, and should be if nothing found)
-     */
-    @SuppressWarnings({"MethodMayBeStatic", "unused"})
-    public final String parseItemSyntax(String item) {
-
-        if(CommandItems.INSTANCE != null)  {
-            CommandItemDefinition def = CommandItems.INSTANCE.getDefinitionByName(item);
-            if(def != null) {
-                return ItemSyntax.getStringFromItem(def.getItem());
-            }
-        }
-        return item;
     }
 
     public static String getWikiDomain() {

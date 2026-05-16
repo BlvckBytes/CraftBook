@@ -11,7 +11,6 @@ import com.sk89q.craftbook.bukkit.CraftBookPlugin;
 import com.sk89q.craftbook.bukkit.ReportWriter;
 import com.sk89q.craftbook.bukkit.util.CraftBookBukkitUtil;
 import com.sk89q.craftbook.mechanics.ic.ICCommands;
-import com.sk89q.craftbook.mechanics.items.CommandItemCommands;
 import com.sk89q.craftbook.mechanics.signcopier.SignEditCommands;
 import com.sk89q.craftbook.mechanics.variables.VariableCommands;
 import com.sk89q.craftbook.util.PastebinPoster;
@@ -33,11 +32,6 @@ public class TopLevelCommands {
     @NestedCommand(Commands.class)
     public void craftBookCmds(CommandContext context, CommandSender sender) {
 
-    }
-
-    @Command(aliases = {"comitems", "commanditems", "citems", "commanditem"}, desc = "Commands to manage Craftbook Command Items")
-    @NestedCommand(CommandItemCommands.class)
-    public void commandItems(CommandContext context, CommandSender sender) {
     }
 
     @Command(aliases = {"sign", "signcopy", "signpaste", "signedit"}, desc = "Commands to manage the Sign Copier")

@@ -156,23 +156,4 @@ public final class ItemUtil {
 
         return isSmeltable(item) || isCookable(item) || isBlastSmeltable(item);
     }
-
-
-    public static ItemStack makeItemValid(ItemStack invalid) {
-
-        if(invalid == null)
-            return new ItemStack(Material.STONE);
-
-        ItemStack valid = invalid.clone();
-
-        if(valid.getDurability() < 0)
-            valid.setDurability((short) 0);
-        if(valid.getType() == null || valid.getType() == Material.MOVING_PISTON)
-            valid.setType(Material.STONE);
-        if(valid.getAmount() < 1)
-            valid.setAmount(1);
-
-        return valid;
-    }
-
 }
