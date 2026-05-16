@@ -19,7 +19,6 @@ disabled-mechanics:
 - PaintingSwitcher
 - Pipes
 - SignCopier
-- Sponge
 - Teleporter
 
 # WARNING! Changing this can result in all ST mechanics acting very weirdly, only change this if you know what you are doing!

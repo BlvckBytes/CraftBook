@@ -32,11 +32,6 @@ mechanics:
         notification-radius: 5
     SignCopier:
         item: minecraft:ink_sac
-    Sponge:
-        radius: 5
-        circular-radius: true
-        require-redstone: false
-        include-wet: false
     Teleporter:
         require-sign: false
         max-range: 0
