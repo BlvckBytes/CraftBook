@@ -184,8 +184,6 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
 
         cachedDispenserOrDropperInventory.clear();
 
-        CraftBookPlugin.logDebugMessage("AutoCrafter is dispensing a " + result.getType().name() + " with data: " + result.getDurability() + " and amount: " + result.getAmount(), "ic-mc1219");
-
         items.add(result);
 
         PipeRequestEvent event = new PipeRequestEvent(cachedOutputBlock, items, cachedDispenserOrDropperBlock);

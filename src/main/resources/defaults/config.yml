@@ -60,15 +60,6 @@ languages:
 # If enabled, CraftBook will scan messages sent to players for localizable text, instead of just checking if the entire message is localizable.
 scan-text-for-localization: false
 
-# Enable a mode that will print extra debug information to the console.
-debug-mode: false
-
-# Causes all debug mode output to be logged into a file. This file is reset every startup (And every /cb reload).
-debug-mode-file-logging: false
-
-# Enable certain debug types when debug mode is enabled.
-debug-flags: []
-
 # Enables random easter eggs. Can be from console messages on startup for a special occasion, to funny little effects with IC's and other mechanics (Always harmless, won't mess anything up)
 easter-eggs: false
 

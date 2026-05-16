@@ -22,7 +22,6 @@ import com.sk89q.craftbook.mechanics.signcopier.SignCopier;
 import com.sk89q.craftbook.mechanics.variables.VariableManager;
 import com.sk89q.craftbook.util.CompatabilityUtil;
 import com.sk89q.craftbook.util.ItemSyntax;
-import com.sk89q.craftbook.util.RegexUtil;
 import com.sk89q.craftbook.util.UUIDMappings;
 import com.sk89q.craftbook.util.compat.companion.CompanionPlugins;
 import com.sk89q.craftbook.util.compat.nms.NMSAdapter;
@@ -69,7 +68,6 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.TreeMap;
@@ -278,14 +276,11 @@ public class CraftBookPlugin extends JavaPlugin {
         uuidMappings = new UUIDMappings();
         uuidMappings.enable();
 
-        logDebugMessage("Initializing Managers!", "startup");
         managerAdapter = new MechanicListenerAdapter();
 
-        logDebugMessage("Initializing Permission!", "startup");
         PermissionsResolverManager.initialize(this);
 
         // Register command classes
-        logDebugMessage("Initializing Commands!", "startup");
         commands = new CommandsManager<CommandSender>() {
 
             @Override
@@ -375,25 +370,13 @@ public class CraftBookPlugin extends JavaPlugin {
      * Register basic things to the plugin. For example, languages.
      */
     public void setupCraftBook() {
-
-        if(config.debugLogToFile) {
-            try {
-                debugLogger = new PrintWriter(new File(getDataFolder(), "debug.log"));
-            } catch (FileNotFoundException e1) {
-                e1.printStackTrace();
-            }
-        }
-
         // Initialize the language manager.
-        logDebugMessage("Initializing Languages!", "startup");
         languageManager = new LanguageManager();
         languageManager.init();
 
         getServer().getScheduler().runTask(this, CompatabilityUtil::init);
 
         mechanics = new ArrayList<>();
-
-        logDebugMessage("Initializing Mechanisms!", "startup");
 
         createDefaultConfiguration(new File(getDataFolder(), "mechanisms.yml"), "mechanisms.yml");
         mechanismsConfig = new YAMLProcessor(new File(getDataFolder(), "mechanisms.yml"), true, YAMLFormat.EXTENDED);
@@ -543,8 +526,6 @@ public class CraftBookPlugin extends JavaPlugin {
      * Registers events used by the main CraftBook plugin. Also registers PluginMetrics
      */
     public void registerGlobalEvents() {
-
-        logDebugMessage("Registring managers!", "startup");
         getServer().getPluginManager().registerEvents(managerAdapter, inst());
 
         if(config.easterEggs) {
@@ -552,8 +533,6 @@ public class CraftBookPlugin extends JavaPlugin {
 
                 @Override
                 public void run () {
-
-                    logDebugMessage("Checking easter eggs!", "startup");
                     Calendar date = Calendar.getInstance();
 
                     if(date.get(Calendar.MONTH) == Calendar.JUNE && date.get(Calendar.DAY_OF_MONTH) == 22) //Me4502 reddit cakeday
@@ -582,7 +561,6 @@ public class CraftBookPlugin extends JavaPlugin {
         }
 
         try {
-            logDebugMessage("Initializing Metrics!", "startup");
             org.bstats.bukkit.Metrics metrics = new org.bstats.bukkit.Metrics(this, 3319);
 
             metrics.addCustomChart(new org.bstats.charts.AdvancedPie("language",
@@ -941,11 +919,6 @@ public class CraftBookPlugin extends JavaPlugin {
         getServer().getScheduler().cancelTasks(inst());
         HandlerList.unregisterAll(inst());
 
-        if(config.debugLogToFile) {
-            debugLogger.close();
-            debugLogger = null;
-        }
-
         config.load();
         managerAdapter = new MechanicListenerAdapter();
         mechanicClock = new MechanicClock();
@@ -1037,47 +1010,6 @@ public class CraftBookPlugin extends JavaPlugin {
         PrintWriter pw = new PrintWriter(out);
         ex.printStackTrace(pw);
         return out.toString();
-    }
-
-    public static boolean isDebugFlagEnabled(String flag) {
-
-        if(inst() == null) return false;
-
-        if(!inst().config.debugMode || inst().config.debugFlags == null || inst().config.debugFlags.isEmpty())
-            return false;
-
-        String[] flagBits = RegexUtil.PERIOD_PATTERN.split(flag);
-
-        String tempFlag = "";
-
-        for(int i = 0; i < flagBits.length; i++) {
-
-            if(i == 0)
-                tempFlag = flagBits[i];
-            else
-                tempFlag = tempFlag + "." + flagBits[i];
-
-            for(String testflag : inst().config.debugFlags) {
-
-                if(testflag.toLowerCase(Locale.ENGLISH).equals(tempFlag))
-                    return true;
-            }
-        }
-
-        return false;
-    }
-
-    private static PrintWriter debugLogger;
-
-    public static void logDebugMessage(String message, String code) {
-
-        if(!isDebugFlagEnabled(code))
-            return;
-
-        logger().info("[Debug][" + code + "] " + message);
-
-        if(CraftBookPlugin.inst().config.debugLogToFile)
-            debugLogger.println("[" + code + "] " + message);
     }
 
     public boolean hasPersistentStorage() {

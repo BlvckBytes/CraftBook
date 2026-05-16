@@ -65,17 +65,13 @@ public class XPStorer extends AbstractCraftBookMechanic {
 
         float pcnt = event.getPlayer().getExp();
         int level = event.getPlayer().getLevel();
-        CraftBookPlugin.logDebugMessage("Percent: " + pcnt + ". Level: " + level, "xpstorer");
 
         event.getPlayer().setExp(0);
         xp += (int)(event.getPlayer().getExpToLevel()*pcnt);
 
-        CraftBookPlugin.logDebugMessage("XP: " + xp, "xpstorer");
-
         while (event.getPlayer().getLevel() > 0) {
             event.getPlayer().setLevel(event.getPlayer().getLevel() - 1);
             xp += event.getPlayer().getExpToLevel();
-            CraftBookPlugin.logDebugMessage("XP: " + xp + ". Level: " + event.getPlayer().getLevel(), "xpstorer");
         }
 
         event.getPlayer().setLevel(level);
@@ -87,8 +83,6 @@ public class XPStorer extends AbstractCraftBookMechanic {
         }
 
         int bottleCount = (int) Math.min(max, Math.floor(xp / (double) xpPerBottle));
-
-        CraftBookPlugin.logDebugMessage("Bottles: " + bottleCount, "xpstorer");
 
         if(requireBottle) {
             event.getPlayer().getInventory().removeItem(new ItemStack(Material.GLASS_BOTTLE, bottleCount));
@@ -113,8 +107,6 @@ public class XPStorer extends AbstractCraftBookMechanic {
         float levelPercentage;
 
         int remainingXP = xp - bottleCount*xpPerBottle;
-
-        CraftBookPlugin.logDebugMessage("Leftover XP: " + remainingXP, "xpstorer");
 
         do {
             levelPercentage = (float)remainingXP / event.getPlayer().getExpToLevel();

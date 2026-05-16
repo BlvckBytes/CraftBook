@@ -43,8 +43,6 @@ public class SelfTriggeringManager implements Listener {
             }
         } catch (Throwable e) {
             Bukkit.getLogger().warning("A corrupt tile entity was found in the chunk: (world: " + chunk.getWorld().getName() + " x: " + chunk.getX() + " z: " + chunk.getZ() + ") Self-Triggering mechanics may not work here until the issue is resolved.");
-            if(CraftBookPlugin.inst().getConfiguration().debugMode)
-                CraftBookBukkitUtil.printStacktrace(e);
         }
     }
 
@@ -65,7 +63,6 @@ public class SelfTriggeringManager implements Listener {
         if(!event.isCancelled()) {
             hasChanged = true;
             thinkingMechanics.remove(location);
-            CraftBookPlugin.logDebugMessage("Unregistered ST at: " + location.toString() + " for reason: " + reason.name(), "st.unregister");
         }
     }
 

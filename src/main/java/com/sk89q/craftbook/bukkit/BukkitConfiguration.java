@@ -35,10 +35,6 @@ public class BukkitConfiguration {
     public List<String> languages;
     public boolean languageScanText;
 
-    public boolean debugMode;
-    public boolean debugLogToFile;
-    public List<String> debugFlags;
-
     public String persistentStorageType;
 
     public YAMLProcessor config;
@@ -130,15 +126,6 @@ public class BukkitConfiguration {
 
         config.setComment("scan-text-for-localization", "If enabled, CraftBook will scan messages sent to players for localizable text, instead of just checking if the entire message is localizable.");
         languageScanText = config.getBoolean("scan-text-for-localization", false);
-
-        config.setComment("debug-mode", "Enable a mode that will print extra debug information to the console.");
-        debugMode = config.getBoolean("debug-mode", false);
-
-        config.setComment("debug-mode-file-logging", "Causes all debug mode output to be logged into a file. This file is reset every startup (And every /cb reload).");
-        debugLogToFile = config.getBoolean("debug-mode-file-logging", false);
-
-        config.setComment("debug-flags", "Enable certain debug types when debug mode is enabled.");
-        debugFlags = config.getStringList("debug-flags", new ArrayList<>());
 
         config.setComment("easter-eggs", "Enables random easter eggs. Can be from console messages on startup for a special occasion, to funny little effects with IC's and other mechanics (Always harmless, won't mess anything up)");
         easterEggs = config.getBoolean("easter-eggs", true);

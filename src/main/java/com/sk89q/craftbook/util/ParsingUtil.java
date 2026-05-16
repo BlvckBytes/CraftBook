@@ -83,8 +83,6 @@ public final class ParsingUtil {
 
         for(String var : getPossibleVariables(line)) {
 
-            CraftBookPlugin.logDebugMessage("Possible variable: " + var + " detected!", "variables.line-parsing");
-
             String key, value;
 
             if(var.contains("|")) {
@@ -96,17 +94,14 @@ public final class ParsingUtil {
                     key = bits[0];
                     value = bits[1];
                 }
-                CraftBookPlugin.logDebugMessage("Variable " + value + " at " + key + " detected!", "variables.line-parsing");
             } else {
                 key = "global";
                 value = var;
-                CraftBookPlugin.logDebugMessage("Global Variable " + value + " detected!", "variables.line-parsing");
             }
 
             if(player != null)
                 if(!VariableCommands.hasVariablePermission(player, key, value, "use"))
                     continue;
-            CraftBookPlugin.logDebugMessage(var + " permissions granted!", "variables.line-parsing");
 
             for(Entry<Tuple2<String, String>, String> bit : VariableManager.instance.getVariableStore().entrySet()) {
                 if(bit.getKey().b.equals(key) && bit.getKey().a.equals(value)) {

@@ -39,7 +39,6 @@ public class VariableManager extends AbstractCraftBookMechanic {
 
         instance = this;
         variableStore = new HashMap<>();
-        CraftBookPlugin.logDebugMessage("Initializing Variables!", "startup.variables");
 
         try {
             File varFile = new File(CraftBookPlugin.inst().getDataFolder(), "variables.yml");

@@ -406,8 +406,6 @@ public class ICMechanic extends AbstractCraftBookMechanic {
             }
 
             if (ICManager.isCachedIC(block.getLocation())) {
-
-                CraftBookPlugin.logDebugMessage("Existing IC found at selected location!", "ic-create");
                 ICManager.getCachedIC(block.getLocation()).unload();
                 ICManager.removeCachedIC(block.getLocation());
             }
