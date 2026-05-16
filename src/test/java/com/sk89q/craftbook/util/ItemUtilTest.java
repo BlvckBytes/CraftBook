@@ -19,9 +19,6 @@ import org.junit.runner.RunWith;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
-import java.util.ArrayList;
-import java.util.List;
-
 @Ignore
 @RunWith(PowerMockRunner.class)
 @PrepareForTest({ItemUtil.class, ItemSyntax.class})
@@ -45,28 +42,6 @@ public class ItemUtilTest {
 
         verify(mockStack, times(2)).setAmount(48);
         verify(mockStack2).setAmount(1);
-    }
-
-    @Test
-    public void testAreItemsSimilar() {
-
-        ItemStack test1 = newMockItemStack(Material.OAK_PLANKS,(byte) 4,1);
-        ItemStack test2 = newMockItemStack(Material.OAK_PLANKS,(byte) 8,1);
-        assertTrue(ItemUtil.areItemsSimilar(test1, test2));
-        test2 = newMockItemStack(Material.GRASS_BLOCK,(byte) 8,1);
-        assertTrue(!ItemUtil.areItemsSimilar(test1, test2));
-    }
-
-    @Test
-    public void testAreItemsIdentical() {
-
-        ItemStack test1 = newMockItemStack(Material.OAK_PLANKS,(byte) 4,1);
-        ItemStack test2 = newMockItemStack(Material.OAK_PLANKS,(byte) 8,1);
-        assertTrue(!ItemUtil.areItemsIdentical(test1, test2));
-        test2 = newMockItemStack(Material.GRASS_BLOCK,(byte) 8,1);
-        assertTrue(!ItemUtil.areItemsIdentical(test1, test2));
-        test2 = newMockItemStack(Material.OAK_PLANKS,(byte) 4,1);
-        assertTrue(ItemUtil.areItemsIdentical(test1, test2));
     }
 
     @Test

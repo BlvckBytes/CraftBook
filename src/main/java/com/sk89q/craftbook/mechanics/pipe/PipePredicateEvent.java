@@ -69,7 +69,7 @@ public class PipePredicateEvent extends BlockEvent {
       if (!ItemUtil.isStackValid(includeFilter))
         continue;
 
-      if (!ItemUtil.areItemsIdentical(includeFilter, stack))
+      if (!includeFilter.isSimilar(stack))
         return false;
     }
 
@@ -77,7 +77,7 @@ public class PipePredicateEvent extends BlockEvent {
       if (!ItemUtil.isStackValid(excludeFilter))
         continue;
 
-      if (ItemUtil.areItemsIdentical(excludeFilter, stack))
+      if (excludeFilter.isSimilar(stack))
         return false;
     }
 

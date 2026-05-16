@@ -117,7 +117,7 @@ public class Planter extends AbstractSelfTriggeredIC {
                   chestItem == null
                     || !ItemUtil.isStackValid(chestItem)
                     || !plantableItem(chestItem)
-                    || (item != null && !ItemUtil.areItemsIdentical(chestItem, item))
+                    || (item != null && !item.isSimilar(chestItem))
                 ) {
                     ++chestSlot;
                     continue;
@@ -161,7 +161,7 @@ public class Planter extends AbstractSelfTriggeredIC {
                 if (
                   !(entity instanceof Item itemEntity)
                     || !ItemUtil.isStackValid(entityStack = itemEntity.getItemStack())
-                    || (item != null && !ItemUtil.areItemsIdentical(item, entityStack))
+                    || (item != null && !item.isSimilar(entityStack))
                 ) {
                     ++entityIndex;
                     continue;

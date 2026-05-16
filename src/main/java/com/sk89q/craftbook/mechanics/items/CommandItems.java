@@ -348,7 +348,7 @@ public class CommandItems extends AbstractCraftBookMechanic {
             final ItemStack stack = stackIt.next();
             performCommandItems(stack, event.getEntity(), event);
             for(CommandItemDefinition def : definitions) {
-                if(ItemUtil.areItemsIdentical(stack, def.getItem()) && def.keepOnDeath) {
+                if(def.getItem().isSimilar(stack) && def.keepOnDeath) {
                     List<ItemStack> items = deathPersistItems.get(event.getEntity().getUniqueId());
                     if (items == null) items = Lists.newArrayList();
                     items.add(stack);
@@ -401,7 +401,7 @@ public class CommandItems extends AbstractCraftBookMechanic {
 
         for(CommandItemDefinition def : definitions) {
             current: {
-            if(ItemUtil.areItemsIdentical(def.stack, item)) {
+            if(def.stack.isSimilar(item)) {
                 final CommandItemDefinition comdef = def;
 
                 if(!comdef.clickType.doesPassType(event)) break current;
@@ -440,7 +440,7 @@ public class CommandItems extends AbstractCraftBookMechanic {
                         int amount = 0;
 
                         for (ItemStack tStack : player.getInventory().getContents()) {
-                            if (ItemUtil.areItemsIdentical(stack, tStack)) {
+                            if (stack.isSimilar(tStack)) {
 
                                 amount += tStack.getAmount();
 
@@ -467,7 +467,7 @@ public class CommandItems extends AbstractCraftBookMechanic {
 
                         for (int i = 0; i < player.getInventory().getContents().length; i++) {
                             ItemStack tStack = player.getInventory().getContents()[i];
-                            if (ItemUtil.areItemsIdentical(stack, tStack)) {
+                            if (stack.isSimilar(tStack)) {
                                 ItemStack toRemove = tStack.clone();
                                 if (toRemove.getAmount() > amount) {
 

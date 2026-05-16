@@ -14,6 +14,7 @@ import org.bukkit.block.*;
 import org.bukkit.block.data.Directional;
 import org.bukkit.entity.Item;
 import org.bukkit.inventory.*;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 
@@ -245,7 +246,7 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
 
             int newAmount = stack.getAmount();
             for (int i = 0; i < stack.getAmount(); i++) {
-                ItemStack it = ItemUtil.getSmallestStackOfType(contents, stack);
+                ItemStack it = getSmallestSimilarStack(contents, stack);
                 if (it == null) break;
                 if (it.getAmount() < 64) {
                     it.setAmount(it.getAmount() + 1);
@@ -428,8 +429,8 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
             int iteind = newItems.indexOf(ite);
             int newAmount = ite.getAmount();
             for (int i = 0; i < ite.getAmount(); i++) {
-                ItemStack it = ItemUtil.getSmallestStackOfType(contents, ite);
-                if (!ItemUtil.isStackValid(it) || !ItemUtil.areItemsIdentical(ite, it)) continue;
+                ItemStack it = getSmallestSimilarStack(contents, ite);
+                if (!ItemUtil.isStackValid(it) || !ite.isSimilar(it)) continue;
                 if (it.getAmount() < 64) {
                     it.setAmount(it.getAmount() + 1);
                     newAmount -= 1;
@@ -458,5 +459,19 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
         cachedDispenserOrDropperInventory = null;
         cachedOutputBlock = null;
         cachedRecipe = null;
+    }
+
+    private ItemStack getSmallestSimilarStack(ItemStack[] candidates, @NotNull ItemStack similarItem) {
+        ItemStack smallest = null;
+
+        for (ItemStack candidate : candidates) {
+            if (!ItemUtil.isStackValid(candidate) || !similarItem.isSimilar(candidate))
+                continue;
+
+            if (smallest == null || candidate.getAmount() < smallest.getAmount())
+                smallest = candidate;
+        }
+
+        return smallest;
     }
 }

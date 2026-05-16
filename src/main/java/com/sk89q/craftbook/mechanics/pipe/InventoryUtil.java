@@ -2,6 +2,7 @@ package com.sk89q.craftbook.mechanics.pipe;
 
 import com.sk89q.craftbook.util.ItemUtil;
 import org.bukkit.Material;
+import org.bukkit.Tag;
 import org.bukkit.block.BrewingStand;
 import org.bukkit.block.ChiseledBookshelf;
 import org.bukkit.block.Crafter;
@@ -41,7 +42,7 @@ public class InventoryUtil {
                 continue;
 
             // Shulker-boxes do not nest
-            if (isAddingToShulkerBox && ItemUtil.isShulkerBox(stack.getType())) {
+            if (isAddingToShulkerBox && Tag.SHULKER_BOXES.isTagged(stack.getType())) {
                 leftovers.add(stack);
                 continue;
             }
@@ -191,7 +192,7 @@ public class InventoryUtil {
         var inventory = chiseledBookshelf.getInventory();
 
         for (var stack : stacks) {
-            if (!ItemUtil.isAStorableBook(stack)) {
+            if (!Tag.ITEMS_BOOKSHELF_BOOKS.isTagged(stack.getType())) {
                 leftovers.add(stack);
                 continue;
             }
