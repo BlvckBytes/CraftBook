@@ -51,5 +51,3 @@ mechanics:
         xp-per-bottle: 16
         block: minecraft:spawner
         require-sneaking-state: 'no'
-        radius-mode: false
-        radius: 5

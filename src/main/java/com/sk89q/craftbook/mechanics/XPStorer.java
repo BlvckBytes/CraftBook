@@ -1,43 +1,24 @@
 package com.sk89q.craftbook.mechanics;
 
 import com.sk89q.craftbook.AbstractCraftBookMechanic;
-import com.sk89q.craftbook.ChangedSign;
 import com.sk89q.craftbook.CraftBookPlayer;
 import com.sk89q.craftbook.bukkit.CraftBookPlugin;
-import com.sk89q.craftbook.bukkit.util.CraftBookBukkitUtil;
 import com.sk89q.craftbook.util.BlockSyntax;
 import com.sk89q.craftbook.util.EventUtil;
-import com.sk89q.craftbook.util.InventoryUtil;
-import com.sk89q.craftbook.util.ItemUtil;
-import com.sk89q.craftbook.util.LocationUtil;
 import com.sk89q.craftbook.util.ProtectionUtil;
-import com.sk89q.craftbook.util.SignUtil;
 import com.sk89q.craftbook.util.TernaryState;
-import com.sk89q.craftbook.util.events.SelfTriggerPingEvent;
-import com.sk89q.craftbook.util.events.SelfTriggerThinkEvent;
 import com.sk89q.util.yaml.YAMLProcessor;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
-import com.sk89q.worldedit.math.Vector3;
 import com.sk89q.worldedit.util.HandSide;
 import com.sk89q.worldedit.world.block.BlockStateHolder;
 import com.sk89q.worldedit.world.block.BlockTypes;
 import com.sk89q.worldedit.world.item.ItemTypes;
 import org.bukkit.Material;
-import org.bukkit.block.BlockFace;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.ExperienceOrb;
 import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.Action;
-import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
-import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class XPStorer extends AbstractCraftBookMechanic {
 
@@ -156,136 +137,10 @@ public class XPStorer extends AbstractCraftBookMechanic {
         event.setCancelled(true);
     }
 
-    @EventHandler(priority = EventPriority.HIGH)
-    public void onSignChange(SignChangeEvent event) {
-
-        if (!autonomousMode) return;
-        if(!EventUtil.passesFilter(event)) return;
-
-        if (!event.getLine(1).equalsIgnoreCase("[XP]") || !block.equalsFuzzy(BukkitAdapter.adapt(SignUtil.getBackBlock(event.getBlock()).getBlockData()))) return;
-
-        CraftBookPlayer player = CraftBookPlugin.inst().wrapPlayer(event.getPlayer());
-
-        if (!player.hasPermission("craftbook.mech.xpstore")) {
-            if(CraftBookPlugin.inst().getConfiguration().showPermissionMessages)
-                player.printError("mech.create-permission");
-            SignUtil.cancelSign(event);
-            return;
-        }
-
-        int signRadius = radius;
-        try {
-            signRadius = Math.max(radius, Integer.parseInt(event.getLine(2)));
-        } catch (Exception e) {
-        }
-
-        event.setLine(1, "[XP]");
-        event.setLine(2, String.valueOf(signRadius));
-        player.print("mech.xp-storer.create");
-
-        CraftBookPlugin.inst().getSelfTriggerManager().registerSelfTrigger(event.getBlock().getLocation());
-    }
-
-    @EventHandler(priority = EventPriority.HIGH)
-    public void onPing(SelfTriggerPingEvent event) {
-
-        if (!autonomousMode) return;
-        if(!EventUtil.passesFilter(event)) return;
-
-        if(!SignUtil.isSign(event.getBlock()) || !block.equalsFuzzy(BukkitAdapter.adapt(SignUtil.getBackBlock(event.getBlock()).getBlockData()))) return;
-
-        ChangedSign sign = CraftBookBukkitUtil.toChangedSign(event.getBlock());
-
-        if(!sign.getLine(1).equals("[XP]")) return;
-
-        CraftBookPlugin.inst().getSelfTriggerManager().registerSelfTrigger(event.getBlock().getLocation());
-    }
-
-    @EventHandler(priority = EventPriority.HIGH)
-    public void onThink(SelfTriggerThinkEvent event) {
-
-        if (!EventUtil.passesFilter(event)) return;
-
-        if (!SignUtil.isSign(event.getBlock())) return;
-
-        ChangedSign sign = CraftBookBukkitUtil.toChangedSign(event.getBlock());
-
-        if (!sign.getLine(1).equals("[XP]")) return;
-
-        event.setHandled(true);
-
-        int signRadius = radius;
-        try {
-            signRadius = Math.max(radius, Integer.parseInt(sign.getLine(2)));
-        } catch (Exception e) {
-        }
-
-        int xp = 0;
-
-        List<ExperienceOrb> orbs = new ArrayList<>();
-
-        for (Entity entity : LocationUtil.getNearbyEntities(SignUtil.getBackBlock(event.getBlock()).getLocation(), Vector3.at(signRadius, signRadius, signRadius))) {
-            if (entity instanceof ExperienceOrb && entity.getTicksLived() > 20) {
-                xp += ((ExperienceOrb) entity).getExperience();
-                orbs.add((ExperienceOrb) entity);
-            }
-        }
-
-        int max = Integer.MAX_VALUE;
-        Inventory inventory = null;
-
-        if (InventoryUtil.doesBlockHaveInventory(SignUtil.getBackBlock(event.getBlock()).getRelative(BlockFace.UP))) {
-            inventory = ((InventoryHolder) SignUtil.getBackBlock(event.getBlock()).getRelative(BlockFace.UP).getState()).getInventory();
-            if (requireBottle) {
-                max = 0;
-                for (ItemStack stack : inventory.getContents()) {
-                    if (ItemUtil.isStackValid(stack) && stack.getType() == Material.GLASS_BOTTLE) {
-                        max += stack.getAmount();
-                    }
-                }
-            }
-        } else if (requireBottle) {
-            return;
-        }
-
-        int bottleCount = (int) Math.min(max, Math.floor(xp / (double) xpPerBottle));
-
-        int tempBottles = bottleCount;
-
-        while(tempBottles > 0) {
-            ItemStack bottles = new ItemStack(Material.EXPERIENCE_BOTTLE, Math.min(tempBottles, 64));
-            if (inventory != null) {
-                for (ItemStack leftover : inventory.addItem(bottles).values()) {
-                    event.getBlock().getWorld().dropItemNaturally(LocationUtil.getCenterOfBlock(SignUtil.getBackBlock(event.getBlock())), leftover);
-                }
-            } else {
-                event.getBlock().getWorld().dropItemNaturally(LocationUtil.getCenterOfBlock(SignUtil.getBackBlock(event.getBlock())), bottles);
-            }
-
-            tempBottles -= 64;
-        }
-
-        if(requireBottle && inventory != null) {
-            inventory.removeItem(new ItemStack(Material.GLASS_BOTTLE, bottleCount));
-        }
-
-        int remainingXP = xp - bottleCount * xpPerBottle;
-        for (ExperienceOrb orb : orbs) {
-            if (remainingXP > 0) {
-                orb.setExperience(Math.min(5, remainingXP));
-                remainingXP -= 5;
-            } else {
-                orb.remove();
-            }
-        }
-    }
-
     private boolean requireBottle;
     private int xpPerBottle;
-    private BlockStateHolder block;
+    private BlockStateHolder<?> block;
     private TernaryState sneakingState;
-    private boolean autonomousMode;
-    private int radius;
 
     @Override
     public void loadConfiguration(YAMLProcessor config, String path) {
@@ -301,11 +156,5 @@ public class XPStorer extends AbstractCraftBookMechanic {
 
         config.setComment(path + "require-sneaking-state", "Sets how the player must be sneaking in order to use the XP Storer.");
         sneakingState = TernaryState.getFromString(config.getString(path + "require-sneaking-state", "no"));
-
-        config.setComment(path + "radius-mode", "Allows XP Storer mechanics with a sign attached to work in a radius.");
-        autonomousMode = config.getBoolean(path + "radius-mode", false);
-
-        config.setComment(path + "radius", "The radius for radius-mode.");
-        radius = config.getInt(path + "radius", 5);
     }
 }
