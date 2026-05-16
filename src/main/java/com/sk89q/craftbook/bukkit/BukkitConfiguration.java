@@ -28,7 +28,6 @@ public class BukkitConfiguration {
     public long signClickTimeout;
     public boolean convertNamesToCBID;
 
-    public boolean easterEggs;
     public boolean realisticRandoms;
 
     public String language;
@@ -126,9 +125,6 @@ public class BukkitConfiguration {
 
         config.setComment("scan-text-for-localization", "If enabled, CraftBook will scan messages sent to players for localizable text, instead of just checking if the entire message is localizable.");
         languageScanText = config.getBoolean("scan-text-for-localization", false);
-
-        config.setComment("easter-eggs", "Enables random easter eggs. Can be from console messages on startup for a special occasion, to funny little effects with IC's and other mechanics (Always harmless, won't mess anything up)");
-        easterEggs = config.getBoolean("easter-eggs", true);
 
         config.setComment("realistic-randoms", "Random numbers are much more random, with a small cost to CPU usage.");
         realisticRandoms = config.getBoolean("realistic-randoms", false);
