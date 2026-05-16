@@ -1,5 +1,6 @@
-package com.sk89q.craftbook.util;
+package com.sk89q.craftbook.mechanics.pipe;
 
+import com.sk89q.craftbook.util.ItemUtil;
 import org.bukkit.Material;
 import org.bukkit.block.BrewingStand;
 import org.bukkit.block.ChiseledBookshelf;
@@ -14,18 +15,8 @@ import org.bukkit.inventory.ItemStack;
 import java.util.*;
 import java.util.stream.IntStream;
 
-/**
- * Class for utilities that include adding items to a furnace based on if it is a fuel or not, and adding items to a chest. Also will include methdos for checking contents and removing.
- */
 public class InventoryUtil {
 
-    /**
-     * Adds items to an inventory, returning the leftovers.
-     *
-     * @param container The InventoryHolder to add the items to.
-     * @param stacks The stacks to add to the inventory.
-     * @return The stacks that could not be added.
-     */
     public static List<ItemStack> addItemsToInventory(InventoryHolder container, Iterable<ItemStack> stacks, EnumSet<InventoryAddFlag> flags) {
         if (container instanceof Furnace)
             return addItemsToFurnace((Furnace) container, stacks, flags.contains(InventoryAddFlag.ADD_TO_FURNACE_RESULT));
@@ -61,14 +52,7 @@ public class InventoryUtil {
         return leftovers;
     }
 
-    /**
-     * Adds items to a furnace, returning the leftovers.
-     * 
-     * @param furnace The Furnace to add the items to.
-     * @param stacks The stacks to add to the inventory.
-     * @return The stacks that could not be added.
-     */
-    public static List<ItemStack> addItemsToFurnace(Furnace furnace, Iterable<ItemStack> stacks, boolean addToResult) {
+    private static List<ItemStack> addItemsToFurnace(Furnace furnace, Iterable<ItemStack> stacks, boolean addToResult) {
         var inventory = furnace.getInventory();
         var leftovers = new ArrayList<ItemStack>();
 
@@ -121,14 +105,7 @@ public class InventoryUtil {
         return leftovers;
     }
 
-    /**
-     * Adds items to a BrewingStand, returning the leftovers.
-     * 
-     * @param brewingStand The BrewingStand to add the items to.
-     * @param stacks The stacks to add to the inventory.
-     * @return The stacks that could not be added.
-     */
-    public static List<ItemStack> addItemsToBrewingStand(BrewingStand brewingStand, Iterable<ItemStack> stacks) {
+    private static List<ItemStack> addItemsToBrewingStand(BrewingStand brewingStand, Iterable<ItemStack> stacks) {
         List<ItemStack> leftovers = new ArrayList<>();
 
         stackLoop: for (ItemStack stack : stacks) {
@@ -183,21 +160,14 @@ public class InventoryUtil {
         return leftovers;
     }
 
-    /**
-     * Adds items to a Crafter, respecting disabled slots, returning the leftovers.
-     * 
-     * @param crafter The Crafter to add the items to.
-     * @param stacks The stacks to add to the inventory.
-     * @return The stacks that could not be added.
-     */
-    public static List<ItemStack> addItemsToCrafter(Crafter crafter, Iterable<ItemStack> stacks) {
+    private static List<ItemStack> addItemsToCrafter(Crafter crafter, Iterable<ItemStack> stacks) {
 
         List<ItemStack> leftovers = new ArrayList<>();
         int[] availableSlots = IntStream.rangeClosed(0, crafter.getInventory().getSize() - 1).filter(slot -> !crafter.isSlotDisabled(slot)).toArray();
-        
+
         for(ItemStack stack : stacks) {
             Inventory inv = crafter.getInventory();
-            
+
             for (int i : availableSlots) {
                 if (stack == null) {
                     break;
@@ -216,14 +186,7 @@ public class InventoryUtil {
         return leftovers;
     }
 
-    /**
-     * Adds items to a chiseled bookshelf.
-     * 
-     * @param chiseledBookshelf The chiseled bookshelf to add the items to.
-     * @param stacks The stacks to add to the inventory.
-     * @return The stacks that could not be added.
-     */
-    public static List<ItemStack> addItemsToChiseledBookshelf(ChiseledBookshelf chiseledBookshelf, Iterable<ItemStack> stacks) {
+    private static List<ItemStack> addItemsToChiseledBookshelf(ChiseledBookshelf chiseledBookshelf, Iterable<ItemStack> stacks) {
         var leftovers = new ArrayList<ItemStack>();
         var inventory = chiseledBookshelf.getInventory();
 
