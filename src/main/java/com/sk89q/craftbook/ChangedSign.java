@@ -1,6 +1,5 @@
 package com.sk89q.craftbook;
 
-import com.sk89q.craftbook.util.ParsingUtil;
 import io.papermc.lib.PaperLib;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -67,8 +66,7 @@ public class ChangedSign {
     }
 
     public String getLine(int index) throws IndexOutOfBoundsException {
-
-        return ParsingUtil.parseLine(lines[index], null);
+        return lines[index];
     }
 
     public String getRawLine(int index) throws IndexOutOfBoundsException {
