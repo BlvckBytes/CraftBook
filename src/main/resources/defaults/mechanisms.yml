@@ -6,8 +6,6 @@ mechanics:
         allow-looping: false
         smooth-movement: false
         smooth-movement-speed: 0.5
-    HiddenSwitch:
-        any-side: true
     ICs:
         cache: true
         max-radius: 10.0

@@ -10,7 +10,6 @@ import com.sk89q.craftbook.core.LanguageManager;
 import com.sk89q.craftbook.core.st.MechanicClock;
 import com.sk89q.craftbook.core.st.SelfTriggeringManager;
 import com.sk89q.craftbook.mechanics.Elevator;
-import com.sk89q.craftbook.mechanics.HiddenSwitch;
 import com.sk89q.craftbook.mechanics.Teleporter;
 import com.sk89q.craftbook.mechanics.ic.ICMechanic;
 import com.sk89q.craftbook.mechanics.ic.gates.world.items.crafter.RecipeCache;
@@ -143,7 +142,6 @@ public class CraftBookPlugin extends JavaPlugin {
         availableMechanics = new TreeMap<>();
 
         availableMechanics.put("Variables", VariableManager.class);
-        availableMechanics.put("HiddenSwitch", HiddenSwitch.class);
         availableMechanics.put("SignCopier", SignCopier.class);
         availableMechanics.put("Elevator", Elevator.class);
         availableMechanics.put("Teleporter", Teleporter.class);

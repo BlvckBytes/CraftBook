@@ -135,9 +135,6 @@ public class LanguageManager {
         put("mech.cook.ouch","Ouch! That was hot!");
         put("mech.cook.add-fuel","You put fuel into the cooking pot, and watch as the fire roars!");
 
-        put("mech.hiddenswitch.key","The key did not fit!");
-        put("mech.hiddenswitch.toggle","You hear the muffled click of a switch!");
-
         put("mech.ic.create","You've created");
 
         put("mech.lift.target-sign-created","Elevator target sign created.");
