@@ -16,8 +16,6 @@
 
 package com.sk89q.craftbook.mechanics.ic;
 
-import com.sk89q.craftbook.mechanics.ic.gates.logic.Clock;
-
 /**
  * Represents a self-triggered {@link IC}. Self-triggered ICs can think on their own through use of an external clock signal.
  *
@@ -35,7 +33,7 @@ public interface SelfTriggeredIC extends PersistentIC {
     void think(ChipState chip);
 
     /**
-     * Checks whether an {@link IC} should always be considered ST, even without the 'S'. This is useful for IC's such as MC1241 ({@link Clock}), which should always be ST.
+     * Checks whether an {@link IC} should always be considered ST, even without the 'S'.
      * 
      * @return if the {@link IC} should always be ST.
      */

@@ -19,8 +19,6 @@ ics:
         invert-output: false
     MC1278:
         inverted: false
-    MC1421:
-        inverted: false
     MC1205:
         blacklist:
         - BEDROCK:-1

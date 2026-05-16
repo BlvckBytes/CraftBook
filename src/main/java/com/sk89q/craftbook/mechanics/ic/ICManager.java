@@ -19,7 +19,6 @@ package com.sk89q.craftbook.mechanics.ic;
 import com.sk89q.craftbook.bukkit.CraftBookPlugin;
 import com.sk89q.craftbook.bukkit.util.CraftBookBukkitUtil;
 import com.sk89q.craftbook.mechanics.ic.families.*;
-import com.sk89q.craftbook.mechanics.ic.gates.logic.*;
 import com.sk89q.craftbook.mechanics.ic.gates.variables.IsAtLeast;
 import com.sk89q.craftbook.mechanics.ic.gates.variables.ItemCounter;
 import com.sk89q.craftbook.mechanics.ic.gates.variables.NumericModifier;
@@ -151,20 +150,6 @@ public class ICManager {
             if(ic.equalsIgnoreCase(name))
                 return false;
         return register(name, longName, factory, families);
-    }
-
-    /**
-     * Register an IC with the manager. The casing of the ID can be of any case because IC IDs are case-insensitive.
-     * Re-using an already registered
-     * name will override the previous registration.
-     *
-     * @param id       case-insensitive ID (such as MC1001)
-     * @param factory  factory to create ICs
-     * @param families families for the ic
-     */
-    public void register(String id, ICFactory factory, ICFamily... families) {
-
-        register(id, null, factory, families);
     }
 
     /**
@@ -320,11 +305,6 @@ public class ICManager {
     public void registerICs(Server server) {
 
         // SISOs
-        registerIC("MC1000", "repeater", new Repeater.Factory(server), familySISO, familyAISO);
-        registerIC("MC1001", "inverter", new Inverter.Factory(server), familySISO, familyAISO);
-        registerIC("MC1017", "re t flip", new ToggleFlipFlop.Factory(server, true), familySISO, familyAISO);
-        registerIC("MC1018", "fe t flip", new ToggleFlipFlop.Factory(server, false), familySISO, familyAISO);
-        registerIC("MC1020", "random bit", new RandomBit.Factory(server), familySISO, familyAISO);
         registerIC("MC1025", "server time", new ServerTimeModulus.Factory(server), familySISO, familyAISO);
         registerIC("MC1110", "transmitter", new WirelessTransmitter.Factory(server), familySISO, familyAISO);
         registerIC("MC1111", "receiver", new WirelessReceiver.Factory(server), familySISO, familyAISO);
@@ -404,52 +384,10 @@ public class ICManager {
         registerIC("MC1278", "sentry gun", new SentryGun.Factory(server), familySISO, familyAISO); //Restricted
         registerIC("MC1279", "player trap",new PlayerTrap.Factory(server), familySISO, familyAISO);
         registerIC("MC1280", "animal brd", new AnimalBreeder.Factory(server), familySISO, familyAISO);
-        registerIC("MC1420", "divide clock", new ClockDivider.Factory(server), familySISO, familyAISO);
-        registerIC("MC1421", "clock", new Clock.Factory(server), familySISO, familyAISO);
-        registerIC("MC1422", "monostable", new Monostable.Factory(server), familySISO, familyAISO);
-        registerIC("MC1500", "range output", new RangedOutput.Factory(server), familySISO, familyAISO);
         registerIC("MC1510", "send message", new MessageSender.Factory(server), familySISO, familyAISO);
-        registerIC("MC2100", "delayer", new Delayer.Factory(server), familySISO, familyAISO);
-        registerIC("MC2101", "inv delayer", new NotDelayer.Factory(server), familySISO, familyAISO);
-        registerIC("MC2110", "fe delayer", new LowDelayer.Factory(server), familySISO, familyAISO);
-        registerIC("MC2111", "inv fe delayer", new NotLowDelayer.Factory(server), familySISO, familyAISO);
-        registerIC("MC2500", "pulser", new Pulser.Factory(server), familySISO, familyAISO);
-        registerIC("MC2501", "inv pulser", new NotPulser.Factory(server), familySISO, familyAISO);
-        registerIC("MC2510", "fe pulser", new LowPulser.Factory(server), familySISO, familyAISO);
-        registerIC("MC2511", "inv fe pulser", new LowNotPulser.Factory(server), familySISO, familyAISO);
-
-        // SI3Os
-        registerIC("MC2020", "random 3", new Random3Bit.Factory(server), familySI3O);
-        registerIC("MC2999", "marquee", new Marquee.Factory(server), familySI3O);
 
         // 3ISOs
-        registerIC("MC3002", "and", new AndGate.Factory(server), family3ISO);
-        registerIC("MC3003", "nand", new NandGate.Factory(server), family3ISO);
-        registerIC("MC3020", "xor", new XorGate.Factory(server), family3ISO);
-        registerIC("MC3021", "xnor", new XnorGate.Factory(server), family3ISO);
-        registerIC("MC3030", "nor flip", new RsNorFlipFlop.Factory(server), family3ISO);
-        registerIC("MC3031", "inv nand latch", new InvertedRsNandLatch.Factory(server), family3ISO);
-        registerIC("MC3032", "jk flip", new JkFlipFlop.Factory(server), family3ISO);
-        registerIC("MC3033", "nand latch", new RsNandLatch.Factory(server), family3ISO);
-        registerIC("MC3034", "edge df flip", new EdgeTriggerDFlipFlop.Factory(server), family3ISO);
-        registerIC("MC3036", "level df flip", new LevelTriggeredDFlipFlop.Factory(server), family3ISO);
-        registerIC("MC3040", "multiplexer", new Multiplexer.Factory(server), family3ISO);
-        registerIC("MC3050", "combo", new CombinationLock.Factory(server), family3ISO);
-        registerIC("MC3101", "down counter", new DownCounter.Factory(server), family3ISO);
-        registerIC("MC3102", "counter", new Counter.Factory(server), family3ISO);
         registerIC("MC3231", "t control adva", new TimeControlAdvanced.Factory(server), family3ISO); // Restricted
-        registerIC("MC3300", "ROM set", new MemorySetter.Factory(server), family3ISO); // Restricted
-        registerIC("MC3301", "ROM get", new MemoryAccess.Factory(server), familySI3O); // Restricted
-        // 3I3Os
-        registerIC("MC4000", "full adder", new FullAdder.Factory(server), family3I3O);
-        registerIC("MC4010", "half adder", new HalfAdder.Factory(server), family3I3O);
-        registerIC("MC4040", "demultiplexer", new DeMultiplexer.Factory(server), family3I3O);
-        registerIC("MC4100", "full subtr", new FullSubtractor.Factory(server), family3I3O);
-        registerIC("MC4110", "half subtr", new HalfSubtractor.Factory(server), family3I3O);
-        registerIC("MC4200", "dispatcher", new Dispatcher.Factory(server), family3I3O);
-
-        // SI5Os
-        registerIC("MC6020", "random 5", new Random5Bit.Factory(server), familySI5O);
 
         // Xtra ICs
         // SISOs
@@ -522,8 +460,6 @@ public class ICManager {
                         else if (c == 'e' && !ric.getFactory().getClass().getPackage().getName().endsWith("entity"))
                             break thisIC;
                         else if (c == 'w' && !ric.getFactory().getClass().getPackage().getName().endsWith("weather"))
-                            break thisIC;
-                        else if (c == 'l' && !ric.getFactory().getClass().getPackage().getName().endsWith("logic"))
                             break thisIC;
                         else if (c == 'm' && !ric.getFactory().getClass().getPackage().getName().endsWith("miscellaneous"))
                             break thisIC;

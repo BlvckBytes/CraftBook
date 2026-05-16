@@ -109,12 +109,7 @@ public class ICMechanic extends AbstractCraftBookMechanic {
             return setupIC(block, create);
         }
         if (sign.getLine(1).toLowerCase(Locale.ENGLISH).startsWith("[mc0")) {
-            if(sign.getLine(1).equalsIgnoreCase("[mc0420]"))
-                sign.setLine(1, "[MC1421]S");
-            else if(sign.getLine(1).equalsIgnoreCase("[mc0421]"))
-                sign.setLine(1, "[MC1422]S");
-            else
-                sign.setLine(1, (StringUtils.replace(sign.getLine(1).toLowerCase(Locale.ENGLISH), "mc0", "mc1") + "s").toUpperCase(Locale.ENGLISH));
+            sign.setLine(1, (StringUtils.replace(sign.getLine(1).toLowerCase(Locale.ENGLISH), "mc0", "mc1") + "s").toUpperCase(Locale.ENGLISH));
             sign.update(false);
 
             return setupIC(block, create);
@@ -381,12 +376,7 @@ public class ICMechanic extends AbstractCraftBookMechanic {
                     return;
                 }
                 if (event.getLine(1).toLowerCase(Locale.ENGLISH).startsWith("[mc0")) {
-                    if(event.getLine(1).equalsIgnoreCase("[mc0420]"))
-                        event.setLine(1, "[MC1421]S");
-                    else if(event.getLine(1).equalsIgnoreCase("[mc0421]"))
-                        event.setLine(1, "[MC1422]S");
-                    else
-                        event.setLine(1, (event.getLine(1).toLowerCase(Locale.ENGLISH).replace("mc0", "mc1") + "s").toUpperCase(Locale.ENGLISH));
+                    event.setLine(1, (event.getLine(1).toLowerCase(Locale.ENGLISH).replace("mc0", "mc1") + "s").toUpperCase(Locale.ENGLISH));
 
                     initializeIC(block, player, event, shortHand);
                     return;
