@@ -11,7 +11,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import org.bukkit.Material;
-import org.bukkit.entity.Item;
 import org.bukkit.inventory.ItemStack;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -55,21 +54,6 @@ public class ItemUtilTest {
         when(mockStack.getAmount()).thenReturn(-60);
         assertTrue(!ItemUtil.isStackValid(mockStack));
         assertTrue(!ItemUtil.isStackValid(null));
-    }
-
-    @Test
-    public void testTakeFromEntity() {
-
-        Item entity = mock(Item.class);
-        when(entity.isDead()).thenReturn(true);
-        assertTrue(!ItemUtil.takeFromItemEntity(null, 1));
-        assertTrue(!ItemUtil.takeFromItemEntity(entity, 1));
-        when(entity.isDead()).thenReturn(false);
-        when(entity.getItemStack()).thenReturn(ItemSyntax.getItem("2:0*20"));
-        assertTrue(!ItemUtil.takeFromItemEntity(entity, 21));
-        assertTrue(ItemUtil.takeFromItemEntity(entity, 2));
-        assertTrue(ItemUtil.takeFromItemEntity(entity, 18));
-        verify(entity).remove();
     }
 
     @Test

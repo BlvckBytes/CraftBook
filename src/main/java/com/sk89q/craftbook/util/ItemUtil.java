@@ -78,36 +78,6 @@ public final class ItemUtil {
       return item.getAmount() > 0;
     }
 
-    /**
-     * Removes a specified amount from an item entity.
-     * 
-     * @param item
-     * @return true if success, otherwise false.
-     */
-    public static boolean takeFromItemEntity(Item item, int amount) {
-
-        if (item == null || item.isDead()) return false;
-
-        ItemStack newStack = item.getItemStack();
-
-        if (!isStackValid(newStack)) {
-            item.remove();
-            return false;
-        }
-
-        if(newStack.getAmount() < amount)
-            return false;
-
-        newStack.setAmount(newStack.getAmount() - amount);
-
-        if (!isStackValid(newStack))
-            item.remove();
-        else
-            item.setItemStack(newStack);
-
-        return true;
-    }
-
     public static boolean isCookable(ItemStack item) {
 
         return getCookedResult(item) != null;

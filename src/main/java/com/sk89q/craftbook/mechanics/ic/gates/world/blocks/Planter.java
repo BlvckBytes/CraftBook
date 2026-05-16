@@ -160,6 +160,8 @@ public class Planter extends AbstractSelfTriggeredIC {
                 // Current entity is unusable for planting - skip over
                 if (
                   !(entity instanceof Item itemEntity)
+                    || entity.isDead()
+                    || !entity.isValid()
                     || !ItemUtil.isStackValid(entityStack = itemEntity.getItemStack())
                     || (item != null && !item.isSimilar(entityStack))
                 ) {
@@ -180,7 +182,9 @@ public class Planter extends AbstractSelfTriggeredIC {
                 if (!plantSuccess)
                     continue;
 
-                ItemUtil.takeFromItemEntity(itemEntity, 1);
+                entityStack.setAmount(entityStack.getAmount() - 1);
+                itemEntity.setItemStack(entityStack);
+
                 return true;
             }
         }
