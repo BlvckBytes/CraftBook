@@ -264,16 +264,20 @@ public final class ICUtil {
     public static Vector3 parseUnsafeRadius(String line) throws NumberFormatException {
         String[] radians = RegexUtil.COMMA_PATTERN.split(RegexUtil.EQUALS_PATTERN.split(line, 2)[0]);
         if(radians.length > 1) {
-            double x = VerifyUtil.verifyRadius(Double.parseDouble(radians[0]), ICMechanic.instance.maxRange);
-            double y = VerifyUtil.verifyRadius(Double.parseDouble(radians[1]), ICMechanic.instance.maxRange);
-            double z = VerifyUtil.verifyRadius(Double.parseDouble(radians[2]), ICMechanic.instance.maxRange);
+            double x = verifyRadius(Double.parseDouble(radians[0]), ICMechanic.instance.maxRange);
+            double y = verifyRadius(Double.parseDouble(radians[1]), ICMechanic.instance.maxRange);
+            double z = verifyRadius(Double.parseDouble(radians[2]), ICMechanic.instance.maxRange);
             return Vector3.at(x,y,z);
         }
         else {
             double r = Double.parseDouble(radians[0]);
-            r = VerifyUtil.verifyRadius(r, ICMechanic.instance.maxRange);
+            r = verifyRadius(r, ICMechanic.instance.maxRange);
             return Vector3.at(r,r,r);
         }
+    }
+
+    private static double verifyRadius(double radius, double maxradius) {
+        return Math.max(0, Math.min(maxradius, radius));
     }
 
     public enum LocationCheckType {
