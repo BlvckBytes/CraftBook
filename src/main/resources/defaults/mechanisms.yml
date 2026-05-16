@@ -45,8 +45,3 @@ mechanics:
         enable-in-console: false
         enable-in-player-commands: false
         enable-in-player-chat: false
-    XPStorer:
-        require-bottle: false
-        xp-per-bottle: 16
-        block: minecraft:spawner
-        require-sneaking-state: 'no'

@@ -14,7 +14,6 @@ import com.sk89q.craftbook.mechanics.HiddenSwitch;
 import com.sk89q.craftbook.mechanics.PaintingSwitch;
 import com.sk89q.craftbook.mechanics.Sponge;
 import com.sk89q.craftbook.mechanics.Teleporter;
-import com.sk89q.craftbook.mechanics.XPStorer;
 import com.sk89q.craftbook.mechanics.ic.ICMechanic;
 import com.sk89q.craftbook.mechanics.ic.gates.world.items.crafter.RecipeCache;
 import com.sk89q.craftbook.mechanics.pipe.Pipes;
@@ -147,7 +146,6 @@ public class CraftBookPlugin extends JavaPlugin {
 
         availableMechanics.put("Variables", VariableManager.class);
         availableMechanics.put("PaintingSwitcher", PaintingSwitch.class);
-        availableMechanics.put("XPStorer", XPStorer.class);
         availableMechanics.put("HiddenSwitch", HiddenSwitch.class);
         availableMechanics.put("SignCopier", SignCopier.class);
         availableMechanics.put("Elevator", Elevator.class);
@@ -395,7 +393,7 @@ public class CraftBookPlugin extends JavaPlugin {
                     continue;
                 }
                 getServer().getPluginManager().registerEvents(mech, this);
-                if(mech instanceof XPStorer || (mech instanceof ICMechanic && !((ICMechanic) mech).disableSelfTriggered)) {
+                if(mech instanceof ICMechanic && !((ICMechanic) mech).disableSelfTriggered) {
                     //TODO make this a better check.
                     hasSTMechanic = true;
                 }
