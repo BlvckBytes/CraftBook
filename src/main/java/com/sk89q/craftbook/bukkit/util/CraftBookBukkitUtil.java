@@ -4,13 +4,11 @@ import com.sk89q.craftbook.ChangedSign;
 import com.sk89q.craftbook.bukkit.CraftBookPlugin;
 import com.sk89q.worldedit.bukkit.BukkitWorld;
 import com.sk89q.worldedit.math.BlockVector3;
-import com.sk89q.worldedit.math.Vector3;
 import com.sk89q.worldedit.util.Location;
 import org.bukkit.Material;
 import org.bukkit.Tag;
 import org.bukkit.World;
 import org.bukkit.block.Block;
-import org.bukkit.block.BlockFace;
 import org.bukkit.block.Sign;
 
 import java.util.HashSet;
@@ -46,44 +44,15 @@ public final class CraftBookBukkitUtil {
         return new ChangedSign(block, lines);
     }
 
-    public static Block toBlock(ChangedSign sign) {
-        return sign.getBlock();
-    }
-
     public static Sign toSign(ChangedSign sign) {
-        try {
-            if (sign.hasChanged()) sign.update(false);
-            return sign.getSign();
-        } catch (NullPointerException ex) {
-            return null;
-        }
+        if (sign.hasChanged())
+            sign.update(false);
+
+        return sign.getOrAccessSign();
     }
 
     public static BlockVector3 toVector(Block block) {
         return BlockVector3.at(block.getX(), block.getY(), block.getZ());
-    }
-
-    public static BlockVector3 toVector(BlockFace face) {
-        return BlockVector3.at(face.getModX(), face.getModY(), face.getModZ());
-    }
-
-    public static Vector3 toVector(org.bukkit.Location loc) {
-        return Vector3.at(loc.getX(), loc.getY(), loc.getZ());
-    }
-
-    public static Vector3 toVector(org.bukkit.util.Vector vector) {
-        return Vector3.at(vector.getX(), vector.getY(), vector.getZ());
-    }
-
-    public static org.bukkit.Location toLocation(World world, Vector3 pt) {
-        return new org.bukkit.Location(world, pt.x(), pt.y(), pt.z());
-    }
-
-    public static org.bukkit.Location center(org.bukkit.Location loc) {
-
-        return new org.bukkit.Location(loc.getWorld(), loc.getBlockX() + 0.5, loc.getBlockY() + 0.5,
-                loc.getBlockZ() + 0.5, loc.getPitch(),
-                loc.getYaw());
     }
 
     /**
@@ -112,7 +81,8 @@ public final class CraftBookBukkitUtil {
         return ((BukkitWorld) world).getWorld();
     }
 
-    private static Set<Material> isRedstoneBlock = new HashSet<>();
+    private static final Set<Material> isRedstoneBlock = new HashSet<>();
+
     static {
         isRedstoneBlock.add(Material.POWERED_RAIL);
         isRedstoneBlock.add(Material.DETECTOR_RAIL);

@@ -1,7 +1,6 @@
 package com.sk89q.craftbook.mechanics.ic;
 
 import com.sk89q.craftbook.ChangedSign;
-import com.sk89q.craftbook.bukkit.util.CraftBookBukkitUtil;
 import com.sk89q.craftbook.util.ICUtil;
 import com.sk89q.craftbook.util.SignUtil;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
@@ -30,7 +29,7 @@ public abstract class AbstractChipState implements ChipState {
         this.sign = sign;
         this.source = source;
         this.selfTriggered = selfTriggered;
-        icBlock = SignUtil.getBackBlock(CraftBookBukkitUtil.toSign(sign).getBlock());
+        icBlock = SignUtil.getBackBlock(sign.getBlock());
     }
 
     protected abstract Block getBlock(int pin);

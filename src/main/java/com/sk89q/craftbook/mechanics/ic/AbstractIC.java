@@ -24,7 +24,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.block.BlockBreakEvent;
 
 import com.sk89q.craftbook.ChangedSign;
-import com.sk89q.craftbook.bukkit.CraftBookPlugin;
 import com.sk89q.craftbook.util.RegexUtil;
 import com.sk89q.craftbook.util.SignUtil;
 
@@ -72,19 +71,9 @@ public abstract class AbstractIC implements IC {
         return sign.getLine(line);
     }
 
-    public String getRawLine(int line) {
-
-        return sign.getRawLine(line);
-    }
-
     public ICFactory getFactory() {
 
         return factory;
-    }
-
-    public CraftBookPlugin getPlugin() {
-
-        return CraftBookPlugin.inst();
     }
 
     @Override

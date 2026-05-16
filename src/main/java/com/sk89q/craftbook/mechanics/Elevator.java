@@ -560,7 +560,7 @@ public class Elevator extends AbstractCraftBookMechanic {
         if (sign == null)
             return;
 
-        String title = sign.getLines()[0];
+        var title = sign.getLine(0);
 
         if (!title.isEmpty()) {
             player.print(player.translate("mech.lift.floor") + ": " + title);

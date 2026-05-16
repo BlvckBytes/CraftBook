@@ -1,16 +1,21 @@
 package com.sk89q.craftbook;
 
 import io.papermc.lib.PaperLib;
-import org.bukkit.Material;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.TextComponent;
 import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
+import org.bukkit.block.sign.Side;
 
-import java.util.Arrays;
 import java.util.Objects;
+import java.util.function.Consumer;
 
 public class ChangedSign {
 
-    private Block block;
+    private static final int SIGN_LINE_COUNT = 4;
+
+    private final Block block;
+
     private Sign sign;
     private String[] lines;
     private String[] oldLines;
@@ -22,99 +27,85 @@ public class ChangedSign {
 
         if (lines == null) {
             this.flushLines();
-        } else {
-            this.lines = lines;
-            this.oldLines = new String[this.lines.length];
-            System.arraycopy(this.lines, 0, this.oldLines, 0, this.lines.length);
+            return;
         }
+
+        this.lines = lines;
+        this.oldLines = new String[this.lines.length];
+        System.arraycopy(this.lines, 0, this.oldLines, 0, this.lines.length);
     }
 
     public Block getBlock() {
         return block;
     }
 
-    public Sign getSign() {
+    public Sign getOrAccessSign() {
         if (this.sign == null) {
             this.sign = (Sign) PaperLib.getBlockState(this.block, false).getState();
         }
         return sign;
     }
 
-    public Material getType() {
-
-        return block.getType();
-    }
-
-    public int getX() {
-
-        return block.getX();
-    }
-
-    public int getY() {
-
-        return block.getY();
-    }
-
-    public int getZ() {
-
-        return block.getZ();
-    }
-
-    public String[] getLines() {
-
-        return lines;
-    }
-
     public String getLine(int index) throws IndexOutOfBoundsException {
         return lines[index];
     }
 
-    public String getRawLine(int index) throws IndexOutOfBoundsException {
-
-        return lines[index];
-    }
-
     public void setLine(int index, String line) throws IndexOutOfBoundsException {
-
         lines[index] = line;
     }
 
-    public void setType(Material type) {
-
-        block.setType(type);
-    }
-
     public boolean update(boolean force) {
-
         if(!hasChanged() && !force)
             return false;
-        for(int i = 0; i < 4; i++) {
-            getSign().setLine(i, lines[i]);
+
+        var currentSign = getOrAccessSign();
+        var frontSide = currentSign.getSide(Side.FRONT);
+
+        for (var lineIndex = 0; lineIndex < lines.length; lineIndex++) {
+            var lineContents = lines[lineIndex];
+
+            if (lineContents == null)
+                lineContents = "";
+
+            frontSide.line(lineIndex, Component.text(lineContents));
         }
+
         System.arraycopy(this.lines, 0, this.oldLines, 0, this.lines.length);
 
-        return getSign().update(force, false);
+        return currentSign.update(force, false);
     }
 
-    public boolean hasChanged () {
-        boolean ret = false;
-        try {
-            for(int i = 0; i < 4; i++)
-                if(!oldLines[i].equals(lines[i])) {
-                    ret = true;
-                    break;
-                }
+    public boolean hasChanged() {
+        for (int lineIndex = 0; lineIndex < lines.length; lineIndex++) {
+            if (!oldLines[lineIndex].equals(lines[lineIndex]))
+                return true;
         }
-        catch(Exception ignored){}
-        return ret;
+
+        return false;
     }
 
-    public void flushLines () {
+    private void flushLines() {
         this.sign = null;
-        this.lines = this.getSign().getLines();
-        if (this.oldLines == null) {
-            this.oldLines = new String[lines.length];
+
+        this.lines = new String[SIGN_LINE_COUNT];
+
+        var componentLines = getOrAccessSign().getSide(Side.FRONT).lines();
+        var lineBuffer = new StringBuilder();
+
+        for (var lineIndex = 0; lineIndex < lines.length; ++lineIndex) {
+            var lineComponent = lineIndex >= componentLines.size() ? null : componentLines.get(lineIndex);
+
+            lineBuffer.setLength(0);
+
+            if (lineComponent != null)
+                forEachTextInComponent(lineComponent, lineBuffer::append);
+
+            this.lines[lineIndex] = lineBuffer.toString();
         }
+
+        if (this.oldLines == null)
+            this.oldLines = new String[lines.length];
+
         System.arraycopy(this.lines, 0, this.oldLines, 0, this.lines.length);
     }
 
@@ -128,39 +119,45 @@ public class ChangedSign {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if(o instanceof ChangedSign) {
-            if(((ChangedSign) o).getType() != getType())
+    public boolean equals(Object other) {
+        if (!(other instanceof ChangedSign otherSign))
+            return false;
+
+        if (otherSign.block.getType() != block.getType())
+            return false;
+
+        for (var lineIndex = 0; lineIndex < lines.length; lineIndex++) {
+            if (!otherSign.lines[lineIndex].equals(lines[lineIndex]))
                 return false;
-            for(int i = 0; i < 4; i++)
-                if(!((ChangedSign) o).getRawLine(i).equals(getRawLine(i)))
-                    return false;
-            if(((ChangedSign) o).getX() != getX())
-                return false;
-            if(((ChangedSign) o).getY() != getY())
-                return false;
-            if(((ChangedSign) o).getZ() != getZ())
-                return false;
-            if(!((ChangedSign) o).block.getWorld().getUID().equals(block.getWorld().getUID()))
-                return false;
-            return true;
         }
 
-        return false;
+        if (otherSign.block.getX() != block.getX())
+            return false;
+
+        if (otherSign.block.getY() != block.getY())
+            return false;
+
+        if (otherSign.block.getZ() != block.getZ())
+            return false;
+
+        return otherSign.block.getWorld().getUID().equals(block.getWorld().getUID());
     }
 
     @Override
     public int hashCode() {
-        return (getType().hashCode() * 1103515245 + 12345
-                ^ Arrays.hashCode(lines) * 1103515245 + 12345
-                ^ getX() * 1103515245 + 12345
-                ^ getY() * 1103515245 + 12345
-                ^ getZ() * 1103515245 + 12345
-                ^ block.getWorld().getUID().hashCode() * 1103515245 + 12345);
+        return Objects.hash(block.getType(), block.getX(), block.getY(), block.getZ(), block.getWorld().getUID());
     }
 
     @Override
     public String toString() {
         return lines[0] + '|' + lines[1] + '|' + lines[2] + '|' + lines[3];
+    }
+
+    private static void forEachTextInComponent(Component component, Consumer<String> textHandler) {
+        if (component instanceof TextComponent textComponent)
+            textHandler.accept(textComponent.content());
+
+        for (var child : component.children())
+            forEachTextInComponent(child, textHandler);
     }
 }
