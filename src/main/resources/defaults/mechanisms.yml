@@ -6,14 +6,6 @@ mechanics:
         allow-looping: false
         smooth-movement: false
         smooth-movement-speed: 0.5
-    Footprints:
-        blocks:
-        - minecraft:dirt
-        - minecraft:sand
-        - minecraft:snow
-        - minecraft:snow_block
-        - minecraft:ice
-        - minecraft:red_sand
     HiddenSwitch:
         any-side: true
     ICs:
