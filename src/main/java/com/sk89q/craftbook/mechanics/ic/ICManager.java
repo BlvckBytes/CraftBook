@@ -23,7 +23,6 @@ import com.sk89q.craftbook.mechanics.ic.gates.world.blocks.Planter;
 import com.sk89q.craftbook.mechanics.ic.gates.world.items.crafter.AutomaticCrafter;
 import com.sk89q.craftbook.mechanics.ic.gates.world.miscellaneous.WirelessReceiver;
 import com.sk89q.craftbook.mechanics.ic.gates.world.miscellaneous.WirelessTransmitter;
-import com.sk89q.craftbook.mechanics.ic.gates.world.weather.*;
 import com.sk89q.craftbook.util.RegexUtil;
 import com.sk89q.util.yaml.YAMLFormat;
 import com.sk89q.util.yaml.YAMLProcessor;
@@ -45,7 +44,6 @@ import java.util.regex.Matcher;
 public class ICManager {
 
     public static final ICFamily familySISO = new FamilySISO();
-    public static final ICFamily family3ISO = new Family3ISO();
     public static final ICFamily familyAISO = new FamilyAISO();
 
     private ICConfiguration icConfiguration;
@@ -295,27 +293,10 @@ public class ICManager {
     public void registerICs(Server server) {
 
         // SISOs
-        registerIC("MC1025", "server time", new ServerTimeModulus.Factory(server), familySISO, familyAISO);
         registerIC("MC1110", "transmitter", new WirelessTransmitter.Factory(server), familySISO, familyAISO);
         registerIC("MC1111", "receiver", new WirelessReceiver.Factory(server), familySISO, familyAISO);
         registerIC("MC1219", "auto craft", new AutomaticCrafter.Factory(server), familySISO, familyAISO);
-        registerIC("MC1231", "t control", new TimeControl.Factory(server), familySISO, familyAISO); // Restricted
-        registerIC("MC1232", "time set", new TimeSet.Factory(server), familySISO, familyAISO); // Restricted
         registerIC("MC1234", "planter", new Planter.Factory(server), familySISO, familyAISO);
-        registerIC("MC1236", "fake weather", new WeatherFaker.Factory(server), familySISO, familyAISO); // Restricted
-        registerIC("MC1237", "fake time", new TimeFaker.Factory(server), familySISO, familyAISO); // Restricted
-        //TODO Dyed Armour Spawner (MC1247) (Sign Title: DYE ARMOUR)
-
-        // 3ISOs
-        registerIC("MC3231", "t control adva", new TimeControlAdvanced.Factory(server), family3ISO); // Restricted
-
-        // Xtra ICs
-        // SISOs
-        registerIC("MCX230", "rain sense", new RainSensor.Factory(server), familySISO, familyAISO);
-        registerIC("MCX231", "storm sense", new TStormSensor.Factory(server), familySISO, familyAISO);
-        registerIC("MCX233", "weather set", new WeatherControl.Factory(server), familySISO, familyAISO);
-        // 3ISOs
-        registerIC("MCT233", "weather set ad", new WeatherControlAdvanced.Factory(server), family3ISO);
     }
 
     public String getSearchID(Player p, String search) {
