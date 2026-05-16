@@ -153,9 +153,6 @@ public class LanguageManager {
         put("mech.pistons.bounce.created","Piston Bounce Mechanic Created!");
         put("mech.pistons.superpush.created","Piston Super-Push Mechanic Created!");
 
-        put("mech.signcopy.copy","You have copied the sign!");
-        put("mech.signcopy.paste","You have pasted the sign!");
-
         put("mech.teleport.create","Teleporter Created!");
         put("mech.teleport.alert","You Teleported!");
         put("mech.teleport.range","Out of Range!");

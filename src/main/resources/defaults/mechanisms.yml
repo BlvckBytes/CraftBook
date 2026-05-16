@@ -28,8 +28,6 @@ mechanics:
         initial-chunk-retain-duration: 20
         continued-chunk-retain-duration: 20
         notification-radius: 5
-    SignCopier:
-        item: minecraft:ink_sac
     Teleporter:
         require-sign: false
         max-range: 0

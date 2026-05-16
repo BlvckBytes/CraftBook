@@ -14,7 +14,6 @@ import com.sk89q.craftbook.mechanics.Teleporter;
 import com.sk89q.craftbook.mechanics.ic.ICMechanic;
 import com.sk89q.craftbook.mechanics.ic.gates.world.items.crafter.RecipeCache;
 import com.sk89q.craftbook.mechanics.pipe.Pipes;
-import com.sk89q.craftbook.mechanics.signcopier.SignCopier;
 import com.sk89q.craftbook.util.ItemSyntax;
 import com.sk89q.craftbook.util.UUIDMappings;
 import com.sk89q.craftbook.util.compat.companion.CompanionPlugins;
@@ -140,7 +139,6 @@ public class CraftBookPlugin extends JavaPlugin {
     static {
         availableMechanics = new TreeMap<>();
 
-        availableMechanics.put("SignCopier", SignCopier.class);
         availableMechanics.put("Elevator", Elevator.class);
         availableMechanics.put("Teleporter", Teleporter.class);
         availableMechanics.put("Pipes", Pipes.class);

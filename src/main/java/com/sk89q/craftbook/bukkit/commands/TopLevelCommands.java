@@ -8,7 +8,6 @@ import org.bukkit.command.CommandSender;
 import com.sk89q.craftbook.bukkit.CraftBookPlugin;
 import com.sk89q.craftbook.bukkit.util.CraftBookBukkitUtil;
 import com.sk89q.craftbook.mechanics.ic.ICCommands;
-import com.sk89q.craftbook.mechanics.signcopier.SignEditCommands;
 import com.sk89q.minecraft.util.commands.Command;
 import com.sk89q.minecraft.util.commands.CommandContext;
 import com.sk89q.minecraft.util.commands.CommandPermissions;
@@ -26,11 +25,6 @@ public class TopLevelCommands {
     @NestedCommand(Commands.class)
     public void craftBookCmds(CommandContext context, CommandSender sender) {
 
-    }
-
-    @Command(aliases = {"sign", "signcopy", "signpaste", "signedit"}, desc = "Commands to manage the Sign Copier")
-    @NestedCommand(SignEditCommands.class)
-    public void signedit(CommandContext context, CommandSender sender) {
     }
 
     @Command(aliases = {"ic", "circuit"}, desc = "Commands to manage Craftbook IC's")
