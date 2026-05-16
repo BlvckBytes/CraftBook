@@ -3,5 +3,3 @@ ics:
         per-player: false
     MC1111:
         per-player: false
-    MC1263:
-        invert-output: false

@@ -21,8 +21,8 @@ import com.sk89q.craftbook.bukkit.util.CraftBookBukkitUtil;
 import com.sk89q.craftbook.mechanics.ic.families.*;
 import com.sk89q.craftbook.mechanics.ic.gates.world.blocks.Planter;
 import com.sk89q.craftbook.mechanics.ic.gates.world.items.crafter.AutomaticCrafter;
-import com.sk89q.craftbook.mechanics.ic.gates.world.miscellaneous.*;
-import com.sk89q.craftbook.mechanics.ic.gates.world.sensors.*;
+import com.sk89q.craftbook.mechanics.ic.gates.world.miscellaneous.WirelessReceiver;
+import com.sk89q.craftbook.mechanics.ic.gates.world.miscellaneous.WirelessTransmitter;
 import com.sk89q.craftbook.mechanics.ic.gates.world.weather.*;
 import com.sk89q.craftbook.util.RegexUtil;
 import com.sk89q.util.yaml.YAMLFormat;
@@ -299,25 +299,12 @@ public class ICManager {
         registerIC("MC1110", "transmitter", new WirelessTransmitter.Factory(server), familySISO, familyAISO);
         registerIC("MC1111", "receiver", new WirelessReceiver.Factory(server), familySISO, familyAISO);
         registerIC("MC1219", "auto craft", new AutomaticCrafter.Factory(server), familySISO, familyAISO);
-        registerIC("MC1230", "sense day", new DaySensor.Factory(server), familySISO, familyAISO);
         registerIC("MC1231", "t control", new TimeControl.Factory(server), familySISO, familyAISO); // Restricted
         registerIC("MC1232", "time set", new TimeSet.Factory(server), familySISO, familyAISO); // Restricted
         registerIC("MC1234", "planter", new Planter.Factory(server), familySISO, familyAISO);
         registerIC("MC1236", "fake weather", new WeatherFaker.Factory(server), familySISO, familyAISO); // Restricted
         registerIC("MC1237", "fake time", new TimeFaker.Factory(server), familySISO, familyAISO); // Restricted
         //TODO Dyed Armour Spawner (MC1247) (Sign Title: DYE ARMOUR)
-        registerIC("MC1260", "sense water", new WaterSensor.Factory(server), familySISO, familyAISO);
-        registerIC("MC1261", "sense lava", new LavaSensor.Factory(server), familySISO, familyAISO);
-        registerIC("MC1262", "sense light", new LightSensor.Factory(server), familySISO, familyAISO);
-        registerIC("MC1263", "sense block", new BlockSensor.Factory(server), familySISO, familyAISO);
-        registerIC("MC1264", "sense item", new ItemSensor.Factory(server), familySISO, familyAISO);
-        registerIC("MC1265", "inv sns itm", new ItemNotSensor.Factory(server), familySISO, familyAISO);
-        registerIC("MC1266", "sense power", new PowerSensor.Factory(server), familySISO, familyAISO);
-        //FIXME registerIC("MC1267", "sense move", new MovementSensor.Factory(server), familySISO, familyAISO);
-        registerIC("MC1268", "sns cntns", new ContentsSensor.Factory(server), familySISO, familyAISO);
-        registerIC("MC1269", "sns p cntns", new PlayerInventorySensor.Factory(server), familySISO, familyAISO);
-        registerIC("MC1271", "sns entity", new EntitySensor.Factory(server), familySISO, familyAISO);
-        registerIC("MC1272", "sns player", new PlayerSensor.Factory(server), familySISO, familyAISO); // Restricted
 
         // 3ISOs
         registerIC("MC3231", "t control adva", new TimeControlAdvanced.Factory(server), family3ISO); // Restricted
