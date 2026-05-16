@@ -3,11 +3,5 @@ ics:
         per-player: false
     MC1111:
         per-player: false
-    MC1252:
-        max-fire-range: 20
     MC1263:
         invert-output: false
-    MC1278:
-        inverted: false
-    MC1270:
-        show-playing-message: true

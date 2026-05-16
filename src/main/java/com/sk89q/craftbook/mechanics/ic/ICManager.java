@@ -298,26 +298,14 @@ public class ICManager {
         registerIC("MC1025", "server time", new ServerTimeModulus.Factory(server), familySISO, familyAISO);
         registerIC("MC1110", "transmitter", new WirelessTransmitter.Factory(server), familySISO, familyAISO);
         registerIC("MC1111", "receiver", new WirelessReceiver.Factory(server), familySISO, familyAISO);
-        registerIC("MC1203", "strike", new LightningSummon.Factory(server), familySISO, familyAISO); // Restricted
-        registerIC("MC1210", "emitter", new ParticleEffect.Factory(server), familySISO, familyAISO); // Restricted
-        registerIC("MC1213", "sound", new SoundEffect.Factory(server), familySISO, familyAISO); // Restricted
-        registerIC("MC1217", "pot induce", new PotionInducer.Factory(server), familySISO, familyAISO);
         registerIC("MC1219", "auto craft", new AutomaticCrafter.Factory(server), familySISO, familyAISO);
-        registerIC("MC1224", "time bomb", new TimedExplosion.Factory(server), familySISO, familyAISO); // Restricted
         registerIC("MC1230", "sense day", new DaySensor.Factory(server), familySISO, familyAISO);
         registerIC("MC1231", "t control", new TimeControl.Factory(server), familySISO, familyAISO); // Restricted
         registerIC("MC1232", "time set", new TimeSet.Factory(server), familySISO, familyAISO); // Restricted
         registerIC("MC1234", "planter", new Planter.Factory(server), familySISO, familyAISO);
         registerIC("MC1236", "fake weather", new WeatherFaker.Factory(server), familySISO, familyAISO); // Restricted
         registerIC("MC1237", "fake time", new TimeFaker.Factory(server), familySISO, familyAISO); // Restricted
-        registerIC("MC1240", "shoot arrow", new ArrowShooter.Factory(server), familySISO, familyAISO); // Restricted
-        registerIC("MC1241", "shoot arrows", new ArrowBarrage.Factory(server), familySISO, familyAISO); // Restricted
-        registerIC("MC1246", "xp spawner", new XPSpawner.Factory(server), familySISO, familyAISO); //Restricted
         //TODO Dyed Armour Spawner (MC1247) (Sign Title: DYE ARMOUR)
-        registerIC("MC1250", "shoot fire", new FireShooter.Factory(server), familySISO, familyAISO); // Restricted
-        registerIC("MC1251", "shoot fires", new FireBarrage.Factory(server), familySISO, familyAISO); // Restricted
-        registerIC("MC1252", "flame thower", new FlameThrower.Factory(server), familySISO, familyAISO); // Restricted
-        registerIC("MC1253", "firework show", new ProgrammableFireworkShow.Factory(server), familySISO, familyAISO); // Restricted
         registerIC("MC1260", "sense water", new WaterSensor.Factory(server), familySISO, familyAISO);
         registerIC("MC1261", "sense lava", new LavaSensor.Factory(server), familySISO, familyAISO);
         registerIC("MC1262", "sense light", new LightSensor.Factory(server), familySISO, familyAISO);
@@ -328,15 +316,8 @@ public class ICManager {
         //FIXME registerIC("MC1267", "sense move", new MovementSensor.Factory(server), familySISO, familyAISO);
         registerIC("MC1268", "sns cntns", new ContentsSensor.Factory(server), familySISO, familyAISO);
         registerIC("MC1269", "sns p cntns", new PlayerInventorySensor.Factory(server), familySISO, familyAISO);
-        registerIC("MC1270", "melody", new Melody.Factory(server), familySISO, familyAISO);
         registerIC("MC1271", "sns entity", new EntitySensor.Factory(server), familySISO, familyAISO);
         registerIC("MC1272", "sns player", new PlayerSensor.Factory(server), familySISO, familyAISO); // Restricted
-        registerIC("MC1273", "jukebox", new Jukebox.Factory(server), familySISO, familyAISO);
-        registerIC("MC1275", "tune", new Tune.Factory(server), familySISO, familyAISO);
-        registerIC("MC1276", "radio station", new RadioStation.Factory(server), familySISO, familyAISO);
-        registerIC("MC1277", "radio player", new RadioPlayer.Factory(server), familySISO, familyAISO);
-        registerIC("MC1278", "sentry gun", new SentryGun.Factory(server), familySISO, familyAISO); //Restricted
-        registerIC("MC1510", "send message", new MessageSender.Factory(server), familySISO, familyAISO);
 
         // 3ISOs
         registerIC("MC3231", "t control adva", new TimeControlAdvanced.Factory(server), family3ISO); // Restricted
