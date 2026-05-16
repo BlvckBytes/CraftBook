@@ -9,16 +9,13 @@ import org.bukkit.block.Smoker;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
-import org.bukkit.entity.Player;
 import org.bukkit.inventory.*;
 import org.bukkit.inventory.meta.BookMeta;
-import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.EnchantmentStorageMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
-import java.util.Map.Entry;
 import java.util.regex.Pattern;
 
 public final class ItemUtil {
@@ -99,87 +96,6 @@ public final class ItemUtil {
             return null;
 
         return STRIP_RESET_PATTERN.matcher(message).replaceAll("");
-    }
-
-    public static boolean areRecipesIdentical(Recipe rec1, Recipe rec2) {
-
-        if(rec1 == null || rec2 == null)
-            return rec1 == rec2;
-        if(ItemUtil.areItemsIdentical(rec1.getResult(), rec2.getResult())) {
-            CraftBookPlugin.logDebugMessage("Recipes have same results!", "advanced-data.compare-recipes");
-            if(rec1 instanceof ShapedRecipe && rec2 instanceof ShapedRecipe) {
-                CraftBookPlugin.logDebugMessage("Shaped recipe!", "advanced-data.compare-recipes.shaped");
-                ShapedRecipe recipe1 = (ShapedRecipe) rec1;
-                ShapedRecipe recipe2 = (ShapedRecipe) rec2;
-                if(recipe1.getShape().length == recipe2.getShape().length) {
-                    CraftBookPlugin.logDebugMessage("Same size!", "advanced-data.compare-recipes.shaped");
-                    List<ItemStack> stacks1 = new ArrayList<>();
-
-                    for(String s : recipe1.getShape())
-                        for(char c : s.toCharArray())
-                            for(Entry<Character, ItemStack> entry : recipe1.getIngredientMap().entrySet())
-                                if(entry.getKey() == c)
-                                    stacks1.add(entry.getValue());
-                    List<ItemStack> stacks2 = new ArrayList<>();
-
-                    for(String s : recipe2.getShape())
-                        for(char c : s.toCharArray())
-                            for(Entry<Character, ItemStack> entry : recipe2.getIngredientMap().entrySet())
-                                if(entry.getKey() == c)
-                                    stacks2.add(entry.getValue());
-
-                    if(stacks2.size() != stacks1.size()) {
-                        CraftBookPlugin.logDebugMessage("Recipes have different amounts of ingredients!", "advanced-data.compare-recipes.shaped");
-                        return false;
-                    }
-                    List<ItemStack> test = new ArrayList<>(stacks1);
-                    if(test.size() == 0) {
-                        CraftBookPlugin.logDebugMessage("Recipes are the same!", "advanced-data.compare-recipes.shaped");
-                        return true;
-                    }
-                    if(!test.removeAll(stacks2) && test.size() > 0) {
-                        CraftBookPlugin.logDebugMessage("Recipes are NOT the same!", "advanced-data.compare-recipes.shaped");
-                        return false;
-                    }
-                    if(test.size() > 0) {
-                        CraftBookPlugin.logDebugMessage("Recipes are NOT the same!", "advanced-data.compare-recipes.shaped");
-                        return false;
-                    }
-                }
-            } else if(rec1 instanceof ShapelessRecipe && rec2 instanceof ShapelessRecipe) {
-
-                CraftBookPlugin.logDebugMessage("Shapeless Recipe!", "advanced-data.compare-recipes.shapeless");
-                ShapelessRecipe recipe1 = (ShapelessRecipe) rec1;
-                ShapelessRecipe recipe2 = (ShapelessRecipe) rec2;
-
-                if(VerifyUtil.withoutNulls(recipe1.getIngredientList()).size() != VerifyUtil.withoutNulls(recipe2.getIngredientList()).size()) {
-                    CraftBookPlugin.logDebugMessage("Recipes have different amounts of ingredients!", "advanced-data.compare-recipes.shapeless");
-                    return false;
-                }
-
-                CraftBookPlugin.logDebugMessage("Same Size!", "advanced-data.compare-recipes.shapeless");
-
-                List<ItemStack> test = new ArrayList<>(VerifyUtil.withoutNulls(recipe1.getIngredientList()));
-                if(test.size() == 0) {
-                    CraftBookPlugin.logDebugMessage("Recipes are the same!", "advanced-data.compare-recipes.shapeless");
-                    return true;
-                }
-                if(!test.removeAll(VerifyUtil.withoutNulls(recipe2.getIngredientList())) && test.size() > 0) {
-                    CraftBookPlugin.logDebugMessage("Recipes are NOT the same!", "advanced-data.compare-recipes.shapeless");
-                    return false;
-                }
-                if(test.size() > 0) {
-                    CraftBookPlugin.logDebugMessage("Recipes are NOT the same!", "advanced-data.compare-recipes.shapeless");
-                    return false;
-                }
-            }
-
-            CraftBookPlugin.logDebugMessage("Recipes are the same!", "advanced-data.compare-recipes");
-
-            return true;
-        }
-
-        return false;
     }
 
     public static boolean isValidItemMeta(ItemMeta meta) {
@@ -379,14 +295,6 @@ public final class ItemUtil {
         return true;
     }
 
-    public static boolean hasDisplayNameOrLore(ItemStack item) {
-        if(item.hasItemMeta()) {
-            ItemMeta meta = item.getItemMeta();
-            return meta.hasDisplayName() || meta.hasLore();
-        }
-        return false;
-    }
-
     /**
      * Removes a specified amount from an item entity.
      * 
@@ -441,60 +349,6 @@ public final class ItemUtil {
 
     public static ItemStack getBlastSmeltedResult(ItemStack item) {
         return blastFurnaceResults.get(item.getType());
-    }
-
-    public static Material getWoolFromColour(DyeColor color) {
-        switch (color) {
-            case ORANGE:
-                return Material.ORANGE_WOOL;
-            case MAGENTA:
-                return Material.MAGENTA_WOOL;
-            case LIGHT_BLUE:
-                return Material.LIGHT_BLUE_WOOL;
-            case YELLOW:
-                return Material.YELLOW_WOOL;
-            case LIME:
-                return Material.LIME_WOOL;
-            case PINK:
-                return Material.PINK_WOOL;
-            case GRAY:
-                return Material.GRAY_WOOL;
-            case LIGHT_GRAY:
-                return Material.LIGHT_GRAY_WOOL;
-            case CYAN:
-                return Material.CYAN_WOOL;
-            case PURPLE:
-                return Material.PURPLE_WOOL;
-            case BLUE:
-                return Material.BLUE_WOOL;
-            case BROWN:
-                return Material.BROWN_WOOL;
-            case GREEN:
-                return Material.GREEN_WOOL;
-            case RED:
-                return Material.RED_WOOL;
-            case BLACK:
-                return Material.BLACK_WOOL;
-            default:
-                return Material.WHITE_WOOL;
-        }
-    }
-
-    public static Material getBoatFromTree(TreeSpecies treeSpecies) {
-        switch (treeSpecies) {
-            case REDWOOD:
-                return Material.SPRUCE_BOAT;
-            case BIRCH:
-                return Material.BIRCH_BOAT;
-            case JUNGLE:
-                return Material.JUNGLE_BOAT;
-            case ACACIA:
-                return Material.ACACIA_BOAT;
-            case DARK_OAK:
-                return Material.DARK_OAK_BOAT;
-            default:
-                return Material.OAK_BOAT;
-        }
     }
 
     /**
@@ -561,62 +415,6 @@ public final class ItemUtil {
         }
     }
 
-    public static boolean containsRawFood(Inventory inv) {
-
-        return getRawFood(inv).size() > 0;
-    }
-
-    public static List<ItemStack> getRawFood(Inventory inv) {
-
-        List<ItemStack> ret = new ArrayList<>();
-
-        for (ItemStack it : inv.getContents()) {
-            if (isStackValid(it) && isCookable(it))
-                ret.add(it);
-        }
-        return ret;
-    }
-
-    public static boolean containsRawMinerals(Inventory inv) {
-
-        for (ItemStack it : inv.getContents()) {
-            if (isStackValid(it) && isSmeltable(it))
-                return true;
-        }
-        return false;
-    }
-
-    public static List<ItemStack> getRawMinerals(Inventory inv) {
-
-        List<ItemStack> ret = new ArrayList<>();
-
-        for (ItemStack it : inv.getContents()) {
-            if (isStackValid(it) && isSmeltable(it))
-                ret.add(it);
-        }
-        return ret;
-    }
-
-    public static boolean containsRawMaterials(Inventory inv) {
-
-        for (ItemStack it : inv.getContents()) {
-            if (isStackValid(it) && isFurnacable(it, null))
-                return true;
-        }
-        return false;
-    }
-
-    public static List<ItemStack> getRawMaterials(Inventory inv) {
-
-        List<ItemStack> ret = new ArrayList<>();
-
-        for (ItemStack it : inv.getContents()) {
-            if (isStackValid(it) && isFurnacable(it, null))
-                ret.add(it);
-        }
-        return ret;
-    }
-
     public static boolean isFurnacable(ItemStack item, @Nullable Furnace furnace) {
         if (furnace instanceof BlastFurnace) {
             return isBlastSmeltable(item);
@@ -627,27 +425,6 @@ public final class ItemUtil {
         }
 
         return isSmeltable(item) || isCookable(item) || isBlastSmeltable(item);
-    }
-
-    public static boolean isItemEdible(ItemStack item) {
-
-        return item.getType().isEdible();
-    }
-
-    public static ItemStack getUsedItem(ItemStack item) {
-
-        if (item.getType() == Material.MUSHROOM_STEW) {
-            item.setType(Material.BOWL); // Get your bowl back
-        } else if (item.getType() == Material.POTION) {
-            item.setType(Material.GLASS_BOTTLE); // Get your bottle back
-        } else if (item.getType() == Material.LAVA_BUCKET || item.getType() == Material.WATER_BUCKET || item.getType() == Material.MILK_BUCKET) {
-            item.setType(Material.BUCKET); // Get your bucket back
-        } else if (item.getAmount() == 1) {
-            item.setType(Material.AIR);
-        } else {
-            item.setAmount(item.getAmount() - 1);
-        }
-        return item;
     }
 
     public static ItemStack getSmallestStackOfType(ItemStack[] stacks, ItemStack item) {
@@ -712,117 +489,6 @@ public final class ItemUtil {
         }
 
         return items;
-    }
-
-    public static boolean isArmor(Material type){
-        switch(type) {
-            case LEATHER_HELMET:
-            case LEATHER_CHESTPLATE:
-            case LEATHER_LEGGINGS:
-            case LEATHER_BOOTS:
-            case IRON_HELMET:
-            case IRON_CHESTPLATE:
-            case IRON_LEGGINGS:
-            case IRON_BOOTS:
-            case GOLDEN_HELMET:
-            case GOLDEN_CHESTPLATE:
-            case GOLDEN_LEGGINGS:
-            case GOLDEN_BOOTS:
-            case DIAMOND_HELMET:
-            case DIAMOND_CHESTPLATE:
-            case DIAMOND_LEGGINGS:
-            case DIAMOND_BOOTS:
-            case CHAINMAIL_HELMET:
-            case CHAINMAIL_CHESTPLATE:
-            case CHAINMAIL_LEGGINGS:
-            case CHAINMAIL_BOOTS:
-            case TURTLE_HELMET:
-                return true;
-            default:
-                return false;
-        }
-    }
-
-    /**
-     * Returns the maximum durability that an item can have.
-     * 
-     * @param type
-     * @return
-     */
-    public static short getMaxDurability(Material type) {
-        switch(type) {
-            case DIAMOND_AXE:
-            case DIAMOND_HOE:
-            case DIAMOND_PICKAXE:
-            case DIAMOND_SHOVEL:
-            case DIAMOND_SWORD:
-                return 1562;
-            case IRON_AXE:
-            case IRON_HOE:
-            case IRON_PICKAXE:
-            case IRON_SHOVEL:
-            case IRON_SWORD:
-                return 251;
-            case STONE_AXE:
-            case STONE_HOE:
-            case STONE_PICKAXE:
-            case STONE_SHOVEL:
-            case STONE_SWORD:
-                return 132;
-            case WOODEN_AXE:
-            case WOODEN_HOE:
-            case WOODEN_PICKAXE:
-            case WOODEN_SHOVEL:
-            case WOODEN_SWORD:
-                return 60;
-            case GOLDEN_AXE:
-            case GOLDEN_HOE:
-            case GOLDEN_PICKAXE:
-            case GOLDEN_SHOVEL:
-            case GOLDEN_SWORD:
-                return 33;
-            case SHEARS:
-                return 238;
-            case FLINT_AND_STEEL:
-            case FISHING_ROD:
-                return 65;
-            case SHIELD:
-                return 337;
-            default:
-                return type.getMaxDurability();
-        }
-    }
-
-    private static boolean shouldDamageItem(ItemStack stack) {
-        Map<Enchantment, Integer> enchants = stack.getEnchantments();
-        int level = enchants.getOrDefault(Enchantment.UNBREAKING, 0);
-
-        if (level > 0) {
-            int chance = (int) (100d / (level + 1));
-            if(isArmor(stack.getType())) {
-                chance = (int)(60d + (40d / (level + 1)));
-            }
-            int roll = CraftBookPlugin.inst().getRandom().nextInt(100);
-            return !(roll < chance);
-        }
-
-        return true;
-    }
-
-    public static void damageHeldItem(Player player) {
-        ItemStack heldItem = player.getInventory().getItemInMainHand();
-        ItemMeta meta = heldItem.getItemMeta();
-        if(meta instanceof Damageable && getMaxDurability(heldItem.getType()) > 0) {
-            if (!shouldDamageItem(heldItem)) {
-                return;
-            }
-            ((Damageable) meta).setDamage(((Damageable) meta).getDamage() + 1);
-            heldItem.setItemMeta(meta);
-            if(((Damageable) meta).getDamage() <= getMaxDurability(heldItem.getType()))
-                player.getInventory().setItemInMainHand(heldItem);
-            else
-                player.getInventory().setItemInMainHand(null);
-        }
     }
 
     public static boolean isShulkerBox(Material type) {
