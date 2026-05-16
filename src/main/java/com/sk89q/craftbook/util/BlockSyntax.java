@@ -22,11 +22,8 @@ import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldedit.extension.input.InputParseException;
 import com.sk89q.worldedit.extension.input.ParserContext;
 import com.sk89q.worldedit.world.block.BaseBlock;
-import com.sk89q.worldedit.world.block.BlockStateHolder;
-import com.sk89q.worldedit.world.block.BlockType;
 import com.sk89q.worldedit.world.registry.LegacyMapper;
 import org.bukkit.Material;
-import org.bukkit.block.data.BlockData;
 
 import java.util.HashSet;
 import java.util.List;
@@ -87,31 +84,7 @@ public class BlockSyntax {
         return blockState;
     }
 
-    public static List<BaseBlock> getBlocks(List<String> lines) {
-        return getBlocks(lines, false);
-    }
-
     public static List<BaseBlock> getBlocks(List<String> lines, boolean wild) {
         return lines.stream().map(line -> getBlock(line, wild)).filter(Objects::nonNull).collect(Collectors.toList());
-    }
-
-    public static BlockData getBukkitBlock(String line) {
-        return BukkitAdapter.adapt(getBlock(line));
-    }
-
-    public static String toMinifiedId(BlockType holder) {
-        String output = holder.id();
-        if (output.startsWith("minecraft:")) {
-            output = output.substring(10);
-        }
-        return output;
-    }
-
-    public static String toMinifiedId(BlockStateHolder holder) {
-        String output = holder.getAsString();
-        if (output.startsWith("minecraft:")) {
-            output = output.substring(10);
-        }
-        return output;
     }
 }

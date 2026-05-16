@@ -2,18 +2,14 @@ package com.sk89q.craftbook.util;
 
 import com.sk89q.craftbook.bukkit.CraftBookPlugin;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
-import org.bukkit.block.BlockState;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Cancellable;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockEvent;
-import org.bukkit.event.block.BlockFormEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
-import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
 
@@ -48,7 +44,6 @@ public final class ProtectionUtil {
 
         if (!shouldUseProtection()) return true;
         if (CraftBookPlugin.inst().getConfiguration().advancedBlockChecks) {
-            CompatabilityUtil.disableInterferences(player);
             BlockEvent event;
             if (build)
                 event = new BlockPlaceEvent(block, block.getState(), block.getRelative(0, -1, 0), player.getInventory().getItemInMainHand(), player, true, EquipmentSlot.HAND);
@@ -56,24 +51,10 @@ public final class ProtectionUtil {
                 event = new BlockBreakEvent(block, player);
             EventUtil.ignoreEvent(event);
             CraftBookPlugin.inst().getServer().getPluginManager().callEvent(event);
-            CompatabilityUtil.enableInterferences(player);
             return !(((Cancellable) event).isCancelled() || event instanceof BlockPlaceEvent && !((BlockPlaceEvent) event).canBuild());
         }
         return !CraftBookPlugin.inst().getConfiguration().obeyWorldguard || (CraftBookPlugin.plugins.getWorldGuard() == null || build ? CraftBookPlugin.plugins.getWorldGuard().createProtectionQuery().testBlockPlace(player, block.getLocation(), block.getType()) : CraftBookPlugin.plugins.getWorldGuard().createProtectionQuery().testBlockBreak(player, block));
 
-    }
-
-    public static boolean canSendCommand(Player player, String command) {
-        if (!shouldUseProtection()) return true;
-        if (CraftBookPlugin.inst().getConfiguration().advancedBlockChecks) {
-            CompatabilityUtil.disableInterferences(player);
-            PlayerCommandPreprocessEvent event = new PlayerCommandPreprocessEvent(player, command);
-            EventUtil.ignoreEvent(event);
-            CraftBookPlugin.inst().getServer().getPluginManager().callEvent(event);
-            CompatabilityUtil.enableInterferences(player);
-            return !event.isCancelled();
-        }
-        return true;
     }
 
     /**
@@ -89,11 +70,9 @@ public final class ProtectionUtil {
 
         if (!shouldUseProtection()) return true;
         if (CraftBookPlugin.inst().getConfiguration().advancedBlockChecks) {
-            CompatabilityUtil.disableInterferences(player);
             PlayerInteractEvent event = new PlayerInteractEvent(player, action == null ? Action.RIGHT_CLICK_BLOCK : action, player.getItemInHand(), loc.getBlock(), face == null ? BlockFace.SELF : face);
             EventUtil.ignoreEvent(event);
             CraftBookPlugin.inst().getServer().getPluginManager().callEvent(event);
-            CompatabilityUtil.enableInterferences(player);
             if (!event.isCancelled() && CraftBookPlugin.inst().getConfiguration().obeyWorldguard && CraftBookPlugin.plugins.getWorldGuard() != null) {
                 return CraftBookPlugin.plugins.getWorldGuard().createProtectionQuery().testBlockInteract(player, loc.getBlock());
             }
@@ -120,29 +99,6 @@ public final class ProtectionUtil {
                 return false;
         }
         return !CraftBookPlugin.inst().getConfiguration().obeyWorldguard || CraftBookPlugin.plugins.getWorldGuard() == null || CraftBookPlugin.plugins.getWorldGuard().createProtectionQuery().testBlockInteract(player, block);
-    }
-
-    /**
-     * Checks to see if a block can form at a specific location. This will
-     * return true if region protection is disabled or WorldGuard is not found.
-     * 
-     * @param block The block that is changing.
-     * @param newState The new state of the block.
-     * 
-     * @return Whether the block can form.
-     */
-    public static boolean canBlockForm(Block block, BlockState newState) {
-
-        if (!shouldUseProtection()) return true;
-        if (CraftBookPlugin.inst().getConfiguration().advancedBlockChecks) {
-
-            BlockFormEvent event = new BlockFormEvent(block, newState);
-            EventUtil.ignoreEvent(event);
-            CraftBookPlugin.inst().getServer().getPluginManager().callEvent(event);
-            return !event.isCancelled();
-        }
-        return !CraftBookPlugin.inst().getConfiguration().obeyWorldguard || CraftBookPlugin.plugins.getWorldGuard() == null || !(newState.getType() == Material.SNOW || newState.getType() == Material.ICE) || CraftBookPlugin.plugins.getWorldGuard().createProtectionQuery().testBlockPlace(null, block.getLocation(), newState.getType());
-
     }
 
     /**

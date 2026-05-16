@@ -8,7 +8,6 @@ import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.math.Vector3;
 import com.sk89q.worldguard.WorldGuard;
 import com.sk89q.worldguard.protection.regions.ProtectedRegion;
-import org.apache.commons.lang.StringUtils;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -71,7 +70,7 @@ public final class SearchArea {
                 return new SearchArea();
 
             ProtectedRegion reg = WorldGuard.getInstance().getPlatform().getRegionContainer()
-                    .get(BukkitAdapter.adapt(block.getWorld())).getRegion(StringUtils.replace(line, "r:", ""));
+                    .get(BukkitAdapter.adapt(block.getWorld())).getRegion(line.replace("r:", ""));
             if(reg == null)
                 return new SearchArea();
 
@@ -96,7 +95,7 @@ public final class SearchArea {
                 return false;
 
             ProtectedRegion reg = WorldGuard.getInstance().getPlatform().getRegionContainer()
-                    .get(BukkitAdapter.adapt(block.getWorld())).getRegion(StringUtils.replace(line, "r:", ""));
+                    .get(BukkitAdapter.adapt(block.getWorld())).getRegion(line.replace("r:", ""));
             return reg != null;
 
         } else {

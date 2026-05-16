@@ -3,7 +3,6 @@ package com.sk89q.craftbook.mechanics.signcopier;
 import com.sk89q.craftbook.AbstractCraftBookMechanic;
 import com.sk89q.craftbook.CraftBookPlayer;
 import com.sk89q.craftbook.bukkit.CraftBookPlugin;
-import com.sk89q.craftbook.util.CompatabilityUtil;
 import com.sk89q.craftbook.util.EventUtil;
 import com.sk89q.craftbook.util.ItemSyntax;
 import com.sk89q.craftbook.util.ProtectionUtil;
@@ -71,19 +70,14 @@ public class SignCopier extends AbstractCraftBookMechanic {
                 Sign s = (Sign) event.getClickedBlock().getState();
                 String[] lines = signs.get(player.getName());
 
-                try {
-                    CompatabilityUtil.disableInterferences(event.getPlayer());
-                    SignChangeEvent sev = new SignChangeEvent(event.getClickedBlock(), event.getPlayer(), lines);
-                    Bukkit.getPluginManager().callEvent(sev);
+                SignChangeEvent sev = new SignChangeEvent(event.getClickedBlock(), event.getPlayer(), lines);
+                Bukkit.getPluginManager().callEvent(sev);
 
-                    if (!sev.isCancelled()) {
-                        lines = sev.getLines();
-                        for (int i = 0; i < lines.length; i++)
-                            s.setLine(i, lines[i]);
-                        s.update();
-                    }
-                } finally {
-                    CompatabilityUtil.enableInterferences(event.getPlayer());
+                if (!sev.isCancelled()) {
+                    lines = sev.getLines();
+                    for (int i = 0; i < lines.length; i++)
+                        s.setLine(i, lines[i]);
+                    s.update();
                 }
 
                 player.print("mech.signcopy.paste");

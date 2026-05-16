@@ -6,10 +6,7 @@ import com.sk89q.craftbook.bukkit.BukkitCraftBookPlayer;
 import com.sk89q.craftbook.bukkit.CraftBookPlugin;
 import com.sk89q.craftbook.bukkit.util.CraftBookBukkitUtil;
 import com.sk89q.worldedit.math.Vector3;
-import org.bukkit.Chunk;
 import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Entity;
@@ -48,40 +45,6 @@ public final class LocationUtil {
     public static boolean isWithinRadius(Location l1, Location l2, Vector3 radius) {
 
         return radius.x() == radius.z() && radius.x() == radius.y() && isWithinSphericalRadius(l1,l2,radius.x()) || (radius.x() != radius.y() || radius.y() != radius.z() || radius.x() != radius.z()) && isWithinRadiusPolygon(l1,l2,radius);
-    }
-
-    public static Entity[] getNearbyEntities(Location l, Vector3 radius) {
-        int chunkRadiusX = (int) radius.x() < 16 ? 1 : (int) radius.x() / 16;
-        int chunkRadiusZ = (int) radius.z() < 16 ? 1 : (int) radius.z() / 16;
-        HashSet<Entity> radiusEntities = new HashSet<>();
-        for (int chX = 0 - chunkRadiusX; chX <= chunkRadiusX; chX++) {
-            for (int chZ = 0 - chunkRadiusZ; chZ <= chunkRadiusZ; chZ++) {
-                int offChunkX = l.getChunk().getX() + chX;
-                int offChunkZ = l.getChunk().getZ() + chZ;
-                if (l.getWorld().isChunkLoaded(offChunkX, offChunkZ)) {
-                    for (Entity e : l.getWorld().getChunkAt(offChunkX, offChunkZ).getEntities()) {
-                        if (e == null || e.isDead() || !e.isValid())
-                            continue;
-                        if (isWithinRadius(l, e.getLocation(), radius))
-                            radiusEntities.add(e);
-                    }
-                }
-            }
-        }
-        return radiusEntities.toArray(new Entity[radiusEntities.size()]);
-    }
-
-    /**
-     * Gets the distance between two points.
-     *
-     * @param l1
-     * @param l2
-     *
-     * @return
-     */
-    public static double getDistance(Location l1, Location l2) {
-
-        return Math.sqrt(getDistanceSquared(l1, l2));
     }
 
     public static double getDistanceSquared(Location l1, Location l2) {
@@ -224,37 +187,6 @@ public final class LocationUtil {
         return block;
     }
 
-    /**
-     * Gets next vertical free space
-     *
-     * @param block
-     * @param direction
-     *
-     * @return next air block in a direction.
-     */
-    public static Block getNextFreeSpace(Block block, BlockFace direction) {
-
-        while (block.getType() != Material.AIR && block.getRelative(direction).getType() != Material.AIR) {
-            if (!(block.getY() < block.getWorld().getMaxHeight())) {
-                break;
-            }
-            block = block.getRelative(direction);
-        }
-        return block;
-    }
-
-    /**
-     * Gets centre of passed block.
-     *
-     * @param block
-     *
-     * @return Centre location
-     */
-    public static Location getCenterOfBlock(Block block) {
-
-        return block.getLocation().add(0.5, 1, 0.5);
-    }
-
     public static Player[] getNearbyPlayers(Location l, int radius) {
 
         int chunkRadius = radius < 16 ? 1 : radius / 16;
@@ -275,21 +207,6 @@ public final class LocationUtil {
         return radiusEntities.toArray(new Player[radiusEntities.size()]);
     }
 
-    public static boolean isBorderChunk(Chunk chunk) {
-        World world = chunk.getWorld();
-
-        for (int x = -1; x < 2; x++) {
-            for (int z = -1; z < 2; z++) {
-                if (x == 0 && z == 0) continue;
-                if (!world.isChunkLoaded(chunk.getX() + x, chunk.getZ() + z)) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
     /**
      * Gets an array of {@link BlockFace} that are direct.
      * 
@@ -298,18 +215,6 @@ public final class LocationUtil {
     public static BlockFace[] getDirectFaces() {
 
         return new BlockFace[] {BlockFace.UP, BlockFace.DOWN, BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST};
-    }
-
-    /**
-     * Gets an array of {@link BlockFace} that are indirect.
-     * 
-     * Note: This is only indirect along the X and Z axis due to bukkit constraints.
-     * 
-     * @return The array of {@link BlockFace}
-     */
-    public static BlockFace[] getIndirectFaces() {
-
-        return new BlockFace[] {BlockFace.UP, BlockFace.DOWN, BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST, BlockFace.NORTH_EAST, BlockFace.NORTH_WEST, BlockFace.SOUTH_EAST, BlockFace.SOUTH_WEST};
     }
 
 

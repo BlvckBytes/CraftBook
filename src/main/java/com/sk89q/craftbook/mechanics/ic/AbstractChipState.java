@@ -6,12 +6,13 @@ import com.sk89q.craftbook.util.ICUtil;
 import com.sk89q.craftbook.util.SignUtil;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldedit.util.Location;
-import org.apache.commons.lang.Validate;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.data.AnaloguePowerable;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.Powerable;
+
+import java.util.Objects;
 
 /**
  * @author Silthus
@@ -24,9 +25,8 @@ public abstract class AbstractChipState implements ChipState {
     protected final Block icBlock;
 
     protected AbstractChipState(Location source, ChangedSign sign, boolean selfTriggered) {
+        Objects.requireNonNull(sign);
 
-        // Check this here to prevent and handle future NPEs
-        Validate.notNull(sign, "Null ChangedSign found: " + source.toString());
         this.sign = sign;
         this.source = source;
         this.selfTriggered = selfTriggered;

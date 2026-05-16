@@ -36,9 +36,7 @@ import com.sk89q.craftbook.util.events.SignClickEvent;
 import com.sk89q.craftbook.util.events.SourcedBlockRedstoneEvent;
 import com.sk89q.util.yaml.YAMLProcessor;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
-import org.apache.commons.lang.StringUtils;
 import org.bukkit.Bukkit;
-import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -103,20 +101,20 @@ public class ICMechanic extends AbstractCraftBookMechanic {
         // TODO: remove after some time to stop converting existing MCA ICs
         // convert existing MCA ICs to the new [MCXXXX]A syntax
         if (prefix.equalsIgnoreCase("MCA")) {
-            sign.setLine(1, (StringUtils.replace(sign.getLine(1).toLowerCase(Locale.ENGLISH), "mca", "mc") + "a").toUpperCase(Locale.ENGLISH));
+            sign.setLine(1, (sign.getLine(1).toLowerCase(Locale.ENGLISH).replace("mca", "mc") + "a").toUpperCase(Locale.ENGLISH));
             sign.update(false);
 
             return setupIC(block, create);
         }
         if (sign.getLine(1).toLowerCase(Locale.ENGLISH).startsWith("[mc0")) {
-            sign.setLine(1, (StringUtils.replace(sign.getLine(1).toLowerCase(Locale.ENGLISH), "mc0", "mc1") + "s").toUpperCase(Locale.ENGLISH));
+            sign.setLine(1, (sign.getLine(1).toLowerCase(Locale.ENGLISH).replace("mc0", "mc1") + "s").toUpperCase(Locale.ENGLISH));
             sign.update(false);
 
             return setupIC(block, create);
         }
 
         if (sign.getLine(1).toLowerCase(Locale.ENGLISH).startsWith("[mcz")) {
-            sign.setLine(1, (StringUtils.replace(sign.getLine(1).toLowerCase(Locale.ENGLISH), "mcz", "mcx") + "s").toUpperCase(Locale.ENGLISH));
+            sign.setLine(1, (sign.getLine(1).toLowerCase(Locale.ENGLISH).replace("mcz", "mcx") + "s").toUpperCase(Locale.ENGLISH));
             sign.update(false);
 
             return setupIC(block, create);
@@ -467,7 +465,7 @@ public class ICMechanic extends AbstractCraftBookMechanic {
             String id = event.getLine(0).substring(1);
 
             boolean st = id.toLowerCase(Locale.ENGLISH).endsWith(" st");
-            id = StringUtils.replace(id.toLowerCase(Locale.ENGLISH), " st", "");
+            id = id.toLowerCase(Locale.ENGLISH).replace(" st", "");
 
             String shortId = manager.longRegistered.get(id.toLowerCase(Locale.ENGLISH));
             if (shortId == null) {

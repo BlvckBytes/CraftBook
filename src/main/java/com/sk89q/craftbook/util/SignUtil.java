@@ -16,7 +16,6 @@
 
 package com.sk89q.craftbook.util;
 
-import com.sk89q.craftbook.bukkit.util.CraftBookBukkitUtil;
 import org.bukkit.Material;
 import org.bukkit.Tag;
 import org.bukkit.block.Block;
@@ -125,25 +124,6 @@ public final class SignUtil {
         return sign.getRelative(getBack(sign));
     }
 
-    public static Block getNextSign(Block sign, String criterea, int searchRadius) {
-
-        Block otherBlock = sign;
-        BlockFace way = sign.getFace(getBackBlock(sign));
-        boolean found = false;
-        for (int i = 0; i < searchRadius; i++) {
-            if (isSign(otherBlock.getRelative(way))) {
-                otherBlock = otherBlock.getRelative(way);
-                if (CraftBookBukkitUtil.toChangedSign(otherBlock).getLine(1).equalsIgnoreCase(criterea)) {
-                    found = true;
-                    break;
-                }
-            } else
-                otherBlock = otherBlock.getRelative(way);
-        }
-        if (!found) return null;
-        return otherBlock;
-    }
-
     /**
      * @param sign treated as sign post if it is such, or else assumed to be a wall sign (i.e.,
      *             if you ask about a stone block, it's considered a wall
@@ -178,28 +158,6 @@ public final class SignUtil {
     public static Block getRightBlock(Block sign) {
 
         return sign.getRelative(getRight(sign));
-    }
-
-    /**
-     * @param sign treated as sign post if it is such, or else assumed to be a wall sign (i.e.,
-     *             if you ask about a stone block, it's considered a wall
-     *             sign).
-     *
-     * @return true if the sign is oriented along a cardinal direction (or if it's a wall sign,
-     *         since those are always oriented along cardinal
-     *         directions); false otherwise.
-     */
-    public static boolean isCardinal(Block sign) {
-        BlockFace facing = getFront(sign);
-        switch (facing) {
-            case NORTH:
-            case SOUTH:
-            case EAST:
-            case WEST:
-                return true;
-            default:
-                return false;
-        }
     }
 
     /**
@@ -254,17 +212,5 @@ public final class SignUtil {
     public static void cancelSign(SignChangeEvent event) {
         event.setCancelled(true);
         event.getBlock().breakNaturally();
-    }
-
-    /**
-     * Check whether or not the block is a sign, and if so, does it contain the said text on that specific line.
-     * 
-     * @param sign The sign to check.
-     * @param text The text to check.
-     * @param line The line to check the text on.
-     * @return
-     */
-    public static boolean doesSignHaveText(Block sign, String text, int line) {
-        return isSign(sign) && CraftBookBukkitUtil.toChangedSign(sign).getLine(line).equals(text);
     }
 }

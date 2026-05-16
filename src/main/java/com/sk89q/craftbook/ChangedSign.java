@@ -6,14 +6,13 @@ import com.sk89q.craftbook.mechanics.variables.VariableManager;
 import com.sk89q.craftbook.util.ParsingUtil;
 import com.sk89q.craftbook.util.RegexUtil;
 import io.papermc.lib.PaperLib;
-import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.Validate;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
 
 import java.util.Arrays;
 import java.util.Locale;
+import java.util.Objects;
 
 public class ChangedSign {
 
@@ -31,7 +30,7 @@ public class ChangedSign {
     }
 
     public ChangedSign(Block block, String[] lines) {
-        Validate.notNull(block);
+        Objects.requireNonNull(block);
 
         this.block = block;
 
@@ -60,7 +59,7 @@ public class ChangedSign {
                         key = "global";
 
                     if(!VariableCommands.hasVariablePermission(((BukkitCraftBookPlayer) player).getPlayer(), key, var, "use"))
-                        setLine(i, StringUtils.replace(line, '%' + key + '|' + var + '%', ""));
+                        setLine(i, line.replace('%' + key + '|' + var + '%', ""));
                 }
             }
         }
@@ -80,11 +79,6 @@ public class ChangedSign {
     public Material getType() {
 
         return block.getType();
-    }
-
-    public byte getLightLevel() {
-
-        return block.getLightLevel();
     }
 
     public int getX() {
@@ -141,10 +135,6 @@ public class ChangedSign {
 
     public void setLines(String[] lines) {
         this.lines = lines;
-    }
-
-    public void setOldLines(String[] oldLines) {
-        this.oldLines = oldLines;
     }
 
     public boolean hasChanged () {

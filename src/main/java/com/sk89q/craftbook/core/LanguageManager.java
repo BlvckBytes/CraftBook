@@ -3,7 +3,6 @@ package com.sk89q.craftbook.core;
 import com.sk89q.craftbook.bukkit.CraftBookPlugin;
 import com.sk89q.util.yaml.YAMLFormat;
 import com.sk89q.util.yaml.YAMLProcessor;
-import org.apache.commons.lang.StringUtils;
 import org.bukkit.entity.Player;
 
 import java.io.File;
@@ -73,7 +72,7 @@ public class LanguageManager {
             } else {
                 String trans = message;
                 for(Entry<String, String> tran : defaultMessages.entrySet()) {
-                    trans = StringUtils.replace(trans, tran.getKey(), tran.getValue());
+                    trans = trans.replace(tran.getKey(), tran.getValue());
                 }
                 return trans;
             }
@@ -95,7 +94,7 @@ public class LanguageManager {
                 for(String tran : languageData.getMap().keySet()) {
                     String trand = defaultMessages.get(tran) != null ? languageData.getString(tran, defaultMessages.get(tran)) : languageData.getString(tran);
                     if(tran == null || trand == null) continue;
-                    trans = StringUtils.replace(trans, tran, trand);
+                    trans = trans.replace(tran, trand);
                 }
                 return trans;
             }

@@ -11,7 +11,6 @@ import com.sk89q.squirrelid.resolver.HttpRepositoryService;
 import com.sk89q.squirrelid.resolver.ProfileService;
 import com.sk89q.util.yaml.YAMLFormat;
 import com.sk89q.util.yaml.YAMLProcessor;
-import org.apache.commons.lang.StringUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.event.EventHandler;
@@ -50,9 +49,6 @@ public class VariableManager extends AbstractCraftBookMechanic {
             CraftBookBukkitUtil.printStacktrace(ignored);
             return false;
         }
-
-        if(packetMessageOverride)
-            new VariablePacketModifier();
 
         return true;
     }
@@ -170,7 +166,7 @@ public class VariableManager extends AbstractCraftBookMechanic {
                             Profile profile = resolver.findByName(player.getName()); // May be null
 
                             UUID uuid = profile.getUniqueId();
-                            line = StringUtils.replace(line, var, var.replace(namespace, CraftBookPlugin.inst().getUUIDMappings().getCBID(uuid)));
+                            line = line.replace(var, var.replace(namespace, CraftBookPlugin.inst().getUUIDMappings().getCBID(uuid)));
                         } catch (Exception e) {
                             e.printStackTrace();
                         }
@@ -187,7 +183,6 @@ public class VariableManager extends AbstractCraftBookMechanic {
     private boolean consoleOverride;
     private boolean playerCommandOverride;
     private boolean playerChatOverride;
-    private boolean packetMessageOverride;
 
     @Override
     public void loadConfiguration (YAMLProcessor config, String path) {
@@ -203,9 +198,6 @@ public class VariableManager extends AbstractCraftBookMechanic {
 
         config.setComment(path + "enable-in-player-chat", "Allow variables to work in player chat.");
         playerChatOverride = config.getBoolean(path + "enable-in-player-chat", false);
-
-        config.setComment(path + "override-all-text", "Modify outgoing packets to replace variables in all text. (Requires ProtocolLib)");
-        packetMessageOverride = config.getBoolean(path + "override-all-text", false);
     }
 
     @Override

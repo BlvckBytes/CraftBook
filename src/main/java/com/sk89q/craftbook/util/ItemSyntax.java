@@ -11,7 +11,6 @@ import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldedit.extension.input.InputParseException;
 import com.sk89q.worldedit.extension.input.ParserContext;
 import com.sk89q.worldedit.world.registry.LegacyMapper;
-import org.apache.commons.lang.StringUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -100,7 +99,7 @@ public final class ItemSyntax {
                 }
             }
             if (!flags.isEmpty()) {
-                builder.append("/flags:").append(StringUtils.join(flags, ","));
+                builder.append("/flags:").append(String.join(",", flags));
             }
 
             if (meta instanceof SkullMeta) {
@@ -130,7 +129,7 @@ public final class ItemSyntax {
             }
         }
 
-        return StringUtils.replace(builder.toString(), "\u00A7", "&");
+        return builder.toString().replace("\u00A7", "&");
     }
 
     private static ParserContext ITEM_CONTEXT = new ParserContext();

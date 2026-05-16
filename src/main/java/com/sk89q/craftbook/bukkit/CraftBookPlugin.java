@@ -20,7 +20,6 @@ import com.sk89q.craftbook.mechanics.ic.gates.world.items.crafter.RecipeCache;
 import com.sk89q.craftbook.mechanics.pipe.Pipes;
 import com.sk89q.craftbook.mechanics.signcopier.SignCopier;
 import com.sk89q.craftbook.mechanics.variables.VariableManager;
-import com.sk89q.craftbook.util.CompatabilityUtil;
 import com.sk89q.craftbook.util.ItemSyntax;
 import com.sk89q.craftbook.util.UUIDMappings;
 import com.sk89q.craftbook.util.compat.companion.CompanionPlugins;
@@ -372,8 +371,6 @@ public class CraftBookPlugin extends JavaPlugin {
         // Initialize the language manager.
         languageManager = new LanguageManager();
         languageManager.init();
-
-        getServer().getScheduler().runTask(this, CompatabilityUtil::init);
 
         mechanics = new ArrayList<>();
 

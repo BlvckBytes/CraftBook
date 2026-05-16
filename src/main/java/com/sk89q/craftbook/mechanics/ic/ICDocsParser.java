@@ -2,7 +2,6 @@ package com.sk89q.craftbook.mechanics.ic;
 
 import java.util.Locale;
 
-import org.apache.commons.lang.StringUtils;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 
@@ -53,9 +52,9 @@ public class ICDocsParser {
         if(line.contains("+o"))
             line = ChatColor.GRAY + line + " (Optional)";
 
-        line = StringUtils.replace(line, "{", ChatColor.GRAY + "");
-        line = StringUtils.replace(line, "}", ChatColor.YELLOW + "");
+        line = line.replace("{", ChatColor.GRAY + "");
+        line = line.replace("}", ChatColor.YELLOW + "");
 
-        return StringUtils.replace(line, "+o", "");
+        return line.replace("+o", "");
     }
 }

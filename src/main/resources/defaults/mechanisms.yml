@@ -45,7 +45,6 @@ mechanics:
         enable-in-console: false
         enable-in-player-commands: false
         enable-in-player-chat: false
-        override-all-text: false
     XPStorer:
         require-bottle: false
         xp-per-bottle: 16

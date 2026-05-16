@@ -6,7 +6,6 @@ import com.google.common.cache.LoadingCache;
 import com.sk89q.craftbook.bukkit.CraftBookPlugin;
 import com.sk89q.craftbook.mechanics.variables.VariableCommands;
 import com.sk89q.craftbook.mechanics.variables.VariableManager;
-import org.apache.commons.lang.StringUtils;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
@@ -37,17 +36,17 @@ public final class ParsingUtil {
 
     public static String parsePlayerTags(String line, Player player) {
 
-        line = StringUtils.replace(line, "@p.l", player.getLocation().getX() + ":" + player.getLocation().getY() + ":" + player.getLocation().getZ());
-        line = StringUtils.replace(line, "@p.x", String.valueOf(player.getLocation().getX()));
-        line = StringUtils.replace(line, "@p.y", String.valueOf(player.getLocation().getY()));
-        line = StringUtils.replace(line, "@p.z", String.valueOf(player.getLocation().getZ()));
-        line = StringUtils.replace(line, "@p.bx", String.valueOf(player.getLocation().getBlockX()));
-        line = StringUtils.replace(line, "@p.by", String.valueOf(player.getLocation().getBlockY()));
-        line = StringUtils.replace(line, "@p.bz", String.valueOf(player.getLocation().getBlockZ()));
-        line = StringUtils.replace(line, "@p.w", String.valueOf(player.getLocation().getWorld().getName()));
-        line = StringUtils.replace(line, "@p.u", player.getUniqueId().toString());
-        line = StringUtils.replace(line, "@p.i", CraftBookPlugin.inst().getUUIDMappings().getCBID(player.getUniqueId()));
-        line = StringUtils.replace(line, "@p", player.getName());
+        line = line.replace("@p.l", player.getLocation().getX() + ":" + player.getLocation().getY() + ":" + player.getLocation().getZ());
+        line = line.replace("@p.x", String.valueOf(player.getLocation().getX()));
+        line = line.replace("@p.y", String.valueOf(player.getLocation().getY()));
+        line = line.replace("@p.z", String.valueOf(player.getLocation().getZ()));
+        line = line.replace("@p.bx", String.valueOf(player.getLocation().getBlockX()));
+        line = line.replace("@p.by", String.valueOf(player.getLocation().getBlockY()));
+        line = line.replace("@p.bz", String.valueOf(player.getLocation().getBlockZ()));
+        line = line.replace("@p.w", player.getLocation().getWorld().getName());
+        line = line.replace("@p.u", player.getUniqueId().toString());
+        line = line.replace("@p.i", CraftBookPlugin.inst().getUUIDMappings().getCBID(player.getUniqueId()));
+        line = line.replace("@p", player.getName());
 
         return line;
     }
@@ -62,7 +61,7 @@ public final class ParsingUtil {
 
     private static final LoadingCache<String, List<String>> variableFinderCache = CacheBuilder.newBuilder().maximumSize(1024).expireAfterAccess(10, TimeUnit.MINUTES).build(new CacheLoader<String, List<String>>() {
         @Override
-        public List<String> load (String line) throws Exception {
+        public List<String> load (String line) {
 
             List<String> variables = new ArrayList<>();
 
@@ -105,11 +104,11 @@ public final class ParsingUtil {
 
             for(Entry<Tuple2<String, String>, String> bit : VariableManager.instance.getVariableStore().entrySet()) {
                 if(bit.getKey().b.equals(key) && bit.getKey().a.equals(value)) {
-                    line = StringUtils.replace(line, "%" + var + "%", bit.getValue());
+                    line = line.replace("%" + var + "%", bit.getValue());
                 }
             }
         }
 
-        return StringUtils.replace(line, "\\%", "%");
+        return line.replace("\\%", "%");
     }
 }
