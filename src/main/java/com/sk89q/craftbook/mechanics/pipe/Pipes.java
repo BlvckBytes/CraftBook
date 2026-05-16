@@ -184,7 +184,7 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
                 CachedBlock.hasHandledOutputInventory(cachedPutBlock)
                     && putBlock.getState() instanceof InventoryHolder holder
             ) {
-                leftovers.addAll(InventoryUtil.addItemsToInventory(holder, itemsToPut));
+                leftovers.addAll(InventoryUtil.addItemsToInventory(holder, itemsToPut, EnumSet.noneOf(InventoryAddFlag.class)));
             } else if (CachedBlock.isMaterial(cachedPutBlock, Material.JUKEBOX)) {
                 Jukebox jukebox = (Jukebox) putBlock.getState();
 

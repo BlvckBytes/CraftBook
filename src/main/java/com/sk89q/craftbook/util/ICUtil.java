@@ -20,10 +20,7 @@ import com.sk89q.craftbook.ChangedSign;
 import com.sk89q.craftbook.CraftBookPlayer;
 import com.sk89q.craftbook.bukkit.CraftBookPlugin;
 import com.sk89q.craftbook.bukkit.util.CraftBookBukkitUtil;
-import com.sk89q.craftbook.mechanics.ic.AbstractIC;
 import com.sk89q.craftbook.mechanics.ic.ICMechanic;
-import com.sk89q.craftbook.mechanics.ic.ICVerificationException;
-import com.sk89q.craftbook.mechanics.pipe.PipeRequestEvent;
 import com.sk89q.worldedit.IncompleteRegionException;
 import com.sk89q.worldedit.WorldEdit;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
@@ -34,20 +31,11 @@ import com.sk89q.worldedit.regions.RegionSelector;
 import com.sk89q.worldedit.regions.selector.CuboidRegionSelector;
 import com.sk89q.worldedit.regions.selector.SphereRegionSelector;
 import org.apache.commons.lang.StringUtils;
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
-import org.bukkit.block.BlockFace;
-import org.bukkit.block.Sign;
 import org.bukkit.block.data.type.Switch;
 import org.bukkit.event.block.BlockRedstoneEvent;
-import org.bukkit.inventory.InventoryHolder;
-import org.bukkit.inventory.ItemStack;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 
 /**
  * IC utility functions.
@@ -263,63 +251,6 @@ public final class ICUtil {
         return target;
     }
 
-    public static Block parseBlockLocation(ChangedSign sign, int lPos, LocationCheckType relative) {
-
-        return parseBlockLocation(sign, sign.getLine(lPos), relative);
-    }
-
-    public static Block parseBlockLocation(ChangedSign sign, int lPos) {
-
-        return parseBlockLocation(sign, lPos, ICMechanic.instance.defaultCoordinates);
-    }
-
-    public static Block parseBlockLocation(ChangedSign sign) {
-
-        return parseBlockLocation(sign, 2, ICMechanic.instance.defaultCoordinates);
-    }
-
-    public static void verifySignSyntax(ChangedSign sign) throws ICVerificationException {
-
-        verifySignLocationSyntax(sign, 2);
-    }
-
-    public static void verifySignLocationSyntax(ChangedSign sign, int i) throws ICVerificationException {
-
-        try {
-            String line = sign.getLine(i);
-            String[] strings;
-            line = StringUtils.replace(StringUtils.replace(StringUtils.replace(line, "!", ""), "^", ""), "&", "");
-            if (line.contains("=")) {
-                String[] split = RegexUtil.EQUALS_PATTERN.split(line, 2);
-                if(RegexUtil.COMMA_PATTERN.split(split[0]).length > 1) {
-
-                    String[] rads = RegexUtil.COMMA_PATTERN.split(split[0]);
-                    Double.parseDouble(rads[0]);
-                    Double.parseDouble(rads[1]);
-                    Double.parseDouble(rads[2]);
-                } else
-                    Double.parseDouble(split[0]);
-                strings = RegexUtil.COLON_PATTERN.split(split[1], 3);
-            } else
-                strings = RegexUtil.COLON_PATTERN.split(line);
-            if (strings.length > 1) {
-                Double.parseDouble(strings[1]);
-                Double.parseDouble(strings[2]);
-            }
-            Double.parseDouble(strings[0]);
-        } catch (Exception e) {
-            throw new ICVerificationException("Wrong syntax! Needs to be: radius=x:y:z or radius=y or y");
-        }
-    }
-
-    public static Vector3 parseRadius(ChangedSign sign) {
-        return parseRadius(sign, 2);
-    }
-
-    public static Vector3 parseRadius(ChangedSign sign, int lPos) {
-        return parseRadius(sign.getLine(lPos));
-    }
-
     public static Vector3 parseRadius(String line) {
 
         Vector3 radius = Vector3.at(10,10,10);
@@ -342,32 +273,6 @@ public final class ICUtil {
             double r = Double.parseDouble(radians[0]);
             r = VerifyUtil.verifyRadius(r, ICMechanic.instance.maxRange);
             return Vector3.at(r,r,r);
-        }
-    }
-
-    public static void collectItem(AbstractIC ic, BlockVector3 offset, ItemStack... items) {
-        Sign sign = CraftBookBukkitUtil.toSign(ic.getSign());
-        Block backB = ic.getBackBlock();
-        BlockFace back = SignUtil.getBack(sign.getBlock());
-
-        Block pipe = backB.getRelative(back);
-
-        // Handle the event
-        PipeRequestEvent event = new PipeRequestEvent(pipe, new ArrayList<>(Arrays.asList(items)), backB);
-        Bukkit.getPluginManager().callEvent(event);
-
-        Collection<ItemStack> results = event.getItems();
-
-        // If there is a chest add the results to the chest
-        Block invHolder = backB.getRelative(offset.x(), offset.y(), offset.z());
-        if (InventoryUtil.doesBlockHaveInventory(invHolder)) {
-            InventoryHolder c = (InventoryHolder) invHolder.getState();
-            results = InventoryUtil.addItemsToInventory(c, results);
-        }
-
-        // Drop whatever results were not added to the chest
-        for (ItemStack item : results) {
-            backB.getWorld().dropItemNaturally(sign.getLocation().add(0.5, 0, 0.5), item);
         }
     }
 

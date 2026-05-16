@@ -7,13 +7,10 @@ import org.bukkit.block.ChiseledBookshelf;
 import org.bukkit.block.Crafter;
 import org.bukkit.block.Furnace;
 import org.bukkit.block.ShulkerBox;
-import org.bukkit.entity.Player;
 import org.bukkit.inventory.BrewerInventory;
-import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.PlayerInventory;
 
 import java.util.*;
 import java.util.stream.IntStream;
@@ -22,14 +19,6 @@ import java.util.stream.IntStream;
  * Class for utilities that include adding items to a furnace based on if it is a fuel or not, and adding items to a chest. Also will include methdos for checking contents and removing.
  */
 public class InventoryUtil {
-
-    public static List<ItemStack> addItemsToInventory(InventoryHolder container, ItemStack stack) {
-        return addItemsToInventory(container, Collections.singletonList(stack), EnumSet.noneOf(InventoryAddFlag.class));
-    }
-
-    public static List<ItemStack> addItemsToInventory(InventoryHolder container, Iterable<ItemStack> stacks) {
-        return addItemsToInventory(container, stacks, EnumSet.noneOf(InventoryAddFlag.class));
-    }
 
     /**
      * Adds items to an inventory, returning the leftovers.
@@ -252,106 +241,6 @@ public class InventoryUtil {
     }
 
     /**
-     * Checks whether the inventory contains all the given itemstacks.
-     * 
-     * @param inv The inventory to check.
-     * @param exact Whether the stacks need to be the exact amount.
-     * @param stacks The stacks to check.
-     * @return whether the inventory contains all the items. If there are no items to check, it returns true.
-     */
-    public static boolean doesInventoryContain(Inventory inv, boolean exact, ItemStack ... stacks) {
-        return doesInventoryContain(inv, !exact, false, false, false, stacks);
-    }
-
-    /**
-     * Checks whether the inventory contains all the given itemstacks.
-     *
-     * @param inv The inventory to check.
-     * @param ignoreStackSize Whether to ignore stack size count.
-     * @param ignoreDurability Whether to ignore durability if damageable.
-     * @param ignoreMeta Whether to ignore meta/nbt data.
-     * @param ignoreEnchants Whether to ignore enchantment data.
-     * @param stacks The stacks to check.
-     * @return whether the inventory contains all the items. If there are no items to check, it returns true.
-     */
-    public static boolean doesInventoryContain(Inventory inv, boolean ignoreStackSize, boolean ignoreDurability, boolean ignoreMeta, boolean ignoreEnchants, ItemStack ... stacks) {
-
-        ArrayList<ItemStack> itemsToFind = new ArrayList<>(Arrays.asList(stacks));
-
-        if(itemsToFind.isEmpty())
-            return true;
-
-        List<ItemStack> items = new ArrayList<>(Arrays.asList(inv.getContents()));
-        if (inv instanceof PlayerInventory) {
-            items.addAll(Arrays.asList(((PlayerInventory) inv).getArmorContents()));
-            items.add(((PlayerInventory) inv).getItemInOffHand());
-        }
-
-        for (ItemStack item : items) {
-            if(!ItemUtil.isStackValid(item))
-                continue;
-
-            for(ItemStack base : stacks) {
-                if(!itemsToFind.contains(base))
-                    continue;
-
-                if(!ItemUtil.isStackValid(base)) {
-                    itemsToFind.remove(base);
-                    continue;
-                }
-
-                if(ItemUtil.areItemsSimilar(base, item)) {
-                    if(!ignoreStackSize && base.getAmount() != item.getAmount())
-                        continue;
-
-                    if(!ignoreDurability && (base.getType().getMaxDurability() > 0 || item.getType().getMaxDurability() > 0) && base.getDurability() != item.getDurability())
-                        continue;
-
-                    if(!ignoreMeta) {
-                        if(base.hasItemMeta() != item.hasItemMeta()) {
-                            if(!ignoreEnchants)
-                                continue;
-                            if(base.hasItemMeta() && ItemUtil.hasDisplayNameOrLore(base))
-                                continue;
-                            else if(item.hasItemMeta() && ItemUtil.hasDisplayNameOrLore(item))
-                                continue;
-                        } else if(base.hasItemMeta()) {
-                            if(base.hasItemMeta() && !ItemUtil.areItemMetaIdentical(base.getItemMeta(), item.getItemMeta(), !ignoreEnchants))
-                                continue;
-                        }
-                    }
-
-                    itemsToFind.remove(base);
-                    break;
-                }
-            }
-        }
-
-        return itemsToFind.isEmpty();
-    }
-
-    /**
-     * Removes items from an inventory.
-     * 
-     * @param inv The inventory to remove it from.
-     * @param stacks The stacks to remove.
-     * @return Whether the stacks were removed.
-     */
-    public static boolean removeItemsFromInventory(InventoryHolder inv, ItemStack ... stacks) {
-
-        List<ItemStack> leftovers = new ArrayList<>(inv.getInventory().removeItem(stacks).values());
-
-        if(!leftovers.isEmpty()) {
-            List<ItemStack> itemsToAdd = new ArrayList<>(Arrays.asList(stacks));
-            itemsToAdd.removeAll(leftovers);
-
-            inv.getInventory().addItem(itemsToAdd.toArray(new ItemStack[itemsToAdd.size()]));
-        }
-
-        return leftovers.isEmpty();
-    }
-
-    /**
      * Checks whether the block has an inventory.
      * 
      * @param block The block.
@@ -393,24 +282,6 @@ public class InventoryUtil {
                 return true;
             default:
                 return false;
-        }
-    }
-
-    public static ItemStack getItemInHand(Player player, EquipmentSlot slot) {
-        if (slot == EquipmentSlot.HAND) {
-            return player.getInventory().getItemInMainHand();
-        } else if (slot == EquipmentSlot.OFF_HAND) {
-            return player.getInventory().getItemInOffHand();
-        }
-
-        return null;
-    }
-
-    public static void setItemInHand(Player player, EquipmentSlot slot, ItemStack itemStack) {
-        if (slot == EquipmentSlot.HAND) {
-            player.getInventory().setItemInMainHand(itemStack);
-        } else if (slot == EquipmentSlot.OFF_HAND) {
-            player.getInventory().setItemInOffHand(itemStack);
         }
     }
 }
