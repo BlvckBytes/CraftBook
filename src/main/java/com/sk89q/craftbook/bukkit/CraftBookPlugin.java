@@ -15,7 +15,6 @@ import com.sk89q.craftbook.mechanics.ic.ICMechanic;
 import com.sk89q.craftbook.mechanics.ic.gates.world.items.crafter.RecipeCache;
 import com.sk89q.craftbook.mechanics.pipe.Pipes;
 import com.sk89q.craftbook.mechanics.signcopier.SignCopier;
-import com.sk89q.craftbook.mechanics.variables.VariableManager;
 import com.sk89q.craftbook.util.ItemSyntax;
 import com.sk89q.craftbook.util.UUIDMappings;
 import com.sk89q.craftbook.util.compat.companion.CompanionPlugins;
@@ -141,7 +140,6 @@ public class CraftBookPlugin extends JavaPlugin {
     static {
         availableMechanics = new TreeMap<>();
 
-        availableMechanics.put("Variables", VariableManager.class);
         availableMechanics.put("SignCopier", SignCopier.class);
         availableMechanics.put("Elevator", Elevator.class);
         availableMechanics.put("Teleporter", Teleporter.class);
@@ -292,29 +290,13 @@ public class CraftBookPlugin extends JavaPlugin {
 
                 if(!event.getPlayer().isOp()) return;
 
-                boolean foundAMech = false;
-
-                for(CraftBookMechanic mech : getMechanics())
-                    if(!(mech instanceof VariableManager)) {
-                        foundAMech = true;
-                        break;
-                    }
-
-                if(!foundAMech) {
+                if(getMechanics().isEmpty()) {
                     event.getPlayer().sendMessage(ChatColor.RED + "[CraftBook] Warning! You have no mechanics enabled, the plugin will appear to do nothing until a feature is enabled!");
                 }
             }
         }, this);
 
-        boolean foundAMech = false;
-
-        for(CraftBookMechanic mech : mechanics)
-            if(!(mech instanceof VariableManager)) {
-                foundAMech = true;
-                break;
-            }
-
-        if(!foundAMech) {
+        if(getMechanics().isEmpty()) {
             Bukkit.getScheduler().runTaskTimer(this,
                     () -> getLogger().warning(ChatColor.RED + "Warning! You have no mechanics enabled, the plugin will appear to do nothing until a feature is enabled!"), 20L, 20*60*5);
         }

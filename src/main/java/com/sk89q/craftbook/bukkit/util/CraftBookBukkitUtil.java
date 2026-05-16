@@ -1,7 +1,6 @@
 package com.sk89q.craftbook.bukkit.util;
 
 import com.sk89q.craftbook.ChangedSign;
-import com.sk89q.craftbook.CraftBookPlayer;
 import com.sk89q.craftbook.bukkit.CraftBookPlugin;
 import com.sk89q.worldedit.bukkit.BukkitWorld;
 import com.sk89q.worldedit.math.BlockVector3;
@@ -44,11 +43,7 @@ public final class CraftBookBukkitUtil {
     }
 
     public static ChangedSign toChangedSign(Block block, String[] lines) {
-        return toChangedSign(block, lines, null);
-    }
-
-    public static ChangedSign toChangedSign(Block block, String[] lines, CraftBookPlayer player) {
-        return new ChangedSign(block, lines, player);
+        return new ChangedSign(block, lines);
     }
 
     public static Block toBlock(ChangedSign sign) {

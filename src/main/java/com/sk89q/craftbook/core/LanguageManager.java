@@ -116,11 +116,6 @@ public class LanguageManager {
         put("area.use-permissions", "You don't have permissions to use that in this area!");
         put("area.break-permissions", "You don't have permissions to break that in this area!");
 
-
-        put("variable.missing", "This variable is missing!");
-        put("variable.use-permissions", "You don't have permission to use that variable!");
-
-
         put("mech.create-permission", "You don't have permission to create this mechanic.");
         put("mech.use-permission", "You don't have permission to use this mechanic.");
         put("mech.restock-permission", "You don't have permission to restock this mechanic.");

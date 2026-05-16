@@ -78,7 +78,7 @@ public class BukkitConfiguration {
                 "");
 
         config.setComment("enabled-mechanics", "List of mechanics to enable! If they aren't in this list, the server won't load them!");
-        enabledMechanics = config.getStringList("enabled-mechanics", Collections.singletonList("Variables"));
+        enabledMechanics = config.getStringList("enabled-mechanics", Collections.emptyList());
 
         List<String> disabledMechanics = new ArrayList<>();
 

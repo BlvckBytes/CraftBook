@@ -1,17 +1,12 @@
 package com.sk89q.craftbook;
 
-import com.sk89q.craftbook.bukkit.BukkitCraftBookPlayer;
-import com.sk89q.craftbook.mechanics.variables.VariableCommands;
-import com.sk89q.craftbook.mechanics.variables.VariableManager;
 import com.sk89q.craftbook.util.ParsingUtil;
-import com.sk89q.craftbook.util.RegexUtil;
 import io.papermc.lib.PaperLib;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
 
 import java.util.Arrays;
-import java.util.Locale;
 import java.util.Objects;
 
 public class ChangedSign {
@@ -20,14 +15,6 @@ public class ChangedSign {
     private Sign sign;
     private String[] lines;
     private String[] oldLines;
-
-    public ChangedSign(Block block, String[] lines, CraftBookPlayer player) {
-        this(block, lines);
-
-        if (player != null) {
-            checkPlayerVariablePermissions(player);
-        }
-    }
 
     public ChangedSign(Block block, String[] lines) {
         Objects.requireNonNull(block);
@@ -40,28 +27,6 @@ public class ChangedSign {
             this.lines = lines;
             this.oldLines = new String[this.lines.length];
             System.arraycopy(this.lines, 0, this.oldLines, 0, this.lines.length);
-        }
-    }
-
-    public void checkPlayerVariablePermissions(CraftBookPlayer player) {
-        if(this.lines != null && VariableManager.instance != null) {
-            for(int i = 0; i < 4; i++) {
-
-                String line = this.lines[i];
-                for(String var : ParsingUtil.getPossibleVariables(line)) {
-
-                    String key;
-
-                    if(var.contains("|")) {
-                        String[] bits = RegexUtil.PIPE_PATTERN.split(var);
-                        key = bits[0];
-                    } else
-                        key = "global";
-
-                    if(!VariableCommands.hasVariablePermission(((BukkitCraftBookPlayer) player).getPlayer(), key, var, "use"))
-                        setLine(i, line.replace('%' + key + '|' + var + '%', ""));
-                }
-            }
         }
     }
 
@@ -133,10 +98,6 @@ public class ChangedSign {
         return getSign().update(force, false);
     }
 
-    public void setLines(String[] lines) {
-        this.lines = lines;
-    }
-
     public boolean hasChanged () {
         boolean ret = false;
         try {
@@ -203,12 +164,5 @@ public class ChangedSign {
     @Override
     public String toString() {
         return lines[0] + '|' + lines[1] + '|' + lines[2] + '|' + lines[3];
-    }
-
-    public boolean hasVariable(String var) {
-        if(VariableManager.instance == null) return false;
-
-        var = var.toLowerCase(Locale.ENGLISH);
-        return lines[0].toLowerCase(Locale.ENGLISH).contains('%' + var + '%') || lines[1].toLowerCase(Locale.ENGLISH).contains('%' + var + '%') || lines[2].toLowerCase(Locale.ENGLISH).contains('%' + var + '%') || lines[3].toLowerCase(Locale.ENGLISH).contains('%' + var + '%');
     }
 }

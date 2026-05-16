@@ -9,7 +9,6 @@ import com.sk89q.craftbook.bukkit.CraftBookPlugin;
 import com.sk89q.craftbook.bukkit.util.CraftBookBukkitUtil;
 import com.sk89q.craftbook.mechanics.ic.ICCommands;
 import com.sk89q.craftbook.mechanics.signcopier.SignEditCommands;
-import com.sk89q.craftbook.mechanics.variables.VariableCommands;
 import com.sk89q.minecraft.util.commands.Command;
 import com.sk89q.minecraft.util.commands.CommandContext;
 import com.sk89q.minecraft.util.commands.CommandPermissions;
@@ -42,12 +41,6 @@ public class TopLevelCommands {
     public static class Commands {
 
         public Commands(CraftBookPlugin plugin) {
-
-        }
-
-        @Command(aliases = {"var"}, desc = "Variable commands")
-        @NestedCommand(VariableCommands.class)
-        public void variableCmds(CommandContext context, CommandSender sender) {
 
         }
 

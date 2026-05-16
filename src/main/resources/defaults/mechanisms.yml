@@ -33,8 +33,3 @@ mechanics:
     Teleporter:
         require-sign: false
         max-range: 0
-    Variables:
-        default-to-global: false
-        enable-in-console: false
-        enable-in-player-commands: false
-        enable-in-player-chat: false
