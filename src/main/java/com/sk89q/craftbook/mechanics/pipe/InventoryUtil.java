@@ -10,7 +10,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
-import java.util.function.IntPredicate;
 
 public class InventoryUtil {
 
@@ -34,19 +33,15 @@ public class InventoryUtil {
             if (!(cookingRecipe.getInputChoice() instanceof RecipeChoice.MaterialChoice materialChoice))
                 continue;
 
-            if (cookingRecipe instanceof FurnaceRecipe) {
-                furnaceIngredients.addAll(materialChoice.getChoices());
-                continue;
-            }
+          var setToAddTo = switch (cookingRecipe) {
+            case FurnaceRecipe ignored -> furnaceIngredients;
+            case BlastingRecipe ignored -> blastFurnaceIngredients;
+            case SmokingRecipe ignored -> smokerIngredients;
+            default -> null;
+          };
 
-            if (cookingRecipe instanceof BlastingRecipe) {
-                blastFurnaceIngredients.addAll(materialChoice.getChoices());
-                continue;
-            }
-
-            if (cookingRecipe instanceof SmokingRecipe) {
-                smokerIngredients.addAll(materialChoice.getChoices());
-            }
+          if (setToAddTo != null)
+              setToAddTo.addAll(materialChoice.getChoices());
         }
     }
 
@@ -78,36 +73,23 @@ public class InventoryUtil {
       };
     }
 
-    private static boolean isFurnaceIngredient(ItemStack item, @Nullable Furnace furnace) {
-        var type = item.getType();
+    public static List<ItemStack> addItemsToInventory(Inventory inventory, int cachedBlock, List<ItemStack> stacks, EnumSet<InventoryAddFlag> flags) {
+        if (inventory instanceof FurnaceInventory furnaceInventory)
+            return addItemsToFurnace(furnaceInventory, cachedBlock, stacks, flags.contains(InventoryAddFlag.ADD_TO_FURNACE_RESULT));
 
-        if (furnace instanceof BlastFurnace)
-            return blastFurnaceIngredients.contains(type);
+        if (inventory instanceof BrewerInventory brewerInventory)
+            return addItemsToBrewingStand(brewerInventory, stacks);
 
-        if (furnace instanceof Smoker)
-            return smokerIngredients.contains(type);
+        if (inventory instanceof CrafterInventory && inventory.getHolder() instanceof Crafter crafter)
+            return distributeItemsToMakeEvenlyAndGetRemainders(stacks, inventory, (slot, contents) -> !crafter.isSlotDisabled(slot));
 
-        return furnaceIngredients.contains(type) || blastFurnaceIngredients.contains(type) || smokerIngredients.contains(type);
-    }
-
-    public static List<ItemStack> addItemsToInventory(InventoryHolder container, Collection<ItemStack> stacks, EnumSet<InventoryAddFlag> flags) {
-        if (container instanceof Furnace)
-            return addItemsToFurnace((Furnace) container, stacks, flags.contains(InventoryAddFlag.ADD_TO_FURNACE_RESULT));
-
-        if (container instanceof BrewingStand)
-            return addItemsToBrewingStand((BrewingStand) container, stacks);
-
-        if (container instanceof Crafter crafter)
-            return distributeItemsToMakeEvenlyAndGetRemainders(stacks, crafter.getInventory(), slot -> !crafter.isSlotDisabled(slot));
-
-        if (container instanceof ChiseledBookshelf)
-            return addItemsToChiseledBookshelf((ChiseledBookshelf) container, stacks);
+        if (inventory instanceof ChiseledBookshelfInventory)
+            return addItemsToChiseledBookshelf(inventory, stacks);
 
         // Basic inventories like chests, dispensers, storage carts, etc.
 
         var leftovers = new ArrayList<ItemStack>();
-        var isAddingToShulkerBox = container instanceof ShulkerBox;
-        var inventory = container.getInventory();
+        var isAddingToShulkerBox = Tag.SHULKER_BOXES.isTagged(CachedBlock.getMaterial(cachedBlock));
 
         for (var stack : stacks) {
             if (stack == null)
@@ -125,8 +107,18 @@ public class InventoryUtil {
         return leftovers;
     }
 
-    private static List<ItemStack> addItemsToFurnace(Furnace furnace, Iterable<ItemStack> stacks, boolean addToResult) {
-        var inventory = furnace.getInventory();
+    private static List<ItemStack> addItemsToFurnace(FurnaceInventory inventory, int cachedBlock, List<ItemStack> stacks, boolean addToResult) {
+        Set<Material> ingredientSet;
+
+        if (CachedBlock.isMaterial(cachedBlock, Material.FURNACE))
+            ingredientSet = furnaceIngredients;
+        else if (CachedBlock.isMaterial(cachedBlock, Material.SMOKER))
+            ingredientSet = smokerIngredients;
+        else if (CachedBlock.isMaterial(cachedBlock, Material.BLAST_FURNACE))
+            ingredientSet = blastFurnaceIngredients;
+        else
+            return stacks;
+
         var leftovers = new ArrayList<ItemStack>();
 
         ItemStack leftover;
@@ -135,7 +127,7 @@ public class InventoryUtil {
             if (!ItemUtil.isStackValid(stack))
                 continue;
 
-            if (isFurnaceIngredient(stack, furnace)) {
+            if (ingredientSet.contains(stack.getType())) {
                 if (inventory.getSmelting() == null) {
                     inventory.setSmelting(stack);
                     continue;
@@ -178,31 +170,29 @@ public class InventoryUtil {
         return leftovers;
     }
 
-    private static List<ItemStack> addItemsToBrewingStand(BrewingStand brewingStand, Iterable<ItemStack> stacks) {
+    private static List<ItemStack> addItemsToBrewingStand(BrewerInventory inventory, Iterable<ItemStack> stacks) {
         List<ItemStack> leftovers = new ArrayList<>();
 
         stackLoop: for (ItemStack stack : stacks) {
-            BrewerInventory inv = brewingStand.getInventory();
-
             if (isAPotionIngredient(stack)) {
-                if (inv.getIngredient() == null) {
-                    inv.setIngredient(stack);
+                if (inventory.getIngredient() == null) {
+                    inventory.setIngredient(stack);
                     continue;
                 }
 
-                stack = addToStack(inv.getIngredient(), stack);
+                stack = addToStack(inventory.getIngredient(), stack);
 
                 if (stack == null)
                     continue;
             }
 
             if (stack.getType() == Material.BLAZE_POWDER) {
-                if (inv.getFuel() == null) {
-                    inv.setFuel(stack);
+                if (inventory.getFuel() == null) {
+                    inventory.setFuel(stack);
                     continue;
                 }
 
-                stack = addToStack(inv.getFuel(), stack);
+                stack = addToStack(inventory.getFuel(), stack);
 
                 if (stack == null)
                     continue;
@@ -213,10 +203,10 @@ public class InventoryUtil {
                     || stack.getType() == Material.LINGERING_POTION
                     || stack.getType() == Material.SPLASH_POTION) {
                 for (int i = 0; i < 3; i++) {
-                    var currentItem = inv.getItem(i);
+                    var currentItem = inventory.getItem(i);
 
                     if (currentItem == null) {
-                        inv.setItem(i, stack);
+                        inventory.setItem(i, stack);
                         continue stackLoop;
                     }
 
@@ -233,58 +223,79 @@ public class InventoryUtil {
         return leftovers;
     }
 
-    public static ItemStack getSmallestSimilarStack(
-      Inventory inventory,
-      @Nullable IntPredicate slotPredicate,
+    private static int getSmallestAmountOrPossiblyVacantIndex(
+      ItemStack[] candidates,
+      @Nullable SlotPredicate slotPredicate,
       @NotNull ItemStack similarItem
     ) {
         ItemStack smallest = null;
+        var smallestIndex = -1;
 
-        for (var slotIndex = 0; slotIndex < inventory.getSize(); ++slotIndex) {
-            if (slotPredicate != null && !slotPredicate.test(slotIndex))
+        for (var index = 0; index < candidates.length; ++index) {
+            var candidate = candidates[index];
+
+            if (slotPredicate != null && !slotPredicate.test(index, candidate))
                 continue;
 
-            var candidate = inventory.getItem(slotIndex);
+            if (!ItemUtil.isStackValid(candidate))
+                return index;
 
-            if (!ItemUtil.isStackValid(candidate) || !similarItem.isSimilar(candidate))
+            if (!similarItem.isSimilar(candidate))
                 continue;
 
-            if (smallest == null || candidate.getAmount() < smallest.getAmount())
+            if (smallest == null || candidate.getAmount() < smallest.getAmount()) {
                 smallest = candidate;
+                smallestIndex = index;
+            }
         }
 
-        return smallest;
+        return smallestIndex;
     }
 
-    public static int distributeToMakeEvenAndGetRemainder(
-      Inventory inventory,
-      @Nullable IntPredicate slotPredicate,
+    public static DistributeResult distributeToMakeEven(
+      ItemStack[] destinations,
+      @Nullable SlotPredicate slotPredicate,
       ItemStack source
     ) {
         var remainingAmount = source.getAmount();
+        var createdStack = false;
 
         while (remainingAmount > 0) {
-            var destination = InventoryUtil.getSmallestSimilarStack(inventory, slotPredicate, source);
+            var destinationIndex = InventoryUtil.getSmallestAmountOrPossiblyVacantIndex(destinations, slotPredicate, source);
 
-            if (destination == null)
-                return remainingAmount;
+            if (destinationIndex < 0)
+                break;
+
+            var destination = destinations[destinationIndex];
+
+            if (!ItemUtil.isStackValid(destination)) {
+                destination = new ItemStack(source);
+                destination.setAmount(1);
+                destinations[destinationIndex] = destination;
+                --remainingAmount;
+                createdStack = true;
+                continue;
+            }
 
             if (destination.getAmount() >= 64)
-                return remainingAmount;
+                break;
 
             destination.setAmount(destination.getAmount() + 1);
             --remainingAmount;
         }
 
-        return remainingAmount;
+        return new DistributeResult(remainingAmount, createdStack);
     }
 
     public static List<ItemStack> distributeItemsToMakeEvenlyAndGetRemainders(
       Collection<ItemStack> itemsToAdd,
       Inventory inventory,
-      @Nullable IntPredicate slotPredicate
+      @Nullable SlotPredicate slotPredicate
     ) {
         var remainders = new ArrayList<>(itemsToAdd);
+        var createdStack = false;
+
+        var inventoryContents = inventory.getContents();
 
         for (var itemIndex = remainders.size() - 1; itemIndex >= 0; --itemIndex) {
             var itemToPut = remainders.get(itemIndex);
@@ -294,20 +305,23 @@ public class InventoryUtil {
                 continue;
             }
 
-            var remainder = distributeToMakeEvenAndGetRemainder(inventory, slotPredicate, itemToPut);
+            var result = distributeToMakeEven(inventoryContents, slotPredicate, itemToPut);
+            createdStack |= result.createdStack();
 
-            itemToPut.setAmount(remainder);
+            itemToPut.setAmount(result.remainder());
 
-            if (remainder <= 0)
+            if (result.remainder() <= 0)
                 remainders.remove(itemIndex);
         }
+
+        if (createdStack)
+            inventory.setContents(inventoryContents);
 
         return remainders;
     }
 
-    private static List<ItemStack> addItemsToChiseledBookshelf(ChiseledBookshelf chiseledBookshelf, Iterable<ItemStack> stacks) {
+    private static List<ItemStack> addItemsToChiseledBookshelf(Inventory inventory, Iterable<ItemStack> stacks) {
         var leftovers = new ArrayList<ItemStack>();
-        var inventory = chiseledBookshelf.getInventory();
 
         for (var stack : stacks) {
             if (!Tag.ITEMS_BOOKSHELF_BOOKS.isTagged(stack.getType())) {

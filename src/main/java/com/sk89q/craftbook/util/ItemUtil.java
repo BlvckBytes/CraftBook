@@ -11,6 +11,9 @@ public final class ItemUtil {
         if (item == null)
             return false;
 
+        if (item.getType().isAir())
+            return false;
+
         return item.getAmount() > 0;
     }
 }

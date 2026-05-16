@@ -236,18 +236,22 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
             }
         }
 
+        var matrixContents = cachedDispenserOrDropperInventory.getContents();
+
         for (var itemEntity : getItemsAtBlock(getSign().getBlock())) {
             if (itemEntity.isDead() || !itemEntity.isValid())
                 continue;
 
             var itemStack = itemEntity.getItemStack();
 
-            var remainder = InventoryUtil.distributeToMakeEvenAndGetRemainder(cachedDispenserOrDropperInventory, null, itemStack);
+            // There's no need to track whether we've created a stack in the matrix and need to set the array back, seeing how
+            // we only ever increase the amount of valid items (the matrix is to be understood as a mask).
+            var result = InventoryUtil.distributeToMakeEven(matrixContents, (slot, contents) -> ItemUtil.isStackValid(contents), itemStack);
 
-            itemStack.setAmount(remainder);
+            itemStack.setAmount(result.remainder());
             itemEntity.setItemStack(itemStack);
 
-            if (remainder <= 0)
+            if (result.remainder() <= 0)
                 itemEntity.remove();
         }
 
@@ -405,7 +409,7 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
         if (updateCachesAndGetIfIsMalformed())
             return;
 
-        var remainders = InventoryUtil.distributeItemsToMakeEvenlyAndGetRemainders(event.getItems(), cachedDispenserOrDropperInventory, null);
+        var remainders = InventoryUtil.distributeItemsToMakeEvenlyAndGetRemainders(event.getItems(), cachedDispenserOrDropperInventory, (slot, contents) -> ItemUtil.isStackValid(contents));
 
         event.getItems().clear();
         event.setItems(remainders);

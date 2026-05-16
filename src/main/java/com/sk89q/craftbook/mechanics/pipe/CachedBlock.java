@@ -15,6 +15,7 @@ public class CachedBlock {
 
     private static final BlockFace[] BLOCK_FACE_VALUES = BlockFace.values();
     private static final Chest.Type[] CHEST_TYPE_VALUES = Chest.Type.values();
+    private static final Material[] MATERIAL_VALUES = Material.values();
 
     private static int[] presetByOffsetMaterialOrdinal;
     private static int presetMaterialOrdinalOffset;
@@ -88,6 +89,15 @@ public class CachedBlock {
 
     public static boolean isMaterial(int cachedBlock, Material material) {
         return ((cachedBlock >> 16) & (4096 - 1)) == material.ordinal();
+    }
+
+    public static Material getMaterial(int cachedBlock) {
+        var index = ((cachedBlock >> 16) & (4096 - 1));
+
+        if (index >= MATERIAL_VALUES.length)
+            return Material.AIR;
+
+        return MATERIAL_VALUES[index];
     }
 
     public static @Nullable Block getOtherChestBlock(Block chestBlock, Chest.Type chestType, BlockFace chestFacing) {
