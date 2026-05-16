@@ -4,6 +4,7 @@ import com.sk89q.craftbook.ChangedSign;
 import com.sk89q.craftbook.bukkit.CraftBookPlugin;
 import com.sk89q.craftbook.bukkit.util.CraftBookBukkitUtil;
 import com.sk89q.craftbook.mechanics.ic.*;
+import com.sk89q.craftbook.mechanics.pipe.InventoryUtil;
 import com.sk89q.craftbook.mechanics.pipe.PipePutEvent;
 import com.sk89q.craftbook.mechanics.pipe.PipeRequestEvent;
 import com.sk89q.craftbook.util.ItemUtil;
@@ -15,7 +16,6 @@ import org.bukkit.block.data.Directional;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
 import org.bukkit.inventory.*;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 
@@ -236,15 +236,13 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
             }
         }
 
-        var matrixContents = cachedDispenserOrDropperInventory.getContents();
-
         for (var itemEntity : getItemsAtBlock(getSign().getBlock())) {
             if (itemEntity.isDead() || !itemEntity.isValid())
                 continue;
 
             var itemStack = itemEntity.getItemStack();
 
-            var remainder = distributeToMakeEvenAndGetRemainder(itemStack, matrixContents);
+            var remainder = InventoryUtil.distributeToMakeEvenAndGetRemainder(cachedDispenserOrDropperInventory, null, itemStack);
 
             itemStack.setAmount(remainder);
             itemEntity.setItemStack(itemStack);
@@ -407,24 +405,7 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
         if (updateCachesAndGetIfIsMalformed())
             return;
 
-        var matrixContents = cachedDispenserOrDropperInventory.getContents();
-        var remainders = new ArrayList<>(event.getItems());
-
-        for (var itemIndex = remainders.size() - 1; itemIndex >= 0; --itemIndex) {
-            var itemToPut = remainders.get(itemIndex);
-
-            if (!ItemUtil.isStackValid(itemToPut)) {
-                remainders.remove(itemIndex);
-                continue;
-            }
-
-            var remainder = distributeToMakeEvenAndGetRemainder(itemToPut, matrixContents);
-
-            itemToPut.setAmount(remainder);
-
-            if (remainder <= 0)
-                remainders.remove(itemIndex);
-        }
+        var remainders = InventoryUtil.distributeItemsToMakeEvenlyAndGetRemainders(event.getItems(), cachedDispenserOrDropperInventory, null);
 
         event.getItems().clear();
         event.setItems(remainders);
@@ -438,39 +419,6 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
         cachedDispenserOrDropperInventory = null;
         cachedOutputBlock = null;
         cachedRecipe = null;
-    }
-
-    private int distributeToMakeEvenAndGetRemainder(ItemStack source, ItemStack[] destinations) {
-        var remainingAmount = source.getAmount();
-
-        while (remainingAmount > 0) {
-            var destination = getSmallestSimilarStack(destinations, source);
-
-            if (destination == null)
-                return remainingAmount;
-
-            if (destination.getAmount() >= 64)
-                return remainingAmount;
-
-            destination.setAmount(destination.getAmount() + 1);
-            --remainingAmount;
-        }
-
-        return remainingAmount;
-    }
-
-    private ItemStack getSmallestSimilarStack(ItemStack[] candidates, @NotNull ItemStack similarItem) {
-        ItemStack smallest = null;
-
-        for (ItemStack candidate : candidates) {
-            if (!ItemUtil.isStackValid(candidate) || !similarItem.isSimilar(candidate))
-                continue;
-
-            if (smallest == null || candidate.getAmount() < smallest.getAmount())
-                smallest = candidate;
-        }
-
-        return smallest;
     }
 
     private List<Item> getItemsAtBlock(Block block) {
