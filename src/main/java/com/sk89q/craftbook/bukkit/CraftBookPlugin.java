@@ -4,7 +4,6 @@ import com.google.common.collect.Sets;
 import com.sk89q.bukkit.util.CommandsManagerRegistration;
 import com.sk89q.craftbook.CraftBookMechanic;
 import com.sk89q.craftbook.CraftBookPlayer;
-import com.sk89q.craftbook.bukkit.commands.TopLevelCommands;
 import com.sk89q.craftbook.bukkit.util.CraftBookBukkitUtil;
 import com.sk89q.craftbook.core.LanguageManager;
 import com.sk89q.craftbook.core.st.MechanicClock;
@@ -434,9 +433,6 @@ public class CraftBookPlugin extends JavaPlugin {
         };
         // Set the proper command injector
         commands.setInjector(new SimpleInjector(this));
-
-        final CommandsManagerRegistration reg = new CommandsManagerRegistration(this, commands);
-        reg.register(TopLevelCommands.class);
 
         if(config.realisticRandoms)
             try {
