@@ -93,7 +93,7 @@ public class BukkitCraftBookPlatform implements CraftBookPlatform {
             CraftBookPlugin.inst().createDefaultConfiguration("config.yml");
         } catch (Exception ignored) {
         }
-        config = new BukkitConfiguration(new YAMLProcessor(CraftBook.getInstance().getPlatform().getWorkingDirectory().resolve("config.yml"), true, YAMLFormat.EXTENDED));
+        config = new BukkitConfiguration(new YAMLProcessor(CraftBook.getInstance().getPlatform().getWorkingDirectory().resolve("config.yml").toFile(), true, YAMLFormat.EXTENDED));
 
         try {
             config.load();

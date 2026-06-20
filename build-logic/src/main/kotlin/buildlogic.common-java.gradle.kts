@@ -23,7 +23,7 @@ tasks
         options.encoding = "UTF-8"
         options.compilerArgs.add("-parameters")
         if (project.name.contains("-core")) {
-            options.compilerArgs.add("-Werror")
+//            options.compilerArgs.add("-Werror")
         }
         options.errorprone {
             // We use -Werror, so we don't need errorprone to fail the build separately

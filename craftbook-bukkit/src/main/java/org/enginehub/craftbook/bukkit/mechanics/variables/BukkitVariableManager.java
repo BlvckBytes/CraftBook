@@ -67,7 +67,7 @@ public class BukkitVariableManager extends VariableManager implements Listener {
             if (!Files.exists(varFile)) {
                 Files.createFile(varFile);
             }
-            variableConfiguration = new VariableConfiguration(new YAMLProcessor(varFile, true, YAMLFormat.EXTENDED));
+            variableConfiguration = new VariableConfiguration(new YAMLProcessor(varFile.toFile(), true, YAMLFormat.EXTENDED));
             variableConfiguration.load();
         } catch (Exception e) {
             throw new MechanicInitializationException(MechanicTypes.VARIABLES.get(), TranslatableComponent.of("craftbook.variables.failed-to-load"), e);
