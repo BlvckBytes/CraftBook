@@ -283,6 +283,16 @@ public class CraftBookPlugin extends JavaPlugin {
         return instance;
     }
 
+    public CraftBookMechanic getMechanic(Class<? extends CraftBookMechanic> clazz) {
+
+        for(CraftBookMechanic mech : mechanics) {
+            if(mech.getClass().equals(clazz))
+                return mech;
+        }
+
+        return null;
+    }
+
     /**
      * This retrieves the CraftBookPlugin logger.
      *
