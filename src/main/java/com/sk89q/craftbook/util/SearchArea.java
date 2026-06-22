@@ -255,14 +255,4 @@ public final class SearchArea {
         }
         return world;
     }
-
-    /**
-     * Checks whether this SearchArea has a valid search type.
-     * 
-     * @return if the area has a valid search type.
-     */
-    public boolean isValid() {
-
-        return hasRadiusAndCenter() || hasRegion();
-    }
 }

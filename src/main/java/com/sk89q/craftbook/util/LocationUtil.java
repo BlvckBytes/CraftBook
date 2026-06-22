@@ -208,17 +208,6 @@ public final class LocationUtil {
     }
 
     /**
-     * Gets an array of {@link BlockFace} that are direct.
-     * 
-     * @return The array of {@link BlockFace}
-     */
-    public static BlockFace[] getDirectFaces() {
-
-        return new BlockFace[] {BlockFace.UP, BlockFace.DOWN, BlockFace.NORTH, BlockFace.SOUTH, BlockFace.EAST, BlockFace.WEST};
-    }
-
-
-    /**
      * Teleports the vehicle the player is in to the given destination.
      * Player is ejected out of the vehicle prior to teleportation,
      * otherwise it doesn't work.

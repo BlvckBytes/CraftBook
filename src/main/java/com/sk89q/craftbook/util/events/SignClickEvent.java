@@ -10,8 +10,6 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
 
 import com.sk89q.craftbook.ChangedSign;
-import com.sk89q.craftbook.CraftBookPlayer;
-import com.sk89q.craftbook.bukkit.CraftBookPlugin;
 
 public class SignClickEvent extends PlayerInteractEvent {
 
@@ -36,9 +34,5 @@ public class SignClickEvent extends PlayerInteractEvent {
 
     public ChangedSign getSign() {
         return sign;
-    }
-
-    public CraftBookPlayer getWrappedPlayer() {
-        return CraftBookPlugin.inst().wrapPlayer(getPlayer());
     }
 }
