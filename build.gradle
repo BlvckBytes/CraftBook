@@ -67,20 +67,8 @@ allprojects {
         mavenLocal()
         mavenCentral()
         maven {
-            name = 'spigotmc-repo'
-            url = 'https://hub.spigotmc.org/nexus/content/repositories/snapshots/'
-        }
-        maven {
             name = 'enginehub-repo'
             url = 'https://maven.enginehub.org/repo/'
-        }
-        maven {
-            name = 'md_5-rep'
-            url = 'https://repo.md-5.net/content/repositories/releases/'
-        }
-        maven {
-            name = 'Vault Repo'
-            url = 'https://jitpack.io'
         }
         maven {
             name "papermc"

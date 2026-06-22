@@ -24,7 +24,6 @@ import com.sk89q.craftbook.mechanics.ic.gates.world.items.crafter.AutomaticCraft
 import com.sk89q.craftbook.util.RegexUtil;
 import com.sk89q.util.yaml.YAMLFormat;
 import com.sk89q.util.yaml.YAMLProcessor;
-import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Server;
 import org.bukkit.entity.Player;
@@ -46,10 +45,6 @@ public class ICManager {
 
     private ICConfiguration icConfiguration;
 
-    private File romFolder;
-    private File midiFolder;
-    private File fireworkFolder;
-
     private static ICManager INSTANCE;
 
     public ICManager() {
@@ -63,13 +58,6 @@ public class ICManager {
     public void enable() {
         CraftBookPlugin.inst().createDefaultConfiguration(new File(CraftBookPlugin.inst().getDataFolder(), "ic-config.yml"), "ic-config.yml");
         icConfiguration = new ICConfiguration(new YAMLProcessor(new File(CraftBookPlugin.inst().getDataFolder(), "ic-config.yml"), true, YAMLFormat.EXTENDED), CraftBookPlugin.logger());
-
-        midiFolder = new File(CraftBookPlugin.inst().getDataFolder(), "midi/");
-        new File(midiFolder, "playlists").mkdirs();
-
-        romFolder = new File(CraftBookPlugin.inst().getDataFolder(), "rom/");
-
-        fireworkFolder = new File(CraftBookPlugin.inst().getDataFolder(), "fireworks/");
 
         registerICs(CraftBookPlugin.inst().getServer());
 
@@ -88,16 +76,6 @@ public class ICManager {
         icConfiguration = null;
         emptyCache();
         INSTANCE = null;
-    }
-
-    public File getFireworkFolder() {
-
-        return fireworkFolder;
-    }
-
-    public File getMidiFolder() {
-
-        return midiFolder;
     }
 
     /**
@@ -288,68 +266,5 @@ public class ICManager {
         }
 
         return "";
-    }
-
-    /**
-     * Used for the /ic list command.
-     *
-     * @param p
-     *
-     * @return
-     */
-    public String[] generateICText(Player p, String search, char[] parameters) {
-
-        ArrayList<String> icNameList = new ArrayList<>(registered.keySet());
-
-        Collections.sort(icNameList);
-
-        ArrayList<String> strings = new ArrayList<>();
-        boolean col = true;
-        for (String ic : icNameList) {
-            try {
-                thisIC:
-                {
-                RegisteredICFactory ric = registered.get(ic);
-                IC tic = ric.getFactory().create(null);
-                if (search != null && !tic.getTitle().toLowerCase(Locale.ENGLISH).contains(search.toLowerCase(Locale.ENGLISH))
-                        && !ric.getId().toLowerCase(Locale.ENGLISH).contains(search.toLowerCase(Locale.ENGLISH))) continue;
-                if (parameters != null) {
-                    for (char c : parameters) {
-                        if (c == 'r' && !(ric.getFactory() instanceof RestrictedIC)) break thisIC;
-                        else if (c == 's' && ric.getFactory() instanceof RestrictedIC) break thisIC;
-                        else if (c == 'b' && !ric.getFactory().getClass().getPackage().getName().endsWith("blocks"))
-                            break thisIC;
-                        else if (c == 'i' && !ric.getFactory().getClass().getPackage().getName().endsWith("items"))
-                            break thisIC;
-                        else if (c == 'e' && !ric.getFactory().getClass().getPackage().getName().endsWith("entity"))
-                            break thisIC;
-                        else if (c == 'w' && !ric.getFactory().getClass().getPackage().getName().endsWith("weather"))
-                            break thisIC;
-                        else if (c == 'm' && !ric.getFactory().getClass().getPackage().getName().endsWith("miscellaneous"))
-                            break thisIC;
-                        else if (c == 'c' && !ric.getFactory().getClass().getPackage().getName().endsWith("sensors"))
-                            break thisIC;
-                        else if (c == 'v' && !ric.getFactory().getClass().getPackage().getName().endsWith("variables"))
-                            break thisIC;
-
-                    }
-                }
-                col = !col;
-                ChatColor colour = col ? ChatColor.YELLOW : ChatColor.GOLD;
-
-                if (!ICMechanic.checkPermissionsBoolean(CraftBookPlugin.inst().wrapPlayer(p), ric.getFactory(), ic.toLowerCase(Locale.ENGLISH))) {
-                    colour = col ? ChatColor.RED : ChatColor.DARK_RED;
-                }
-                strings.add(colour + tic.getTitle() + " (" + ric.getId() + ")"
-                        + ": " + (tic instanceof SelfTriggeredIC ? "ST " : "T ")
-                        + (ric.getFactory() instanceof RestrictedIC ? ChatColor.DARK_RED + "R " : ""));
-                }
-            } catch (Throwable e) {
-                CraftBookPlugin.logger().warning("An error occurred generating the docs for IC: " + ic + ".");
-                CraftBookPlugin.logger().warning("Please report this error on: https://github.com/EngineHub/CraftBook/.");
-            }
-        }
-
-        return strings.toArray(new String[strings.size()]);
     }
 }

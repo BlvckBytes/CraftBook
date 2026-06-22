@@ -1,7 +1,6 @@
 package com.sk89q.craftbook.bukkit;
 
 import com.google.common.collect.Sets;
-import com.sk89q.bukkit.util.CommandsManagerRegistration;
 import com.sk89q.craftbook.CraftBookMechanic;
 import com.sk89q.craftbook.CraftBookPlayer;
 import com.sk89q.craftbook.core.LanguageManager;
@@ -16,13 +15,6 @@ import com.sk89q.craftbook.util.ItemSyntax;
 import com.sk89q.craftbook.util.UUIDMappings;
 import com.sk89q.craftbook.util.compat.companion.CompanionPlugins;
 import com.sk89q.craftbook.util.persistent.PersistentStorage;
-import com.sk89q.minecraft.util.commands.CommandException;
-import com.sk89q.minecraft.util.commands.CommandPermissionsException;
-import com.sk89q.minecraft.util.commands.CommandUsageException;
-import com.sk89q.minecraft.util.commands.CommandsManager;
-import com.sk89q.minecraft.util.commands.MissingNestedCommandException;
-import com.sk89q.minecraft.util.commands.SimpleInjector;
-import com.sk89q.minecraft.util.commands.WrappedCommandException;
 import com.sk89q.util.yaml.YAMLFormat;
 import com.sk89q.util.yaml.YAMLProcessor;
 import com.sk89q.wepif.PermissionsResolverManager;
@@ -31,15 +23,13 @@ import org.bukkit.ChatColor;
 import org.bukkit.Chunk;
 import org.bukkit.Server;
 import org.bukkit.World;
-import org.bukkit.command.CommandSender;
-import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
-import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.SignChangeEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.permissions.Permissible;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.jetbrains.annotations.Nullable;
 
@@ -88,13 +78,6 @@ public class CraftBookPlugin extends JavaPlugin {
     private Random random;
 
     /**
-     * Manager for commands. This automatically handles nested commands,
-     * permissions checking, and a number of other fancy command things.
-     * We just set it up and register commands against it.
-     */
-    private CommandsManager<CommandSender> commands;
-
-    /**
      * Handles all configuration.
      */
     private BukkitConfiguration config;
@@ -104,12 +87,7 @@ public class CraftBookPlugin extends JavaPlugin {
      */
     private MechanicListenerAdapter managerAdapter;
 
-    /**
-     * The MechanicClock that manages all Self-Triggering Components.
-     */
-    private MechanicClock mechanicClock;
-
-    /**
+  /**
      * The persistent storage database of CraftBook.
      */
     private PersistentStorage persistentStorage;
@@ -161,26 +139,6 @@ public class CraftBookPlugin extends JavaPlugin {
         return mechanics;
     }
 
-    public boolean isMechanicEnabled(Class<? extends CraftBookMechanic> clazz) {
-
-        for(CraftBookMechanic mech : mechanics) {
-            if(mech.getClass().equals(clazz))
-                return true;
-        }
-
-        return false;
-    }
-
-    public CraftBookMechanic getMechanic(Class<? extends CraftBookMechanic> clazz) {
-
-        for(CraftBookMechanic mech : mechanics) {
-            if(mech.getClass().equals(clazz))
-                return mech;
-        }
-
-        return null;
-    }
-
     /**
      * Retrieve the UUID Mappings system of CraftBook.
      * 
@@ -205,7 +163,7 @@ public class CraftBookPlugin extends JavaPlugin {
         // Need to create the plugins/CraftBook folder
         getDataFolder().mkdirs();
 
-        // Setup Config and the Commands Manager
+        // Setup Config
         createDefaultConfiguration(new File(getDataFolder(), "config.yml"), "config.yml");
         config = new BukkitConfiguration(new YAMLProcessor(new File(getDataFolder(), "config.yml"), true, YAMLFormat.EXTENDED), logger());
         // Load the configuration
@@ -230,18 +188,6 @@ public class CraftBookPlugin extends JavaPlugin {
         managerAdapter = new MechanicListenerAdapter();
 
         PermissionsResolverManager.initialize(this);
-
-        // Register command classes
-        commands = new CommandsManager<CommandSender>() {
-
-            @Override
-            public boolean hasPermission(CommandSender player, String perm) {
-
-                return CraftBookPlugin.inst().hasPermission(player, perm);
-            }
-        };
-        // Set the proper command injector
-        commands.setInjector(new SimpleInjector(this));
 
         if(config.realisticRandoms)
             try {
@@ -370,86 +316,6 @@ public class CraftBookPlugin extends JavaPlugin {
             setupSelfTriggered();
     }
 
-    /**
-     * Enables the mechanic with the specified name.
-     * 
-     * @param mechanic The name of the mechanic.
-     * @return If the mechanic could be found and enabled.
-     */
-    public boolean enableMechanic(String mechanic) {
-
-        try {
-            mechanismsConfig.load();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        mechanismsConfig.setHeader(
-                "# CraftBook Mechanism Configuration. Generated for version: " + (CraftBookPlugin.inst() == null ? CraftBookPlugin.getVersion() : CraftBookPlugin.inst().getDescription().getVersion()),
-                "# This configuration will automatically add new configuration options for you,",
-                "# So there is no need to regenerate this configuration unless you need to.",
-                "# More information about these features are available at...",
-                "# " + CraftBookPlugin.getWikiDomain() + "/mechanics/",
-                "#",
-                "# NOTE! MAKE SURE TO ENABLE FEATURES IN THE config.yml FILE!",
-                "");
-
-        Class<? extends CraftBookMechanic> mechClass = availableMechanics.get(mechanic);
-        try {
-            if(mechClass != null) {
-
-                CraftBookMechanic mech = mechClass.newInstance();
-                mech.loadConfiguration(mechanismsConfig, "mechanics." + mechanic + '.');
-                mechanics.add(mech);
-
-                if(!mech.enable()) {
-                    getLogger().warning("Failed to enable mechanic: " + mech.getClass().getSimpleName());
-                    mech.disable();
-                    return false;
-                }
-                getServer().getPluginManager().registerEvents(mech, this);
-            } else
-                return false;
-        } catch (Throwable t) {
-            getLogger().log(Level.WARNING, "Failed to load mechanic: " + mechanic, t);
-            return false;
-        }
-
-        mechanismsConfig.save();
-        config.save();
-
-        return true;
-    }
-
-    /**
-     * Disables the mechanic with the specified name.
-     * 
-     * @param mechanic The name of the mechanic.
-     * @return If the mechanic could be found and disabled.
-     */
-    public boolean disableMechanic(String mechanic) {
-
-        Class<? extends CraftBookMechanic> mechClass = availableMechanics.get(mechanic);
-
-        if(mechClass == null) return false;
-
-        boolean found = false;
-
-        for(CraftBookMechanic mech : mechanics) {
-            if(mech.getClass().equals(mechClass)) {
-                found = true;
-                break;
-            }
-        }
-
-        if(!found) return false;
-
-        config.enabledMechanics.remove(mechanic);
-        config.save();
-
-        return true;
-    }
-
     public void registerGlobalEvents() {
         getServer().getPluginManager().registerEvents(managerAdapter, inst());
     }
@@ -475,36 +341,6 @@ public class CraftBookPlugin extends JavaPlugin {
 
         if(uuidMappings != null)
             uuidMappings.disable();
-    }
-
-    /**
-     * Handle a command.
-     */
-    @Override
-    public boolean onCommand(CommandSender sender, org.bukkit.command.Command cmd, String label,
-            String[] args) {
-
-        try {
-            commands.execute(cmd.getName(), args, sender, sender);
-        } catch (CommandPermissionsException e) {
-            sender.sendMessage(ChatColor.RED + "You don't have permission.");
-        } catch (MissingNestedCommandException e) {
-            sender.sendMessage(ChatColor.RED + e.getUsage());
-        } catch (CommandUsageException e) {
-            sender.sendMessage(ChatColor.RED + e.getMessage());
-            sender.sendMessage(ChatColor.RED + e.getUsage());
-        } catch (WrappedCommandException e) {
-            if (e.getCause() instanceof NumberFormatException) {
-                sender.sendMessage(ChatColor.RED + "Number expected, string received instead.");
-            } else {
-                sender.sendMessage(ChatColor.RED + "An error has occurred. See console.");
-                e.printStackTrace();
-            }
-        } catch (CommandException e) {
-            sender.sendMessage(ChatColor.RED + e.getMessage());
-        }
-
-        return true;
     }
 
     /**
@@ -549,8 +385,7 @@ public class CraftBookPlugin extends JavaPlugin {
      * Setup the required components of self-triggered Mechanics.
      */
     private void setupSelfTriggered() {
-
-        mechanicClock = new MechanicClock();
+        MechanicClock mechanicClock = new MechanicClock();
         selfTriggerManager = new SelfTriggeringManager();
 
         getLogger().info("Enumerating chunks for self-triggered components...");
@@ -578,24 +413,6 @@ public class CraftBookPlugin extends JavaPlugin {
         getServer().getScheduler().runTaskTimer(this, mechanicClock, 0, config.stThinkRate);
 
         getServer().getPluginManager().registerEvents(selfTriggerManager, this);
-    }
-
-    /**
-     * This is a method used to register events for a class under CraftBook.
-     */
-    public static void registerEvents(Listener ... listeners) {
-
-        for(Listener listener : listeners)
-            inst().getServer().getPluginManager().registerEvents(listener, inst());
-    }
-
-    /**
-     * This is a method used to register commands for a class.
-     */
-    public void registerCommands(Class<?> clazz) {
-
-        final CommandsManagerRegistration reg = new CommandsManagerRegistration(this, commands);
-        reg.register(clazz);
     }
 
     /**
@@ -634,90 +451,10 @@ public class CraftBookPlugin extends JavaPlugin {
         return random;
     }
 
-    /**
-     * Check whether a player is in a group.
-     * This calls the corresponding method in PermissionsResolverManager
-     *
-     * @param player The player to check
-     * @param group  The group
-     *
-     * @return whether {@code player} is in {@code group}
-     */
-    public boolean inGroup(Player player, String group) {
+    public boolean hasPermission(Permissible permissible, String perm) {
 
-        try {
-            return PermissionsResolverManager.getInstance().inGroup(player, group);
-        } catch (Throwable t) {
-            t.printStackTrace();
-            return false;
-        }
-    }
-
-    /**
-     * Get the groups of a player.
-     * This calls the corresponding method in PermissionsResolverManager.
-     *
-     * @param player The player to check
-     *
-     * @return The names of each group the playe is in.
-     */
-    public String[] getGroups(Player player) {
-
-        try {
-            return PermissionsResolverManager.getInstance().getGroups(player);
-        } catch (Throwable t) {
-            t.printStackTrace();
-            return new String[0];
-        }
-    }
-
-    /**
-     * Gets the name of a command sender. This is a unique name and this
-     * method should never return a "display name".
-     *
-     * @param sender The sender to get the name of
-     *
-     * @return The unique name of the sender.
-     */
-    public String toUniqueName(CommandSender sender) {
-
-        if (sender instanceof ConsoleCommandSender) {
-            return "*Console*";
-        } else {
-            return sender.getName();
-        }
-    }
-
-    /**
-     * Gets the name of a command sender. This play be a display name.
-     *
-     * @param sender The CommandSender to get the name of.
-     *
-     * @return The name of the given sender
-     */
-    public String toName(CommandSender sender) {
-
-        if (sender instanceof ConsoleCommandSender) {
-            return "*Console*";
-        } else if (sender instanceof Player) {
-            return ((Player) sender).getDisplayName();
-        } else {
-            return sender.getName();
-        }
-    }
-
-    /**
-     * Checks permissions.
-     *
-     * @param sender The sender to check the permission on.
-     * @param perm   The permission to check the permission on.
-     *
-     * @return whether {@code sender} has {@code perm}
-     */
-    public boolean hasPermission(CommandSender sender, String perm) {
-
-        if (sender.isOp()) {
-            if (sender instanceof Player) {
+        if (permissible.isOp()) {
+            if (permissible instanceof Player) {
 
                 if (!config.noOpPermissions) return true;
             } else {
@@ -726,47 +463,12 @@ public class CraftBookPlugin extends JavaPlugin {
         }
 
         // Invoke the permissions resolver
-        if (sender instanceof Player) {
-            Player player = (Player) sender;
+        if (permissible instanceof Player) {
+            Player player = (Player) permissible;
             return PermissionsResolverManager.getInstance().hasPermission(player.getWorld().getName(), player, perm);
         }
 
         return false;
-    }
-
-    /**
-     * Checks permissions and throws an exception if permission is not met.
-     *
-     * @param sender The sender to check the permission on.
-     * @param perm   The permission to check the permission on.
-     *
-     * @throws CommandPermissionsException if {@code sender} doesn't have {@code perm}
-     */
-    public void checkPermission(CommandSender sender, String perm)
-            throws CommandPermissionsException {
-
-        if (!hasPermission(sender, perm)) {
-            throw new CommandPermissionsException();
-        }
-    }
-
-    /**
-     * Checks to see if the sender is a player, otherwise throw an exception.
-     *
-     * @param sender The {@link CommandSender} to check
-     *
-     * @return {@code sender} casted to a player
-     *
-     * @throws CommandException if {@code sender} isn't a {@link Player}
-     */
-    public static Player checkPlayer(CommandSender sender)
-            throws CommandException {
-
-        if (sender instanceof Player) {
-            return (Player) sender;
-        } else {
-            throw new CommandException("A player is expected.");
-        }
     }
 
     /**
@@ -787,25 +489,6 @@ public class CraftBookPlugin extends JavaPlugin {
     public SelfTriggeringManager getSelfTriggerManager() {
 
         return selfTriggerManager;
-    }
-
-    /**
-     * Reload configuration
-     */
-    public void reloadConfiguration() throws Throwable {
-
-        if(mechanics != null)
-            for(CraftBookMechanic mech : mechanics)
-                mech.disable();
-        mechanics = null;
-        getServer().getScheduler().cancelTasks(inst());
-        HandlerList.unregisterAll(inst());
-
-        config.load();
-        managerAdapter = new MechanicListenerAdapter();
-        mechanicClock = new MechanicClock();
-        setupCraftBook();
-        registerGlobalEvents();
     }
 
     /**
@@ -897,11 +580,6 @@ public class CraftBookPlugin extends JavaPlugin {
     public boolean hasPersistentStorage() {
 
         return persistentStorage != null && persistentStorage.isValid();
-    }
-
-    public PersistentStorage getPersistentStorage() {
-
-        return persistentStorage;
     }
 
     public void setPersistentStorage(PersistentStorage storage) {
