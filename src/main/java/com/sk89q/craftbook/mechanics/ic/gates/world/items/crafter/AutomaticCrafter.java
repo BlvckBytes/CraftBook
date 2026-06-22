@@ -10,7 +10,6 @@ import com.sk89q.craftbook.mechanics.pipe.PipeRequestEvent;
 import com.sk89q.craftbook.util.ItemUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
-import org.bukkit.Server;
 import org.bukkit.block.*;
 import org.bukkit.block.data.Directional;
 import org.bukkit.entity.Entity;
@@ -19,7 +18,7 @@ import org.bukkit.inventory.*;
 
 import java.util.*;
 
-public class AutomaticCrafter extends AbstractIC implements SelfTriggeredIC, PipeInputIC {
+public class AutomaticCrafter extends IC implements SelfTriggeredIC, PipeInputIC {
 
     private static final ItemStack AIR_STACK = new ItemStack(Material.AIR);
 
@@ -40,8 +39,8 @@ public class AutomaticCrafter extends AbstractIC implements SelfTriggeredIC, Pip
     private long cachedRecipeMatrixLsb;
     private TriState wasMatrixInvalid = TriState.NULL;
 
-    public AutomaticCrafter(Server server, ChangedSign block) {
-        super(server, block);
+    public AutomaticCrafter(ChangedSign block) {
+        super(block);
     }
 
     @Override
@@ -365,13 +364,9 @@ public class AutomaticCrafter extends AbstractIC implements SelfTriggeredIC, Pip
     }
 
     public static class Factory extends ICFactory {
-        public Factory(Server server) {
-            super(server);
-        }
-
         @Override
         public IC create(ChangedSign sign) {
-            return new AutomaticCrafter(getServer(), sign);
+            return new AutomaticCrafter(sign);
         }
 
         @Override

@@ -16,21 +16,9 @@
 
 package com.sk89q.craftbook.mechanics.ic;
 
-import org.bukkit.Server;
-
 import com.sk89q.craftbook.ChangedSign;
 
 public abstract class ICFactory {
-
-    private final Server server;
-
-    public ICFactory(Server server) {
-        this.server = server;
-    }
-
-    protected Server getServer() {
-        return server;
-    }
 
     public abstract IC create(ChangedSign sign);
 

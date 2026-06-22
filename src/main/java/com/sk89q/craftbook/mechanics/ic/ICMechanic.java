@@ -31,18 +31,14 @@ import com.sk89q.craftbook.util.events.SelfTriggerPingEvent;
 import com.sk89q.craftbook.util.events.SelfTriggerThinkEvent;
 import com.sk89q.craftbook.util.events.SelfTriggerUnregisterEvent;
 import com.sk89q.craftbook.util.events.SelfTriggerUnregisterEvent.UnregisterReason;
-import com.sk89q.craftbook.util.events.SignClickEvent;
 import com.sk89q.util.yaml.YAMLProcessor;
 import org.bukkit.Bukkit;
 import org.bukkit.block.Block;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
-import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.SignChangeEvent;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Locale;
 import java.util.regex.Matcher;
 
@@ -91,12 +87,9 @@ public class ICMechanic implements CraftBookMechanic {
 
         String id = matcher.group(1);
 
-        if(disabledICs.contains(id.toLowerCase()) || disabledICs.contains(id)) return null; //This IC is disabled.
-        // after this point, we don't return null if we can't make an IC: we throw shit,
-        // because it SHOULD be an IC and can't possibly be any other kind of mechanic.
-
         // now actually try to pull up an IC of that id number.
         RegisteredICFactory registration = manager.get(id);
+
         if (registration == null) {
             CraftBookPlugin.logger().warning("\"" + sign.getLine(1) + "\" should be an IC ID, but no IC registered under that ID could be found.");
             block.breakNaturally();
@@ -104,29 +97,19 @@ public class ICMechanic implements CraftBookMechanic {
         }
 
         IC ic;
+
         // check if the ic is cached and get that single instance instead of creating a new one
         if (ICManager.isCachedIC(block.getLocation())) {
             ic = ICManager.getCachedIC(block.getLocation());
             if(ic.getSign().updateSign(sign)) {
-
                 ICManager.removeCachedIC(block.getLocation());
                 ic = registration.getFactory().create(sign);
-                if(!sign.getLine(0).equals(ic.getSignTitle()) && !sign.getLine(0).startsWith("=")) {
-                    sign.setLine(0, ic.getSignTitle());
-                    sign.update(false);
-                }
                 ic.load();
-                // add the created ic to the cache
                 ICManager.addCachedIC(block.getLocation(), ic);
             }
         } else if (create) {
             ic = registration.getFactory().create(sign);
-            if(!sign.getLine(0).equals(ic.getSignTitle()) && !sign.getLine(0).startsWith("=")) {
-                sign.setLine(0, ic.getSignTitle());
-                sign.update(false);
-            }
             ic.load();
-            // add the created ic to the cache
             ICManager.addCachedIC(block.getLocation(), ic);
         } else
             return null;
@@ -135,25 +118,6 @@ public class ICMechanic implements CraftBookMechanic {
             CraftBookPlugin.inst().getSelfTriggerManager().registerSelfTrigger(block.getLocation());
 
         return ic;
-    }
-
-    @EventHandler(priority = EventPriority.HIGH)
-    public void onRightClick(SignClickEvent event) {
-
-        if(event.getAction() != Action.RIGHT_CLICK_BLOCK) return;
-
-        if(!EventUtil.passesFilter(event)) return;
-
-        if(ICManager.isCachedIC(event.getClickedBlock().getLocation()) && event.getPlayer().isSneaking()) {
-            ICManager.getCachedIC(event.getClickedBlock().getLocation()).unload();
-            ICManager.removeCachedIC(event.getClickedBlock().getLocation());
-        }
-
-        var ic  = setupIC(event.getClickedBlock(), true);
-
-        if(ic == null) return;
-
-        ic.onRightClick(event.getPlayer());
     }
 
     @EventHandler(priority = EventPriority.HIGH)
@@ -171,17 +135,8 @@ public class ICMechanic implements CraftBookMechanic {
 
         var ic = setupIC(event.getBlock(), false);
 
-        if(ic != null) {
-            if(event.getReason() == UnregisterReason.ERROR) {
-                if(breakOnError) {
-                    ic.unload();
-                    event.getBlock().breakNaturally();
-                    return;
-                }
-            }
-
+        if(ic != null)
             ic.unload();
-        }
     }
 
     @EventHandler(priority = EventPriority.HIGH)
@@ -207,7 +162,6 @@ public class ICMechanic implements CraftBookMechanic {
         // remove the ic from cache
         CraftBookPlugin.inst().getSelfTriggerManager().unregisterSelfTrigger(event.getBlock().getLocation(), UnregisterReason.BREAK);
         ICManager.removeCachedIC(event.getBlock().getLocation());
-        ic.onICBreak(event);
         if(!event.isCancelled())
             ic.unload();
     }
@@ -312,28 +266,15 @@ public class ICMechanic implements CraftBookMechanic {
         throw new ICVerificationException("You don't have permission to use " + id.toLowerCase(Locale.ENGLISH) + ".");
     }
 
-    public boolean cache;
     public double maxRange;
-    public List<String> disabledICs;
     public LocationCheckType defaultCoordinates;
-    public boolean breakOnError;
 
     @Override
     public void loadConfiguration (YAMLProcessor config, String path) {
-
-        config.setComment(path + "cache", "Saves many CPU cycles with a VERY small cost to memory (Highly Recommended)");
-        cache = config.getBoolean(path + "cache", true);
-
         config.setComment(path + "max-radius", "The max radius IC's with a radius setting can use. (WILL cause lag at higher values)");
         maxRange = config.getDouble(path + "max-radius", 10);
 
-        config.setComment(path + "disallowed-ics", "A list of IC's which are never loaded. They will not work or show up in /ic list.");
-        disabledICs = config.getStringList(path + "disallowed-ics", new ArrayList<>());
-
         config.setComment(path + "default-coordinate-system", "The default coordinate system for ICs. This changes the way IC offsets work. From RELATIVE, OFFSET and ABSOLUTE.");
         defaultCoordinates = LocationCheckType.getTypeFromName(config.getString(path + "default-coordinate-system", "RELATIVE"));
-
-        config.setComment(path + "break-on-error", "Break the IC sign when an error occurs from that specific IC.");
-        breakOnError = config.getBoolean(path + "break-on-error", false);
     }
 }

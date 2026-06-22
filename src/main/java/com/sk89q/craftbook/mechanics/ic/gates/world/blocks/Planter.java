@@ -7,7 +7,6 @@ import com.sk89q.craftbook.util.ItemSyntax;
 import com.sk89q.craftbook.util.ItemUtil;
 import com.sk89q.craftbook.util.SearchArea;
 import org.bukkit.Material;
-import org.bukkit.Server;
 import org.bukkit.Tag;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -31,14 +30,13 @@ import java.util.concurrent.ThreadLocalRandom;
  *
  * @authors Drathus, Me4502
  */
-public class Planter extends AbstractIC implements SelfTriggeredIC {
+public class Planter extends IC implements SelfTriggeredIC {
 
     private Block cachedContainerBlock;
     private Inventory cachedChestInventory;
 
-    public Planter(Server server, ChangedSign block) {
-
-        super(server, block);
+    public Planter(ChangedSign block) {
+        super(block);
     }
 
     ItemStack item;
@@ -335,13 +333,9 @@ public class Planter extends AbstractIC implements SelfTriggeredIC {
     }
 
     public static class Factory extends ICFactory {
-        public Factory(Server server) {
-            super(server);
-        }
-
         @Override
         public IC create(ChangedSign sign) {
-            return new Planter(getServer(), sign);
+            return new Planter(sign);
         }
 
         @Override

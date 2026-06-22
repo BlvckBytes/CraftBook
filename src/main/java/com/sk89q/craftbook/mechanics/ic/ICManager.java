@@ -16,14 +16,11 @@
 
 package com.sk89q.craftbook.mechanics.ic;
 
-import com.sk89q.craftbook.bukkit.CraftBookPlugin;
 import com.sk89q.craftbook.mechanics.ic.gates.world.blocks.Planter;
 import com.sk89q.craftbook.mechanics.ic.gates.world.items.crafter.AutomaticCrafter;
 import com.sk89q.craftbook.util.RegexUtil;
 import org.bukkit.Location;
-import org.bukkit.Server;
 
-import java.io.File;
 import java.util.*;
 import java.util.regex.Matcher;
 
@@ -46,9 +43,8 @@ public class ICManager {
     }
 
     public void enable() {
-        CraftBookPlugin.inst().createDefaultConfiguration(new File(CraftBookPlugin.inst().getDataFolder(), "ic-config.yml"), "ic-config.yml");
-
-        registerICs(CraftBookPlugin.inst().getServer());
+        registerIC("MC1219", "auto craft", new AutomaticCrafter.Factory());
+        registerIC("MC1234", "planter", new Planter.Factory());
     }
 
     public void disable() {
@@ -72,16 +68,7 @@ public class ICManager {
 
     private static final Map<Location, IC> cachedICs = new HashMap<>();
 
-    public void registerIC(String name, String longName, ICFactory factory) {
-
-        for(String ic : ICMechanic.instance.disabledICs)
-            if(ic.equalsIgnoreCase(name))
-                return;
-
-        register(name, longName, factory);
-    }
-
-    public void register(String id, String longId, ICFactory factory) {
+    public void registerIC(String id, String longId, ICFactory factory) {
 
         // this is needed so we dont have two patterns
         String id2 = "[" + id + "]";
@@ -149,8 +136,6 @@ public class ICManager {
      * @param ic to add
      */
     public static void addCachedIC(Location pt, IC ic) {
-
-        if (!ICMechanic.instance.cache) return;
         if(cachedICs.containsKey(pt)) return;
         cachedICs.put(pt, ic);
     }
@@ -171,12 +156,5 @@ public class ICManager {
     public static void emptyCache() {
 
         cachedICs.clear();
-    }
-
-    public void registerICs(Server server) {
-
-        // SISOs
-        registerIC("MC1219", "auto craft", new AutomaticCrafter.Factory(server));
-        registerIC("MC1234", "planter", new Planter.Factory(server));
     }
 }

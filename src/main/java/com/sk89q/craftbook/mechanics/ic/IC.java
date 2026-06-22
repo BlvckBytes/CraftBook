@@ -1,6 +1,6 @@
 // $Id$
 /*
- * CraftBook Copyright (C) 2010 sk89q <http://www.sk89q.com>
+ * Copyright (C) 2010, 2011 sk89q <http://www.sk89q.com>
  * 
  * This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public
  * License as published by the Free
@@ -16,54 +16,52 @@
 
 package com.sk89q.craftbook.mechanics.ic;
 
-import org.bukkit.entity.Player;
-import org.bukkit.event.block.BlockBreakEvent;
+import com.sk89q.craftbook.bukkit.util.CraftBookBukkitUtil;
+import org.bukkit.Location;
+import org.bukkit.block.Block;
 
 import com.sk89q.craftbook.ChangedSign;
+import com.sk89q.craftbook.util.SignUtil;
 
 /**
- * Integrated circuits are represented by this interface. For self-triggered ICs, see {@link SelfTriggeredIC}.
+ * A base abstract IC that all ICs can inherit from.
  *
  * @author sk89q
  */
-public interface IC {
+public abstract class IC {
 
-    /**
-     * @return the title of the IC.
-     */
-    String getTitle();
+    private final ChangedSign sign;
 
-    /**
-     * @return the title that is shown on the sign.
-     */
-    String getSignTitle();
+    public IC(ChangedSign sign) {
+        this.sign = sign;
+    }
 
-    /**
-     * Called when the sign is right clicked.
-     */
-    void onRightClick(Player p);
+    public abstract String getTitle();
 
-    /**
-     * Called when the sign is broken.
-     * 
-     * @param event The BlockBreakEvent.
-     */
-    void onICBreak(BlockBreakEvent event);
+    public abstract String getSignTitle();
 
-    /**
-     * Proceed to unload the IC.
-     */
-    void unload();
+    public abstract void unload();
 
-    /**
-     * Called on IC load, to cache the IC's settings.
-     */
-    void load();
+    public abstract void load();
 
-    /**
-     * Get's the IC's sign.
-     * 
-     * @return The IC's sign.
-     */
-    ChangedSign getSign();
+    public ChangedSign getSign() {
+        return sign;
+    }
+
+    public Location getLocation() {
+        return getSign().getBlock().getLocation();
+    }
+
+    public Block getBackBlock() {
+        return SignUtil.getBackBlock(CraftBookBukkitUtil.toSign(sign).getBlock());
+    }
+
+    public String getLine(int line) {
+        return sign.getLine(line);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        return o instanceof IC && getSignTitle().equalsIgnoreCase(((IC) o).getSignTitle()) && getTitle().equalsIgnoreCase(((IC) o).getTitle()) && sign.equals(((IC) o).sign);
+    }
 }
