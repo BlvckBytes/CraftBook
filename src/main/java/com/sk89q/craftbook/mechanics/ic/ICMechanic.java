@@ -24,7 +24,6 @@ import com.sk89q.craftbook.bukkit.util.CraftBookBukkitUtil;
 import com.sk89q.craftbook.mechanics.pipe.CachedBlock;
 import com.sk89q.craftbook.mechanics.pipe.PipePutEvent;
 import com.sk89q.craftbook.util.EventUtil;
-import com.sk89q.craftbook.util.ICUtil.LocationCheckType;
 import com.sk89q.craftbook.util.RegexUtil;
 import com.sk89q.craftbook.util.SignUtil;
 import com.sk89q.craftbook.util.events.SelfTriggerPingEvent;
@@ -267,14 +266,10 @@ public class ICMechanic implements CraftBookMechanic {
     }
 
     public double maxRange;
-    public LocationCheckType defaultCoordinates;
 
     @Override
     public void loadConfiguration (YAMLProcessor config, String path) {
         config.setComment(path + "max-radius", "The max radius IC's with a radius setting can use. (WILL cause lag at higher values)");
         maxRange = config.getDouble(path + "max-radius", 10);
-
-        config.setComment(path + "default-coordinate-system", "The default coordinate system for ICs. This changes the way IC offsets work. From RELATIVE, OFFSET and ABSOLUTE.");
-        defaultCoordinates = LocationCheckType.getTypeFromName(config.getString(path + "default-coordinate-system", "RELATIVE"));
     }
 }

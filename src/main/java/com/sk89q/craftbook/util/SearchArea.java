@@ -2,7 +2,6 @@ package com.sk89q.craftbook.util;
 
 import com.sk89q.craftbook.bukkit.CraftBookPlugin;
 import com.sk89q.craftbook.bukkit.util.CraftBookBukkitUtil;
-import com.sk89q.craftbook.mechanics.ic.ICMechanic;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.math.Vector3;
@@ -82,7 +81,7 @@ public final class SearchArea {
             Location offset = SignUtil.getBackBlock(block).getLocation();
             Vector3 radius = ICUtil.parseRadius(locationParts[0]);
             if(locationParts.length > 1)
-                offset = ICUtil.parseBlockLocation(CraftBookBukkitUtil.toChangedSign(block), locationParts[1], ICMechanic.instance.defaultCoordinates).getLocation();
+                offset = ICUtil.parseBlockLocation(CraftBookBukkitUtil.toChangedSign(block), locationParts[1]).getLocation();
 
             return new SearchArea(offset, radius);
         }

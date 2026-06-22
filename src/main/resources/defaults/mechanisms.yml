@@ -8,7 +8,6 @@ mechanics:
         smooth-movement-speed: 0.5
     ICs:
         max-radius: 10.0
-        default-coordinate-system: RELATIVE
     Pipes:
         allow-diagonal: false
         insulator-block: minecraft:white_wool

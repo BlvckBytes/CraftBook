@@ -17,11 +17,9 @@
 package com.sk89q.craftbook.util;
 
 import com.sk89q.craftbook.ChangedSign;
-import com.sk89q.craftbook.bukkit.util.CraftBookBukkitUtil;
 import com.sk89q.craftbook.mechanics.ic.ICMechanic;
 import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.math.Vector3;
-import org.bukkit.Location;
 import org.bukkit.block.Block;
 
 /**
@@ -49,34 +47,17 @@ public final class ICUtil {
         return Vector3.at(offsetX, offsetY, offsetZ);
     }
 
-    public static Block parseBlockLocation(ChangedSign sign, String line, LocationCheckType relative) {
-
-        Block target = SignUtil.getBackBlock(CraftBookBukkitUtil.toSign(sign).getBlock());
-
-        if (line.contains("!"))
-            relative = LocationCheckType.getTypeFromChar('!');
-        else if (line.contains("^"))
-            relative = LocationCheckType.getTypeFromChar('^');
-        else if (line.contains("&"))
-            relative = LocationCheckType.getTypeFromChar('&');
-
+    public static Block parseBlockLocation(ChangedSign sign, String line) {
         BlockVector3 offsets = BlockVector3.ZERO;
 
         try {
             offsets = parseUnsafeBlockLocation(line).toBlockPoint();
-        } catch (NumberFormatException | ArrayIndexOutOfBoundsException ignored) {
-        }
+        } catch (NumberFormatException | ArrayIndexOutOfBoundsException ignored) {}
 
         if(offsets.x() == 0 && offsets.y() == 0 && offsets.z() == 0)
-            return target;
+            return sign.getBlock();
 
-        if (relative == LocationCheckType.RELATIVE)
-            target = LocationUtil.getRelativeOffset(sign, offsets.x(), offsets.y(), offsets.z());
-        else if (relative == LocationCheckType.OFFSET)
-            target = LocationUtil.getOffset(target, offsets.x(), offsets.y(), offsets.z());
-        else if (relative == LocationCheckType.ABSOLUTE)
-            target = new Location(target.getWorld(), offsets.x(), offsets.y(), offsets.z()).getBlock();
-        return target;
+        return LocationUtil.getRelativeOffset(sign, offsets.x(), offsets.y(), offsets.z());
     }
 
     public static Vector3 parseRadius(String line) {
@@ -106,39 +87,5 @@ public final class ICUtil {
 
     private static double verifyRadius(double radius, double maxradius) {
         return Math.max(0, Math.min(maxradius, radius));
-    }
-
-    public enum LocationCheckType {
-
-        RELATIVE('^'),
-        OFFSET('&'),
-        ABSOLUTE('!');
-
-        final char c;
-
-        LocationCheckType(char c) {
-
-            this.c = c;
-        }
-
-        public static LocationCheckType getTypeFromChar(char c) {
-
-            for(LocationCheckType t : values())
-                if(t.c == c)
-                    return t;
-
-            return RELATIVE;
-        }
-
-        public static LocationCheckType getTypeFromName(String name) {
-
-            if(name.length() == 1)
-                return getTypeFromChar(name.charAt(0));
-            for(LocationCheckType t : values())
-                if(t.name().equalsIgnoreCase(name))
-                    return t;
-
-            return RELATIVE;
-        }
     }
 }
