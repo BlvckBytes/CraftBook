@@ -6,6 +6,7 @@ import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
 import org.bukkit.block.sign.Side;
 
+import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.Consumer;
 
@@ -144,7 +145,7 @@ public class ChangedSign {
 
     @Override
     public int hashCode() {
-        return Objects.hash(block.getType(), block.getX(), block.getY(), block.getZ(), block.getWorld().getUID());
+        return Objects.hash(block.getType(), block.getX(), block.getY(), block.getZ(), block.getWorld().getUID(), Arrays.hashCode(lines));
     }
 
     @Override
