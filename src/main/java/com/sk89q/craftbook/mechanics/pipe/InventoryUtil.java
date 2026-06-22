@@ -81,7 +81,7 @@ public class InventoryUtil {
             return addItemsToBrewingStand(brewerInventory, stacks);
 
         if (inventory instanceof CrafterInventory && inventory.getHolder() instanceof Crafter crafter)
-            return distributeItemsToMakeEvenlyAndGetRemainders(stacks, inventory, (slot, contents) -> !crafter.isSlotDisabled(slot));
+            return distributeItemsToMakeEvenAndGetRemainders(stacks, inventory, (slot, contents) -> !crafter.isSlotDisabled(slot));
 
         if (inventory instanceof ChiseledBookshelfInventory)
             return addItemsToChiseledBookshelf(inventory, stacks);
@@ -287,7 +287,7 @@ public class InventoryUtil {
         return new DistributeResult(remainingAmount, createdStack);
     }
 
-    public static List<ItemStack> distributeItemsToMakeEvenlyAndGetRemainders(
+    public static List<ItemStack> distributeItemsToMakeEvenAndGetRemainders(
       Collection<ItemStack> itemsToAdd,
       Inventory inventory,
       @Nullable SlotPredicate slotPredicate

@@ -383,7 +383,7 @@ public class AutomaticCrafter extends IC implements SelfTriggeredIC, PipeInputIC
         if (updateCachesAndGetIfIsMalformed())
             return;
 
-        var remainders = InventoryUtil.distributeItemsToMakeEvenlyAndGetRemainders(event.getItems(), cachedDispenserOrDropperInventory, (slot, contents) -> ItemUtil.isStackValid(contents));
+        var remainders = InventoryUtil.distributeItemsToMakeEvenAndGetRemainders(event.getItems(), cachedDispenserOrDropperInventory, (slot, contents) -> ItemUtil.isStackValid(contents));
 
         event.getItems().clear();
         event.setItems(remainders);
