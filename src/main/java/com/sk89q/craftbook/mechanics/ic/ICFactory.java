@@ -16,37 +16,24 @@
 
 package com.sk89q.craftbook.mechanics.ic;
 
+import org.bukkit.Server;
+
 import com.sk89q.craftbook.ChangedSign;
 
-/**
- * Factories are used to generate instances of ICs.
- *
- * @author sk89q
- */
-public interface ICFactory {
+public abstract class ICFactory {
 
-    /**
-     * Create an IC instance given a block. The verify method should already have been called before this function,
-     * so this should have no reason to
-     * fail or return a null.
-     *
-     * @param sign
-     *
-     * @return an IC ready to be used
-     */
-    IC create(ChangedSign sign);
+    private final Server server;
 
-    /**
-     * Verify that the IC can be created in the area of the world defined by the given sign; throw exceptions if not.
-     * This does NOT verify
-     * permissions, since that is only done when placing blocks for a new IC, and this can be invoked many times in
-     * the life of an IC.
-     *
-     * @param sign
-     *
-     * @throws ICVerificationException if the area of the world defined by the sign does not represent a valid setup
-     *                                 for this type of IC.
-     */
-    void verify(ChangedSign sign) throws ICVerificationException;
+    public ICFactory(Server server) {
+        this.server = server;
+    }
+
+    protected Server getServer() {
+        return server;
+    }
+
+    public abstract IC create(ChangedSign sign);
+
+    public abstract void verify(ChangedSign sign) throws ICVerificationException;
 
 }

@@ -364,7 +364,7 @@ public class AutomaticCrafter extends AbstractIC implements SelfTriggeredIC, Pip
         return false;
     }
 
-    public static class Factory extends AbstractICFactory {
+    public static class Factory extends ICFactory {
         public Factory(Server server) {
             super(server);
         }
@@ -373,6 +373,9 @@ public class AutomaticCrafter extends AbstractIC implements SelfTriggeredIC, Pip
         public IC create(ChangedSign sign) {
             return new AutomaticCrafter(getServer(), sign);
         }
+
+        @Override
+        public void verify(ChangedSign sign) {}
     }
 
     @Override

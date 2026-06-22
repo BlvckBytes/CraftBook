@@ -334,10 +334,8 @@ public class Planter extends AbstractIC implements SelfTriggeredIC {
         }
     }
 
-    public static class Factory extends AbstractICFactory {
-
+    public static class Factory extends ICFactory {
         public Factory(Server server) {
-
             super(server);
         }
 
