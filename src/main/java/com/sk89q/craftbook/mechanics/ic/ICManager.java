@@ -52,10 +52,6 @@ public class ICManager {
     }
 
     public void disable() {
-
-        for(RegisteredICFactory factory : registered.values()) {
-            factory.getFactory().unload();
-        }
         emptyCache();
         INSTANCE = null;
     }
@@ -76,39 +72,24 @@ public class ICManager {
 
     private static final Map<Location, IC> cachedICs = new HashMap<>();
 
-    private static final Set<String> customPrefix = new HashSet<>();
-
-    public boolean registerIC(String name, String longName, ICFactory factory) {
+    public void registerIC(String name, String longName, ICFactory factory) {
 
         for(String ic : ICMechanic.instance.disabledICs)
             if(ic.equalsIgnoreCase(name))
-                return false;
-        return register(name, longName, factory);
+                return;
+
+        register(name, longName, factory);
     }
 
-    /**
-     * Register an IC with the manager. The casing of the ID can be of any case because IC IDs are case-insensitive.
-     * Re-using an already registered
-     * name will override the previous registration.
-     *
-     * @param id       case-insensitive ID (such as MC1001)
-     * @param longId   case-insensitive long name (such as inverter)
-     * @param factory  factory to create ICs
-     *
-     * @return true if IC registration was a success
-     */
-    public boolean register(String id, String longId, ICFactory factory) {
+    public void register(String id, String longId, ICFactory factory) {
 
         // this is needed so we dont have two patterns
         String id2 = "[" + id + "]";
         // lets check if the IC ID has already been registered
-        if (registered.containsKey(id.toLowerCase(Locale.ENGLISH))) return false;
+        if (registered.containsKey(id.toLowerCase(Locale.ENGLISH))) return;
         // check if the ic matches the requirements
         Matcher matcher = RegexUtil.IC_PATTERN.matcher(id2);
-        if (!matcher.matches()) return false;
-        String prefix = matcher.group(2).toLowerCase(Locale.ENGLISH);
-        // lets get the custom prefix
-        customPrefix.add(prefix);
+        if (!matcher.matches()) return;
 
         RegisteredICFactory registration = new RegisteredICFactory(id, longId, factory);
         // Lowercase the ID so that we can do case in-sensitive lookups
@@ -121,10 +102,6 @@ public class ICManager {
             }
             longRegistered.put(toRegister, id);
         }
-
-        factory.load();
-
-        return true;
     }
 
     /**
@@ -182,15 +159,9 @@ public class ICManager {
      * Removes the given IC from the cache list based on its location.
      *
      * @param pt of the ic
-     *
-     * @return the removed ic
      */
-    public static IC removeCachedIC(Location pt) {
-
-        if (cachedICs.containsKey(pt)) {
-            return cachedICs.remove(pt);
-        }
-        return null;
+    public static void removeCachedIC(Location pt) {
+      cachedICs.remove(pt);
     }
 
     /**
@@ -200,16 +171,6 @@ public class ICManager {
     public static void emptyCache() {
 
         cachedICs.clear();
-    }
-
-    public static boolean hasCustomPrefix(String prefix) {
-
-        return customPrefix.contains(prefix.toLowerCase(Locale.ENGLISH));
-    }
-
-    public List<RegisteredICFactory> getICList() {
-
-        return new LinkedList<>(registered.values());
     }
 
     public void registerICs(Server server) {

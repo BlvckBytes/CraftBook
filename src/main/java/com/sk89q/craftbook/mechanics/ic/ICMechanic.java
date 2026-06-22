@@ -89,31 +89,6 @@ public class ICMechanic implements CraftBookMechanic {
         Matcher matcher = RegexUtil.IC_PATTERN.matcher(sign.getLine(1));
         if (!matcher.matches()) return null;
 
-        String prefix = matcher.group(2);
-        // TODO: remove after some time to stop converting existing MCA ICs
-        // convert existing MCA ICs to the new [MCXXXX]A syntax
-        if (prefix.equalsIgnoreCase("MCA")) {
-            sign.setLine(1, (sign.getLine(1).toLowerCase(Locale.ENGLISH).replace("mca", "mc") + "a").toUpperCase(Locale.ENGLISH));
-            sign.update(false);
-
-            return setupIC(block, create);
-        }
-        if (sign.getLine(1).toLowerCase(Locale.ENGLISH).startsWith("[mc0")) {
-            sign.setLine(1, (sign.getLine(1).toLowerCase(Locale.ENGLISH).replace("mc0", "mc1") + "s").toUpperCase(Locale.ENGLISH));
-            sign.update(false);
-
-            return setupIC(block, create);
-        }
-
-        if (sign.getLine(1).toLowerCase(Locale.ENGLISH).startsWith("[mcz")) {
-            sign.setLine(1, (sign.getLine(1).toLowerCase(Locale.ENGLISH).replace("mcz", "mcx") + "s").toUpperCase(Locale.ENGLISH));
-            sign.update(false);
-
-            return setupIC(block, create);
-        }
-
-        if (!ICManager.hasCustomPrefix(prefix)) return null;
-
         String id = matcher.group(1);
 
         if(disabledICs.contains(id.toLowerCase()) || disabledICs.contains(id)) return null; //This IC is disabled.
@@ -261,134 +236,67 @@ public class ICMechanic implements CraftBookMechanic {
     }
 
     public void initializeIC(final Block block, final CraftBookPlayer player, final SignChangeEvent event, final boolean shortHand) {
-
-        boolean matches = true;
         Matcher matcher = RegexUtil.IC_PATTERN.matcher(event.getLine(1));
-        // lets check for custom ics
+
         if (!matcher.matches()) {
-            matches = false;
+            return;
         }
+
+        String id = matcher.group(1);
+
+        if (!SignUtil.isWallSign(block)) {
+            player.printError("Only wall signs are used for ICs.");
+            SignUtil.cancelSign(event);
+            return;
+        }
+
+        if (ICManager.isCachedIC(block.getLocation())) {
+            ICManager.getCachedIC(block.getLocation()).unload();
+            ICManager.removeCachedIC(block.getLocation());
+        }
+
+        final RegisteredICFactory registration = manager.get(id);
+        if (registration == null) {
+            player.printError("Unknown IC detected: " + id);
+            SignUtil.cancelSign(event);
+            return;
+        }
+
+        final ICFactory factory = registration.getFactory();
 
         try {
-            if (!ICManager.hasCustomPrefix(matcher.group(2))) {
-                matches = false;
-            }
-        } catch (Exception e) {
-            // we need to catch here if the sign changes when beeing parsed
-            matches = false;
+            checkPermissions(player, factory, registration.getId().toLowerCase(Locale.ENGLISH));
+        } catch (ICVerificationException e) {
+            player.printError(e.getMessage());
+            SignUtil.cancelSign(event);
+            return;
         }
 
-        if (matches) {
+        Bukkit.getServer().getScheduler().runTask(CraftBookPlugin.inst(), () -> {
+            ChangedSign sign = new ChangedSign(event.getBlock(), event.getLines());
 
             try {
-                String prefix = matcher.group(2);
-                // TODO: remove after some time to stop converting existing MCA ICs
-                // convert existing MCA ICs to the new [MCXXXX]A syntax
-                if (prefix.equalsIgnoreCase("MCA")) {
-                    event.setLine(1, (event.getLine(1).toLowerCase(Locale.ENGLISH).replace("mca", "mc") + "a").toUpperCase(Locale.ENGLISH));
-
-                    initializeIC(block, player, event, shortHand);
-                    return;
-                }
-                if (event.getLine(1).toLowerCase(Locale.ENGLISH).startsWith("[mc0")) {
-                    event.setLine(1, (event.getLine(1).toLowerCase(Locale.ENGLISH).replace("mc0", "mc1") + "s").toUpperCase(Locale.ENGLISH));
-
-                    initializeIC(block, player, event, shortHand);
-                    return;
-                }
-
-                if (event.getLine(1).toLowerCase(Locale.ENGLISH).startsWith("[mcz")) {
-                    event.setLine(1, (event.getLine(1).toLowerCase(Locale.ENGLISH).replace("mcz", "mcx") + "s").toUpperCase(Locale.ENGLISH));
-
-                    initializeIC(block, player, event, shortHand);
-                    return;
-                }
-            }
-            catch(Exception ignored){}
-
-            String id = matcher.group(1);
-            final String suffix;
-            String[] str = RegexUtil.RIGHT_BRACKET_PATTERN.split(event.getLine(1));
-            if (str.length > 1) {
-                suffix = str[1];
-            } else
-                suffix = "";
-
-            if (!SignUtil.isWallSign(block)) {
-                player.printError("Only wall signs are used for ICs.");
-                SignUtil.cancelSign(event);
-                return;
-            }
-
-            if (ICManager.isCachedIC(block.getLocation())) {
-                ICManager.getCachedIC(block.getLocation()).unload();
-                ICManager.removeCachedIC(block.getLocation());
-            }
-
-            final RegisteredICFactory registration = manager.get(id);
-            if (registration == null) {
-                player.printError("Unknown IC detected: " + id);
-                SignUtil.cancelSign(event);
-                return;
-            }
-
-            final ICFactory factory = registration.getFactory();
-
-            try {
-                checkPermissions(player, factory, registration.getId().toLowerCase(Locale.ENGLISH));
+                factory.verify(sign);
             } catch (ICVerificationException e) {
                 player.printError(e.getMessage());
-                SignUtil.cancelSign(event);
+                event.getBlock().breakNaturally();
                 return;
             }
 
-            Bukkit.getServer().getScheduler().runTask(CraftBookPlugin.inst(), () -> {
-                ChangedSign sign = new ChangedSign(event.getBlock(), event.getLines());
+            IC ic = registration.getFactory().create(sign);
+            ic.load();
 
-                try {
-                    factory.verify(sign);
-                } catch (ICVerificationException e) {
-                    player.printError(e.getMessage());
-                    event.getBlock().breakNaturally();
-                    return;
-                }
+            sign.setLine(1, "[" + registration.getId() + "]");
+            if (!shortHand)
+                sign.setLine(0, ic.getSignTitle());
 
-                IC ic = registration.getFactory().create(sign);
-                ic.load();
+            sign.update(false);
 
-                sign.setLine(1, "[" + registration.getId() + "]" + suffix);
-                if (!shortHand)
-                    sign.setLine(0, ic.getSignTitle());
+            if (ic instanceof SelfTriggeredIC)
+                CraftBookPlugin.inst().getSelfTriggerManager().registerSelfTrigger(block.getLocation());
 
-                sign.update(false);
-
-                if (ic instanceof SelfTriggeredIC)
-                    CraftBookPlugin.inst().getSelfTriggerManager().registerSelfTrigger(block.getLocation());
-
-                player.print(player.translate("mech.ic.create") + " " + registration.getId() + ": " + ic.getTitle() + ".");
-            });
-        } else if (shortHand && event.getLine(0).startsWith("=")) {
-            String id = event.getLine(0).substring(1);
-
-            boolean st = id.toLowerCase(Locale.ENGLISH).endsWith(" st");
-            id = id.toLowerCase(Locale.ENGLISH).replace(" st", "");
-
-            String shortId = manager.longRegistered.get(id.toLowerCase(Locale.ENGLISH));
-            if (shortId == null) {
-                player.printError("Warning: Unknown IC");
-                return;
-            }
-
-            if (!SignUtil.isWallSign(block)) {
-                player.printError("Only wall signs are used for ICs.");
-                SignUtil.cancelSign(event);
-                return;
-            }
-
-            event.setLine(1, "[" + shortId + "]" + (st ? "S" : ""));
-
-            initializeIC(block, player, event, true);
-        }
+            player.print(player.translate("mech.ic.create") + " " + registration.getId() + ": " + ic.getTitle() + ".");
+        });
     }
 
     public static void checkPermissions(CraftBookPlayer player, ICFactory factory, String id) throws ICVerificationException {
@@ -405,7 +313,6 @@ public class ICMechanic implements CraftBookMechanic {
     }
 
     public boolean cache;
-    public boolean shortHand;
     public double maxRange;
     public List<String> disabledICs;
     public LocationCheckType defaultCoordinates;
@@ -419,9 +326,6 @@ public class ICMechanic implements CraftBookMechanic {
 
         config.setComment(path + "max-radius", "The max radius IC's with a radius setting can use. (WILL cause lag at higher values)");
         maxRange = config.getDouble(path + "max-radius", 10);
-
-        config.setComment(path + "allow-short-hand", "Allows the usage of IC Shorthand, which is an easier way to create ICs.");
-        shortHand = config.getBoolean(path + "allow-short-hand", true);
 
         config.setComment(path + "disallowed-ics", "A list of IC's which are never loaded. They will not work or show up in /ic list.");
         disabledICs = config.getStringList(path + "disallowed-ics", new ArrayList<>());

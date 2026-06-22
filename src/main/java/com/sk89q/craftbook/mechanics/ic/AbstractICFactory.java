@@ -42,9 +42,4 @@ public abstract class AbstractICFactory implements ICFactory {
     @Override
     public void verify(ChangedSign sign) throws ICVerificationException {}
 
-    @Override
-    public void load() {}
-
-    @Override
-    public void unload() {}
 }

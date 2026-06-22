@@ -49,13 +49,4 @@ public interface ICFactory {
      */
     void verify(ChangedSign sign) throws ICVerificationException;
 
-    /**
-     * Called on load to load extra information.
-     */
-    void load();
-
-    /**
-     * Unloads the IC Factory.
-     */
-    void unload();
 }
