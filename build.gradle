@@ -101,7 +101,6 @@ allprojects {
         compileOnly 'it.unimi.dsi:fastutil'
 
         implementation 'org.jetbrains:annotations:24.1.0'
-        implementation 'com.sk89q:squirrelid:0.1.0'
         implementation 'org.bstats:bstats-bukkit:2.2.1'
 
         testImplementation 'org.spigotmc:spigot-api:1.21.3-R0.1-SNAPSHOT'
@@ -127,14 +126,12 @@ allprojects {
     shadowJar {
         archiveClassifier.set('dist')
         dependencies {
-            include(dependency('com.sk89q:squirrelid'))
             include(dependency("org.bstats:"))
             include(dependency("org.jetbrains:annotations"))
         }
         relocate 'org.bstats', 'com.sk89q.craftbook.bukkit.bstats'
         relocate 'org.jetbrains.annotations', 'com.sk89q.craftbook.util.jetbrains_annotations'
         relocate 'org.intellij.lang.annotations', 'com.sk89q.craftbook.util.intellij_annotations'
-        relocate 'com.sk89q.squirrelid', 'com.sk89q.craftbook.util.profile'
         exclude 'GradleStart**'
         exclude '.cache'
         exclude 'LICENSE*'

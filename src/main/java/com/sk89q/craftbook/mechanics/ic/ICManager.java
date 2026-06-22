@@ -21,8 +21,6 @@ import com.sk89q.craftbook.bukkit.util.CraftBookBukkitUtil;
 import com.sk89q.craftbook.mechanics.ic.families.*;
 import com.sk89q.craftbook.mechanics.ic.gates.world.blocks.Planter;
 import com.sk89q.craftbook.mechanics.ic.gates.world.items.crafter.AutomaticCrafter;
-import com.sk89q.craftbook.mechanics.ic.gates.world.miscellaneous.WirelessReceiver;
-import com.sk89q.craftbook.mechanics.ic.gates.world.miscellaneous.WirelessTransmitter;
 import com.sk89q.craftbook.util.RegexUtil;
 import com.sk89q.util.yaml.YAMLFormat;
 import com.sk89q.util.yaml.YAMLProcessor;
@@ -100,11 +98,6 @@ public class ICManager {
     public File getMidiFolder() {
 
         return midiFolder;
-    }
-
-    public File getRomFolder() {
-
-        return romFolder;
     }
 
     /**
@@ -251,30 +244,12 @@ public class ICManager {
     }
 
     /**
-     * Gets called when the IC gets unloaded. This method then takes care of clearing the IC from the cache.
-     *
-     * @param pt of the block break
-     */
-    public static void unloadIC(Location pt) {
-
-        removeCachedIC(pt);
-    }
-
-    /**
      * Clears the IC cache.
      *
      */
     public static void emptyCache() {
 
         cachedICs.clear();
-    }
-
-    /**
-     * Gets the IC Cache map.
-     */
-    public static Map<Location, IC> getCachedICs() {
-
-        return cachedICs;
     }
 
     public static boolean hasCustomPrefix(String prefix) {
@@ -290,8 +265,6 @@ public class ICManager {
     public void registerICs(Server server) {
 
         // SISOs
-        registerIC("MC1110", "transmitter", new WirelessTransmitter.Factory(server), familySISO, familyAISO);
-        registerIC("MC1111", "receiver", new WirelessReceiver.Factory(server), familySISO, familyAISO);
         registerIC("MC1219", "auto craft", new AutomaticCrafter.Factory(server), familySISO, familyAISO);
         registerIC("MC1234", "planter", new Planter.Factory(server), familySISO, familyAISO);
     }
