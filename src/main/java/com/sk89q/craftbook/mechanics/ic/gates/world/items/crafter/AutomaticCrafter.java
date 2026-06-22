@@ -197,7 +197,7 @@ public class AutomaticCrafter extends IC implements SelfTriggeredIC, PipeInputIC
         cachedDispenserOrDropperInventory.setContents(replace);
 
         if(!items.isEmpty()) {
-            if (cachedOutputBlock.getState() instanceof InventoryHolder inventoryHolder) {
+            if (cachedOutputBlock.getState(false) instanceof InventoryHolder inventoryHolder) {
                 var outputInventory = inventoryHolder.getInventory();
 
                 for (ItemStack stack : items)
@@ -259,7 +259,7 @@ public class AutomaticCrafter extends IC implements SelfTriggeredIC, PipeInputIC
         }
 
         if (cachedDispenserOrDropperInventory == null || cachedOutputBlock == null) {
-            BlockState state = cachedDispenserOrDropperBlock.getState();
+            BlockState state = cachedDispenserOrDropperBlock.getState(false);
             cachedDispenserOrDropperInventory = ((InventoryHolder) state).getInventory();
 
             BlockFace facing = ((Directional) cachedDispenserOrDropperBlock.getBlockData()).getFacing();

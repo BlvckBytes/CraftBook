@@ -86,7 +86,7 @@ public class Planter extends IC implements SelfTriggeredIC {
             // just as well, invalidating the cache again; no need to access the inventory repeatedly.
             if (cachedChestInventory == null) {
                 cachedContainerData = containerData;
-                cachedChestInventory = ((Chest) cachedContainerBlock.getState()).getInventory();
+                cachedChestInventory = ((Chest) cachedContainerBlock.getState(false)).getInventory();
             }
 
             var chestSlot = 0;

@@ -170,11 +170,11 @@ public class Pipes implements CraftBookMechanic, PipesApi {
 
             if (
                 CachedBlock.hasHandledOutputInventory(cachedPutBlock)
-                    && putBlock.getState() instanceof InventoryHolder holder
+                    && putBlock.getState(false) instanceof InventoryHolder holder
             ) {
                 leftovers.addAll(InventoryUtil.addItemsToInventory(new WrappedInventory(holder, holder.getInventory()), cachedPutBlock, itemsToPut, EnumSet.noneOf(InventoryAddFlag.class)));
             } else if (CachedBlock.isMaterial(cachedPutBlock, Material.JUKEBOX)) {
-                Jukebox jukebox = (Jukebox) putBlock.getState();
+                Jukebox jukebox = (Jukebox) putBlock.getState(false);
 
                 for (ItemStack item : itemsToPut) {
                     if (jukebox.hasRecord() || !item.getType().isRecord()) {
@@ -401,7 +401,7 @@ public class Pipes implements CraftBookMechanic, PipesApi {
             // that we are also not going to try to put them back - the caller handles leftovers.
         } else if (
             CachedBlock.hasHandledInputInventory(cachedContainerBlock)
-                && containerBlock.getState() instanceof InventoryHolder holder
+                && containerBlock.getState(false) instanceof InventoryHolder holder
         ) {
             inventoryHolder = holder;
             Inventory blockInventory = inventoryHolder.getInventory();
@@ -448,7 +448,7 @@ public class Pipes implements CraftBookMechanic, PipesApi {
                 }
             }
         } else if (CachedBlock.isMaterial(cachedContainerBlock, Material.JUKEBOX)) {
-            jukebox = (Jukebox) containerBlock.getState();
+            jukebox = (Jukebox) containerBlock.getState(false);
 
             if (jukebox.hasRecord()) {
                 var recordItem = jukebox.getRecord();
