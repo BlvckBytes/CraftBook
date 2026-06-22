@@ -1,4 +1,4 @@
-package com.sk89q.craftbook.core.st;
+package com.sk89q.craftbook.mechanics.ic;
 
 import com.sk89q.craftbook.bukkit.CraftBookPlugin;
 import com.sk89q.craftbook.bukkit.util.CraftBookBukkitUtil;
@@ -19,7 +19,6 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.event.world.ChunkUnloadEvent;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.logging.Level;
@@ -78,11 +77,6 @@ public class SelfTriggeringManager implements Listener {
             if(location.getChunk().equals(chunk))
                 unregisterSelfTrigger(location, UnregisterReason.UNLOAD);
         }
-    }
-
-    public Collection<Location> getSelfTriggeringMechanics() {
-
-        return new ArrayList<>(thinkingMechanics);
     }
 
     private Location[] registeredLocations;

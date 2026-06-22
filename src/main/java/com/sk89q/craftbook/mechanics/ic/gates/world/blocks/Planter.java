@@ -334,6 +334,11 @@ public class Planter extends IC implements SelfTriggeredIC {
 
     public static class Factory extends ICFactory {
         @Override
+        public String getId() {
+            return "MC1234";
+        }
+
+        @Override
         public IC create(ChangedSign sign) {
             return new Planter(sign);
         }

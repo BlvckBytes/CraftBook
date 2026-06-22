@@ -21,6 +21,8 @@ import com.sk89q.craftbook.CraftBookMechanic;
 import com.sk89q.craftbook.CraftBookPlayer;
 import com.sk89q.craftbook.bukkit.CraftBookPlugin;
 import com.sk89q.craftbook.bukkit.util.CraftBookBukkitUtil;
+import com.sk89q.craftbook.mechanics.ic.gates.world.blocks.Planter;
+import com.sk89q.craftbook.mechanics.ic.gates.world.items.crafter.AutomaticCrafter;
 import com.sk89q.craftbook.mechanics.pipe.CachedBlock;
 import com.sk89q.craftbook.mechanics.pipe.PipePutEvent;
 import com.sk89q.craftbook.util.EventUtil;
@@ -32,13 +34,17 @@ import com.sk89q.craftbook.util.events.SelfTriggerUnregisterEvent;
 import com.sk89q.craftbook.util.events.SelfTriggerUnregisterEvent.UnregisterReason;
 import com.sk89q.util.yaml.YAMLProcessor;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.SignChangeEvent;
 
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Locale;
+import java.util.Map;
 import java.util.regex.Matcher;
 
 /**
@@ -49,32 +55,61 @@ import java.util.regex.Matcher;
  */
 public class ICMechanic implements CraftBookMechanic {
 
-    /**
-     * Manager of ICs.
-     */
-    protected final ICManager manager;
+    private final Map<Location, IC> icByLocation = new HashMap<>();
+    private final Map<String, ICFactory> factoryByIcId = new LinkedHashMap<>();
+
     public static ICMechanic instance;
 
     public ICMechanic() {
+        registerIC(new AutomaticCrafter.Factory());
+        registerIC(new Planter.Factory());
 
-        manager = new ICManager();
         instance = this;
     }
 
     @Override
     public boolean enable() {
-
-        ICManager.inst().enable();
         return true;
     }
 
     @Override
     public void disable() {
-
-        manager.disable();
+        icByLocation.clear();
     }
 
-    private IC setupIC(Block block, boolean create) {
+    private ICFactory getFactoryById(String id) {
+        return factoryByIcId.get(id.toLowerCase());
+    }
+
+    private IC getCachedIC(Location pt) {
+        return icByLocation.get(pt);
+    }
+
+    private void addCachedIC(Location pt, IC ic) {
+        if(icByLocation.containsKey(pt)) return;
+        icByLocation.put(pt, ic);
+    }
+
+    private void removeCachedIC(Location pt) {
+        icByLocation.remove(pt);
+    }
+
+    public void registerIC(ICFactory factory) {
+        var id = factory.getId();
+        String bracketedId = "[" + id + "]";
+
+        if (factoryByIcId.containsKey(id.toLowerCase()))
+            return;
+
+        Matcher matcher = RegexUtil.IC_PATTERN.matcher(bracketedId);
+
+        if (!matcher.matches())
+            return;
+
+        factoryByIcId.put(id.toLowerCase(), factory);
+    }
+
+    private IC setupOrAccessIC(Block block, boolean create) {
 
         // if we're not looking at a wall sign, it can't be an IC.
         if (!SignUtil.isWallSign(block)) return null;
@@ -87,29 +122,28 @@ public class ICMechanic implements CraftBookMechanic {
         String id = matcher.group(1);
 
         // now actually try to pull up an IC of that id number.
-        RegisteredICFactory registration = manager.get(id);
+        ICFactory factory = getFactoryById(id);
 
-        if (registration == null) {
+        if (factory == null) {
             CraftBookPlugin.logger().warning("\"" + sign.getLine(1) + "\" should be an IC ID, but no IC registered under that ID could be found.");
             block.breakNaturally();
             return null;
         }
 
-        IC ic;
+        var ic = getCachedIC(block.getLocation());
 
         // check if the ic is cached and get that single instance instead of creating a new one
-        if (ICManager.isCachedIC(block.getLocation())) {
-            ic = ICManager.getCachedIC(block.getLocation());
+        if (ic != null) {
             if(ic.getSign().updateSign(sign)) {
-                ICManager.removeCachedIC(block.getLocation());
-                ic = registration.getFactory().create(sign);
+                removeCachedIC(block.getLocation());
+                ic = factory.create(sign);
                 ic.load();
-                ICManager.addCachedIC(block.getLocation(), ic);
+                addCachedIC(block.getLocation(), ic);
             }
         } else if (create) {
-            ic = registration.getFactory().create(sign);
+            ic = factory.create(sign);
             ic.load();
-            ICManager.addCachedIC(block.getLocation(), ic);
+            addCachedIC(block.getLocation(), ic);
         } else
             return null;
 
@@ -124,7 +158,7 @@ public class ICMechanic implements CraftBookMechanic {
 
         if(!EventUtil.passesFilter(event)) return;
 
-        setupIC(event.getBlock(), true);
+        setupOrAccessIC(event.getBlock(), true);
     }
 
     @EventHandler(priority = EventPriority.HIGH)
@@ -132,7 +166,7 @@ public class ICMechanic implements CraftBookMechanic {
 
         if(!EventUtil.passesFilter(event)) return;
 
-        var ic = setupIC(event.getBlock(), false);
+        var ic = setupOrAccessIC(event.getBlock(), false);
 
         if(ic != null)
             ic.unload();
@@ -142,7 +176,7 @@ public class ICMechanic implements CraftBookMechanic {
     public void onThink(SelfTriggerThinkEvent event) {
         if(!EventUtil.passesFilter(event)) return;
 
-        var ic = setupIC(event.getBlock(), true);
+        var ic = setupOrAccessIC(event.getBlock(), true);
 
         if(ic instanceof SelfTriggeredIC selfTriggeredIC) {
             event.setHandled(true);
@@ -154,13 +188,13 @@ public class ICMechanic implements CraftBookMechanic {
     public void onBlockBreak(BlockBreakEvent event) {
         if(!EventUtil.passesFilter(event)) return;
 
-        var ic = setupIC(event.getBlock(), false);
+        var ic = setupOrAccessIC(event.getBlock(), false);
 
         if(ic == null) return;
 
         // remove the ic from cache
         CraftBookPlugin.inst().getSelfTriggerManager().unregisterSelfTrigger(event.getBlock().getLocation(), UnregisterReason.BREAK);
-        ICManager.removeCachedIC(event.getBlock().getLocation());
+        removeCachedIC(event.getBlock().getLocation());
         if(!event.isCancelled())
             ic.unload();
     }
@@ -172,7 +206,7 @@ public class ICMechanic implements CraftBookMechanic {
 
         if (!CachedBlock.isSign(event.getCachedPuttingBlock())) return;
 
-        var ic = setupIC(event.getPuttingBlock(), true);
+        var ic = setupOrAccessIC(event.getPuttingBlock(), true);
 
         if(ic == null) return;
 
@@ -185,10 +219,10 @@ public class ICMechanic implements CraftBookMechanic {
 
         if(!EventUtil.passesFilter(event)) return;
 
-        initializeIC(event.getBlock(), CraftBookPlugin.inst().wrapPlayer(event.getPlayer()), event, false);
+        initializeIC(event.getBlock(), CraftBookPlugin.inst().wrapPlayer(event.getPlayer()), event);
     }
 
-    public void initializeIC(final Block block, final CraftBookPlayer player, final SignChangeEvent event, final boolean shortHand) {
+    public void initializeIC(final Block block, final CraftBookPlayer player, final SignChangeEvent event) {
         Matcher matcher = RegexUtil.IC_PATTERN.matcher(event.getLine(1));
 
         if (!matcher.matches()) {
@@ -203,22 +237,23 @@ public class ICMechanic implements CraftBookMechanic {
             return;
         }
 
-        if (ICManager.isCachedIC(block.getLocation())) {
-            ICManager.getCachedIC(block.getLocation()).unload();
-            ICManager.removeCachedIC(block.getLocation());
+        var cachedIC = getCachedIC(block.getLocation());
+
+        if (cachedIC != null) {
+            cachedIC.unload();
+            removeCachedIC(block.getLocation());
         }
 
-        final RegisteredICFactory registration = manager.get(id);
-        if (registration == null) {
+        var factory = getFactoryById(id);
+
+        if (factory == null) {
             player.printError("Unknown IC detected: " + id);
             SignUtil.cancelSign(event);
             return;
         }
 
-        final ICFactory factory = registration.getFactory();
-
         try {
-            checkPermissions(player, factory, registration.getId().toLowerCase(Locale.ENGLISH));
+            checkPermissions(player, factory, factory.getId().toLowerCase(Locale.ENGLISH));
         } catch (ICVerificationException e) {
             player.printError(e.getMessage());
             SignUtil.cancelSign(event);
@@ -236,19 +271,18 @@ public class ICMechanic implements CraftBookMechanic {
                 return;
             }
 
-            IC ic = registration.getFactory().create(sign);
+            IC ic = factory.create(sign);
             ic.load();
 
-            sign.setLine(1, "[" + registration.getId() + "]");
-            if (!shortHand)
-                sign.setLine(0, ic.getSignTitle());
+            sign.setLine(1, "[" + factory.getId() + "]");
+            sign.setLine(0, ic.getSignTitle());
 
             sign.update(false);
 
             if (ic instanceof SelfTriggeredIC)
                 CraftBookPlugin.inst().getSelfTriggerManager().registerSelfTrigger(block.getLocation());
 
-            player.print(player.translate("mech.ic.create") + " " + registration.getId() + ": " + ic.getTitle() + ".");
+            player.print(player.translate("mech.ic.create") + " " + factory.getId() + ": " + ic.getTitle() + ".");
         });
     }
 

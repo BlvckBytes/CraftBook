@@ -4,8 +4,7 @@ import com.google.common.collect.Sets;
 import com.sk89q.craftbook.CraftBookMechanic;
 import com.sk89q.craftbook.CraftBookPlayer;
 import com.sk89q.craftbook.core.LanguageManager;
-import com.sk89q.craftbook.core.st.MechanicClock;
-import com.sk89q.craftbook.core.st.SelfTriggeringManager;
+import com.sk89q.craftbook.mechanics.ic.SelfTriggeringManager;
 import com.sk89q.craftbook.mechanics.Elevator;
 import com.sk89q.craftbook.mechanics.Teleporter;
 import com.sk89q.craftbook.mechanics.ic.ICMechanic;
@@ -317,7 +316,6 @@ public class CraftBookPlugin extends JavaPlugin {
      * Setup the required components of self-triggered Mechanics.
      */
     private void setupSelfTriggered() {
-        MechanicClock mechanicClock = new MechanicClock();
         selfTriggerManager = new SelfTriggeringManager();
 
         getLogger().info("Enumerating chunks for self-triggered components...");
@@ -342,7 +340,7 @@ public class CraftBookPlugin extends JavaPlugin {
 
         // Set up the clock for self-triggered ICs.
 
-        getServer().getScheduler().runTaskTimer(this, mechanicClock, 0, config.stThinkRate);
+        getServer().getScheduler().runTaskTimer(this, selfTriggerManager::think, 0, config.stThinkRate);
 
         getServer().getPluginManager().registerEvents(selfTriggerManager, this);
     }

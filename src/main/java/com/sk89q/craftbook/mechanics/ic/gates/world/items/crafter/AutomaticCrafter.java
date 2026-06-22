@@ -365,6 +365,11 @@ public class AutomaticCrafter extends IC implements SelfTriggeredIC, PipeInputIC
 
     public static class Factory extends ICFactory {
         @Override
+        public String getId() {
+            return "MC1219";
+        }
+
+        @Override
         public IC create(ChangedSign sign) {
             return new AutomaticCrafter(sign);
         }

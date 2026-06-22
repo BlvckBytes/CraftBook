@@ -20,6 +20,8 @@ import com.sk89q.craftbook.ChangedSign;
 
 public abstract class ICFactory {
 
+    public abstract String getId();
+
     public abstract IC create(ChangedSign sign);
 
     public abstract void verify(ChangedSign sign) throws ICVerificationException;
