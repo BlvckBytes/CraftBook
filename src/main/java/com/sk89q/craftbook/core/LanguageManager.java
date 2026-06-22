@@ -146,9 +146,5 @@ public class LanguageManager {
         put("circuits.pipes.malformed-sign-token", "[Pipe] The token \"{token}\" on line {line} on the sign at {sign_coordinates} on the pipe at {coordinates} is invalid!");
 
         put("vehicles.create-permission","You don't have permissions to create this vehicle mechanic!");
-
-        put("worldedit.ic.unsupported","WorldEdit selection type currently unsupported for IC's!");
-        put("worldedit.ic.notfound","WorldEdit not found!");
-        put("worldedit.ic.noselection","No selection was found!");
     }};
 }

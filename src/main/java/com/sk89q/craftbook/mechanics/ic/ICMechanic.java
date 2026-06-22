@@ -24,7 +24,6 @@ import com.sk89q.craftbook.bukkit.util.CraftBookBukkitUtil;
 import com.sk89q.craftbook.mechanics.pipe.CachedBlock;
 import com.sk89q.craftbook.mechanics.pipe.PipePutEvent;
 import com.sk89q.craftbook.util.EventUtil;
-import com.sk89q.craftbook.util.ICUtil;
 import com.sk89q.craftbook.util.ICUtil.LocationCheckType;
 import com.sk89q.craftbook.util.RegexUtil;
 import com.sk89q.craftbook.util.SignUtil;
@@ -345,9 +344,6 @@ public class ICMechanic implements CraftBookMechanic {
 
             Bukkit.getServer().getScheduler().runTask(CraftBookPlugin.inst(), () -> {
                 ChangedSign sign = new ChangedSign(event.getBlock(), event.getLines());
-
-                //WorldEdit offset/radius tools.
-                ICUtil.parseSignFlags(player, sign);
 
                 try {
                     factory.verify(sign);
