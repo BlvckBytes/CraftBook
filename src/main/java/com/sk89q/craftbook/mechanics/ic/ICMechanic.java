@@ -355,7 +355,6 @@ public class ICMechanic extends AbstractCraftBookMechanic {
 
                 try {
                     factory.verify(sign);
-                    factory.checkPlayer(sign, player);
                 } catch (ICVerificationException e) {
                     player.printError(e.getMessage());
                     event.getBlock().breakNaturally();

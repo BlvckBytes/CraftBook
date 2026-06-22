@@ -44,9 +44,6 @@ public abstract class AbstractICFactory implements ICFactory {
     public void verify(ChangedSign sign) throws ICVerificationException {}
 
     @Override
-    public void checkPlayer(ChangedSign sign, CraftBookPlayer player) {}
-
-    @Override
     public void load() {}
 
     @Override
