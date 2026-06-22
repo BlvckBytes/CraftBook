@@ -173,18 +173,6 @@ public class Pipes implements CraftBookMechanic, PipesApi {
                     && putBlock.getState(false) instanceof InventoryHolder holder
             ) {
                 leftovers.addAll(InventoryUtil.addItemsToInventory(new WrappedInventory(holder, holder.getInventory()), cachedPutBlock, itemsToPut, EnumSet.noneOf(InventoryAddFlag.class)));
-            } else if (CachedBlock.isMaterial(cachedPutBlock, Material.JUKEBOX)) {
-                Jukebox jukebox = (Jukebox) putBlock.getState(false);
-
-                for (ItemStack item : itemsToPut) {
-                    if (jukebox.hasRecord() || !item.getType().isRecord()) {
-                        leftovers.add(item);
-                        continue;
-                    }
-
-                    jukebox.setRecord(item);
-                    jukebox.update();
-                }
             } else if (isSubPipe) {
                 // Handle sub-pipes which continue the walk from here on forwards with a (possibly) limited set of items.
                 List<ItemStack> subPipeItems = new ArrayList<>(itemsToPut);
@@ -392,7 +380,6 @@ public class Pipes implements CraftBookMechanic, PipesApi {
 
         InventoryHolder inventoryHolder = null;
         Block secondaryInventoryBlock = null;
-        Jukebox jukebox = null;
         Levelled levelled = null;
 
         //noinspection StatementWithEmptyBody
@@ -445,18 +432,6 @@ public class Pipes implements CraftBookMechanic, PipesApi {
 
                     if (pipeStackPerPull)
                         break;
-                }
-            }
-        } else if (CachedBlock.isMaterial(cachedContainerBlock, Material.JUKEBOX)) {
-            jukebox = (Jukebox) containerBlock.getState(false);
-
-            if (jukebox.hasRecord()) {
-                var recordItem = jukebox.getRecord();
-
-                if (predicateEvent.testItem(recordItem)) {
-                    itemsInPipe.add(recordItem);
-                    jukebox.setRecord(null);
-                    jukebox.update();
                 }
             }
         } else if (CachedBlock.isMaterial(cachedContainerBlock, Material.COMPOSTER)) {
@@ -534,16 +509,6 @@ public class Pipes implements CraftBookMechanic, PipesApi {
             } else if (inventoryHolder != null) {
                 // Allow to put items that have been sucked from the result-slot back into the furnace.
                 leftovers.addAll(InventoryUtil.addItemsToInventory(new WrappedInventory(inventoryHolder, inventoryHolder.getInventory()), cachedContainerBlock, itemsInPipe, EnumSet.of(InventoryAddFlag.ADD_TO_FURNACE_RESULT)));
-            } else if (jukebox != null) {
-                for (ItemStack item : itemsInPipe) {
-                    if (jukebox.hasRecord() || !item.getType().isRecord()) {
-                        leftovers.add(item);
-                        continue;
-                    }
-
-                    jukebox.setRecord(item);
-                    jukebox.update();
-                }
             } else if (levelled != null) {
                 for (ItemStack item : itemsInPipe) {
                     if (levelled.getLevel() == levelled.getMaximumLevel() || item.getType() != Material.BONE_MEAL) {
