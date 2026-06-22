@@ -172,7 +172,7 @@ public class Pipes implements CraftBookMechanic, PipesApi {
                 CachedBlock.hasHandledOutputInventory(cachedPutBlock)
                     && putBlock.getState() instanceof InventoryHolder holder
             ) {
-                leftovers.addAll(InventoryUtil.addItemsToInventory(holder.getInventory(), cachedPutBlock, itemsToPut, EnumSet.noneOf(InventoryAddFlag.class)));
+                leftovers.addAll(InventoryUtil.addItemsToInventory(new WrappedInventory(holder, holder.getInventory()), cachedPutBlock, itemsToPut, EnumSet.noneOf(InventoryAddFlag.class)));
             } else if (CachedBlock.isMaterial(cachedPutBlock, Material.JUKEBOX)) {
                 Jukebox jukebox = (Jukebox) putBlock.getState();
 
@@ -533,7 +533,7 @@ public class Pipes implements CraftBookMechanic, PipesApi {
                 leftovers.addAll(itemsInPipe);
             } else if (inventoryHolder != null) {
                 // Allow to put items that have been sucked from the result-slot back into the furnace.
-                leftovers.addAll(InventoryUtil.addItemsToInventory(inventoryHolder.getInventory(), cachedContainerBlock, itemsInPipe, EnumSet.of(InventoryAddFlag.ADD_TO_FURNACE_RESULT)));
+                leftovers.addAll(InventoryUtil.addItemsToInventory(new WrappedInventory(inventoryHolder, inventoryHolder.getInventory()), cachedContainerBlock, itemsInPipe, EnumSet.of(InventoryAddFlag.ADD_TO_FURNACE_RESULT)));
             } else if (jukebox != null) {
                 for (ItemStack item : itemsInPipe) {
                     if (jukebox.hasRecord() || !item.getType().isRecord()) {

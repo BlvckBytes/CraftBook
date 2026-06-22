@@ -7,6 +7,7 @@ import com.sk89q.craftbook.mechanics.ic.*;
 import com.sk89q.craftbook.mechanics.pipe.InventoryUtil;
 import com.sk89q.craftbook.mechanics.pipe.PipePutEvent;
 import com.sk89q.craftbook.mechanics.pipe.PipeRequestEvent;
+import com.sk89q.craftbook.util.WrappedInventory;
 import com.sk89q.craftbook.util.ItemUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -383,7 +384,11 @@ public class AutomaticCrafter extends IC implements SelfTriggeredIC, PipeInputIC
         if (updateCachesAndGetIfIsMalformed())
             return;
 
-        var remainders = InventoryUtil.distributeItemsToMakeEvenAndGetRemainders(event.getItems(), cachedDispenserOrDropperInventory, (slot, contents) -> ItemUtil.isStackValid(contents));
+        var remainders = InventoryUtil.distributeItemsToMakeEvenAndGetRemainders(
+          event.getItems(),
+          new WrappedInventory(null, cachedDispenserOrDropperInventory),
+          (slot, contents) -> ItemUtil.isStackValid(contents)
+        );
 
         event.getItems().clear();
         event.setItems(remainders);
