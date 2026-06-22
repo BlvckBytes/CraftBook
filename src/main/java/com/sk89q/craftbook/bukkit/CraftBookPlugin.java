@@ -4,7 +4,6 @@ import com.google.common.collect.Sets;
 import com.sk89q.bukkit.util.CommandsManagerRegistration;
 import com.sk89q.craftbook.CraftBookMechanic;
 import com.sk89q.craftbook.CraftBookPlayer;
-import com.sk89q.craftbook.bukkit.util.CraftBookBukkitUtil;
 import com.sk89q.craftbook.core.LanguageManager;
 import com.sk89q.craftbook.core.st.MechanicClock;
 import com.sk89q.craftbook.core.st.SelfTriggeringManager;
@@ -61,11 +60,9 @@ import java.util.Map;
 import java.util.Random;
 import java.util.TreeMap;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.function.Function;
 import java.util.jar.JarFile;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 
 public class CraftBookPlugin extends JavaPlugin {
@@ -453,22 +450,8 @@ public class CraftBookPlugin extends JavaPlugin {
         return true;
     }
 
-    /**
-     * Registers events used by the main CraftBook plugin. Also registers PluginMetrics
-     */
     public void registerGlobalEvents() {
         getServer().getPluginManager().registerEvents(managerAdapter, inst());
-
-        try {
-            org.bstats.bukkit.Metrics metrics = new org.bstats.bukkit.Metrics(this, 3319);
-
-            metrics.addCustomChart(new org.bstats.charts.AdvancedPie("language",
-                    () -> languageManager.getLanguages().stream().collect(Collectors.toMap(Function.identity(), o -> 1))));
-            metrics.addCustomChart(new org.bstats.charts.SimpleBarChart("enabled_mechanics",
-                    () -> mechanics.stream().collect(Collectors.toMap(mech -> mech.getClass().getSimpleName(), o -> 1))));
-        } catch (Throwable e1) {
-            CraftBookBukkitUtil.printStacktrace(e1);
-        }
     }
 
     /**

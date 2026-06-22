@@ -83,10 +83,6 @@ allprojects {
             url = 'https://jitpack.io'
         }
         maven {
-			name = 'bstats repo'
-            url = 'https://repo.codemc.org/repository/maven-public'
-		}
-        maven {
             name "papermc"
             url "https://repo.papermc.io/repository/maven-public/"
         }
@@ -101,7 +97,6 @@ allprojects {
         compileOnly 'it.unimi.dsi:fastutil'
 
         implementation 'org.jetbrains:annotations:24.1.0'
-        implementation 'org.bstats:bstats-bukkit:2.2.1'
 
         testImplementation 'org.spigotmc:spigot-api:1.21.3-R0.1-SNAPSHOT'
         testImplementation 'com.sk89q.worldedit:worldedit-core:7.3.8-SNAPSHOT'
@@ -126,10 +121,8 @@ allprojects {
     shadowJar {
         archiveClassifier.set('dist')
         dependencies {
-            include(dependency("org.bstats:"))
             include(dependency("org.jetbrains:annotations"))
         }
-        relocate 'org.bstats', 'com.sk89q.craftbook.bukkit.bstats'
         relocate 'org.jetbrains.annotations', 'com.sk89q.craftbook.util.jetbrains_annotations'
         relocate 'org.intellij.lang.annotations', 'com.sk89q.craftbook.util.intellij_annotations'
         exclude 'GradleStart**'
