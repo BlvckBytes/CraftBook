@@ -17,7 +17,6 @@
 package com.sk89q.craftbook.mechanics.ic;
 
 import com.sk89q.craftbook.bukkit.CraftBookPlugin;
-import com.sk89q.craftbook.bukkit.util.CraftBookBukkitUtil;
 import com.sk89q.craftbook.mechanics.ic.gates.world.blocks.Planter;
 import com.sk89q.craftbook.mechanics.ic.gates.world.items.crafter.AutomaticCrafter;
 import com.sk89q.craftbook.util.RegexUtil;
@@ -36,8 +35,6 @@ import java.util.regex.Matcher;
  */
 public class ICManager {
 
-    private ICConfiguration icConfiguration;
-
     private static ICManager INSTANCE;
 
     public ICManager() {
@@ -52,12 +49,6 @@ public class ICManager {
         CraftBookPlugin.inst().createDefaultConfiguration(new File(CraftBookPlugin.inst().getDataFolder(), "ic-config.yml"), "ic-config.yml");
 
         registerICs(CraftBookPlugin.inst().getServer());
-
-        try {
-            icConfiguration.load();
-        } catch (Throwable e) {
-            CraftBookBukkitUtil.printStacktrace(e);
-        }
     }
 
     public void disable() {
@@ -65,7 +56,6 @@ public class ICManager {
         for(RegisteredICFactory factory : registered.values()) {
             factory.getFactory().unload();
         }
-        icConfiguration = null;
         emptyCache();
         INSTANCE = null;
     }

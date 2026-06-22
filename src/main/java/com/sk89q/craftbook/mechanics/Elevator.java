@@ -16,8 +16,8 @@
 
 package com.sk89q.craftbook.mechanics;
 
-import com.sk89q.craftbook.AbstractCraftBookMechanic;
 import com.sk89q.craftbook.ChangedSign;
+import com.sk89q.craftbook.CraftBookMechanic;
 import com.sk89q.craftbook.CraftBookPlayer;
 import com.sk89q.craftbook.bukkit.BukkitCraftBookPlayer;
 import com.sk89q.craftbook.bukkit.CraftBookPlugin;
@@ -61,7 +61,7 @@ import java.util.*;
  * @author sk89q
  * @author hash
  */
-public class Elevator extends AbstractCraftBookMechanic {
+public class Elevator implements CraftBookMechanic {
 
     private static final BlockFace[] SIGN_MOUNT_FACES = new BlockFace[] {
       BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST

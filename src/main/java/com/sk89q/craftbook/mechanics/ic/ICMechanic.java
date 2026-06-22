@@ -16,8 +16,8 @@
 
 package com.sk89q.craftbook.mechanics.ic;
 
-import com.sk89q.craftbook.AbstractCraftBookMechanic;
 import com.sk89q.craftbook.ChangedSign;
+import com.sk89q.craftbook.CraftBookMechanic;
 import com.sk89q.craftbook.CraftBookPlayer;
 import com.sk89q.craftbook.bukkit.CraftBookPlugin;
 import com.sk89q.craftbook.bukkit.util.CraftBookBukkitUtil;
@@ -53,7 +53,7 @@ import java.util.regex.Matcher;
  *
  * @author sk89q
  */
-public class ICMechanic extends AbstractCraftBookMechanic {
+public class ICMechanic implements CraftBookMechanic {
 
     /**
      * Manager of ICs.

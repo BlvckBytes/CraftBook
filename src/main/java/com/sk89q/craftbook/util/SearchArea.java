@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 
 public final class SearchArea {
 
@@ -213,9 +214,11 @@ public final class SearchArea {
         } else
             return null;
 
-        int x = xMin + CraftBookPlugin.inst().getRandom().nextInt(xMax - xMin + 1);
-        int y = yMin + CraftBookPlugin.inst().getRandom().nextInt(yMax - yMin + 1);
-        int z = zMin + CraftBookPlugin.inst().getRandom().nextInt(zMax - zMin + 1);
+        var random = ThreadLocalRandom.current();
+
+        int x = xMin + random.nextInt(xMax - xMin + 1);
+        int y = yMin + random.nextInt(yMax - yMin + 1);
+        int z = zMin + random.nextInt(zMax - zMin + 1);
         Location loc = new Location(getWorld(), x, y, z);
         if(!isWithinArea(loc))
             return null;

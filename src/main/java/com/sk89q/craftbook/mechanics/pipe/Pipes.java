@@ -1,6 +1,6 @@
 package com.sk89q.craftbook.mechanics.pipe;
 
-import com.sk89q.craftbook.AbstractCraftBookMechanic;
+import com.sk89q.craftbook.CraftBookMechanic;
 import com.sk89q.craftbook.CraftBookPlayer;
 import com.sk89q.craftbook.bukkit.CraftBookPlugin;
 import com.sk89q.craftbook.mechanics.pipe.notification.*;
@@ -28,7 +28,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.*;
 import java.util.logging.Level;
 
-public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
+public class Pipes implements CraftBookMechanic, PipesApi {
 
     private static final BlockFace[] DROP_ITEM_FACES = new BlockFace[] {
       BlockFace.UP, BlockFace.DOWN,
@@ -60,9 +60,12 @@ public class Pipes extends AbstractCraftBookMechanic implements PipesApi {
     }
 
     @Override
-    public void disable() {
-        super.disable();
+    public boolean enable() {
+        return true;
+    }
 
+    @Override
+    public void disable() {
         cacheRegistry.disable();
     }
 

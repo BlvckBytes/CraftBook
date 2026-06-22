@@ -51,17 +51,5 @@ language: en_US
 languages:
 - en_US
 
-# If enabled, CraftBook will scan messages sent to players for localizable text, instead of just checking if the entire message is localizable.
-scan-text-for-localization: false
-
-# Enables random easter eggs. Can be from console messages on startup for a special occasion, to funny little effects with IC's and other mechanics (Always harmless, won't mess anything up)
-easter-eggs: false
-
-# Random numbers are much more random, with a small cost to CPU usage.
-realistic-randoms: false
-
 # Show messages when a player does not have permission to do something.
 show-permission-messages: true
-
-# Causes mechanics to attempt to convert names to use CBIDs. This can and should be disabled after you believe your servers transition to UUIDs v Names is complete.
-convert-names-to-cbids: false

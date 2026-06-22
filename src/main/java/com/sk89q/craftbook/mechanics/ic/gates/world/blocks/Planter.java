@@ -1,7 +1,6 @@
 package com.sk89q.craftbook.mechanics.ic.gates.world.blocks;
 
 import com.sk89q.craftbook.ChangedSign;
-import com.sk89q.craftbook.bukkit.CraftBookPlugin;
 import com.sk89q.craftbook.bukkit.util.CraftBookBukkitUtil;
 import com.sk89q.craftbook.mechanics.ic.*;
 import com.sk89q.craftbook.util.ItemSyntax;
@@ -23,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Sapling planter Hybrid variant of MCX206 and MCX203 chest collector When there is a sapling or seed item drop in
@@ -307,7 +307,7 @@ public class Planter extends AbstractIC implements SelfTriggeredIC {
             case COCOA_BEANS:
                 List<BlockFace> faces =
                         new ArrayList<>(Arrays.asList(BlockFace.EAST, BlockFace.WEST, BlockFace.NORTH, BlockFace.SOUTH));
-                Collections.shuffle(faces, CraftBookPlugin.inst().getRandom());
+                Collections.shuffle(faces, ThreadLocalRandom.current());
                 for(BlockFace face : faces) {
                     if(block.getRelative(face).getType() == Material.JUNGLE_LOG) {
                         block.setType(Material.COCOA);

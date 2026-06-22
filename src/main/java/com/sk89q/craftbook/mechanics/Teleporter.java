@@ -1,7 +1,7 @@
 package com.sk89q.craftbook.mechanics;
 
-import com.sk89q.craftbook.AbstractCraftBookMechanic;
 import com.sk89q.craftbook.ChangedSign;
+import com.sk89q.craftbook.CraftBookMechanic;
 import com.sk89q.craftbook.CraftBookPlayer;
 import com.sk89q.craftbook.bukkit.CraftBookPlugin;
 import com.sk89q.craftbook.bukkit.util.CraftBookBukkitUtil;
@@ -37,7 +37,7 @@ import java.util.UUID;
  * @author hash
  * @author Me4502
  */
-public class Teleporter extends AbstractCraftBookMechanic {
+public class Teleporter implements CraftBookMechanic {
 
     private record BlockOffset(int modX, int modY, int modZ) {
         BlockOffset(BlockFace face) {
@@ -330,6 +330,14 @@ public class Teleporter extends AbstractCraftBookMechanic {
 
     private boolean requireSign;
     private int maxRange;
+
+    @Override
+    public boolean enable() {
+        return true;
+    }
+
+    @Override
+    public void disable() {}
 
     @Override
     public void loadConfiguration (YAMLProcessor config, String path) {

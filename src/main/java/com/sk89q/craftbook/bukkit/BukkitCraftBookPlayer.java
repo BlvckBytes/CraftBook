@@ -20,9 +20,7 @@ import com.sk89q.craftbook.CraftBookPlayer;
 import com.sk89q.craftbook.bukkit.util.CraftBookBukkitUtil;
 import com.sk89q.craftbook.core.LanguageManager;
 import com.sk89q.worldedit.bukkit.BukkitPlayer;
-import com.sk89q.worldedit.util.HandSide;
 import com.sk89q.worldedit.util.Location;
-import com.sk89q.worldedit.world.item.ItemType;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 import org.bukkit.metadata.FixedMetadataValue;
@@ -86,20 +84,7 @@ public final class BukkitCraftBookPlayer extends BukkitPlayer implements CraftBo
     }
 
     @Override
-    public boolean isHoldingBlock() {
-        ItemType mainitem = getItemInHand(HandSide.MAIN_HAND).getType();
-        ItemType offitem = getItemInHand(HandSide.OFF_HAND).getType();
-        return (mainitem.hasBlockType() && !mainitem.getBlockType().getMaterial().isAir())
-                || (offitem.hasBlockType() && !offitem.getBlockType().getMaterial().isAir());
-    }
-
-    @Override
     public String translate(String message) {
         return plugin.getLanguageManager().getString(message, LanguageManager.getPlayersLanguage(player));
-    }
-
-    @Override
-    public boolean isSneaking () {
-        return player.isSneaking();
     }
 }

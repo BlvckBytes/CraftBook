@@ -30,24 +30,8 @@ public class InvalidMechanismException extends CraftbookException {
 
     private static final long serialVersionUID = -6917162805444409894L;
 
-    public InvalidMechanismException() {
-
-        super();
-    }
-
-    public InvalidMechanismException(String message, Throwable cause) {
-
-        super(message, cause);
-    }
-
     public InvalidMechanismException(String message) {
-
         super(message);
-    }
-
-    public InvalidMechanismException(Throwable cause) {
-
-        super(cause);
     }
 
     @Override

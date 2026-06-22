@@ -19,21 +19,13 @@ package com.sk89q.craftbook;
 import com.sk89q.worldedit.entity.Player;
 import com.sk89q.worldedit.util.Location;
 
-/**
- * Holds an abstraction for players.
- *
- */
 public interface CraftBookPlayer extends Player {
 
-    void teleport(Location location); // TODO Add to WorldEdit
+    void teleport(Location location);
 
     void temporarilyAttachMetadataFlag(String key, boolean value, Runnable runnable);
 
-    boolean isSneaking(); // TODO Add to WorldEdit
-
-    boolean isInsideVehicle(); // TODO Add to WorldEdit
-
-    boolean isHoldingBlock(); // TODO Add to WorldEdit
+    boolean isInsideVehicle();
 
     String translate(String message);
 }

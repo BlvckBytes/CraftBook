@@ -10,21 +10,16 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 
 /**
  * @author Me4502
  */
 public class LanguageManager {
 
-    private Map<String, YAMLProcessor> languageMap = new HashMap<>();
+    private final Map<String, YAMLProcessor> languageMap = new HashMap<>();
 
     public void init() {
         checkForLanguages();
-    }
-
-    public void close() {
-
     }
 
     private void checkForLanguages() {
@@ -67,15 +62,7 @@ public class LanguageManager {
         YAMLProcessor languageData = languageMap.get(language.toLowerCase());
         String def = defaultMessages.get(message);
         if(languageData == null) {
-            if(!CraftBookPlugin.inst().getConfiguration().languageScanText || def != null) {
-                return def == null ? message : def;
-            } else {
-                String trans = message;
-                for(Entry<String, String> tran : defaultMessages.entrySet()) {
-                    trans = trans.replace(tran.getKey(), tran.getValue());
-                }
-                return trans;
-            }
+          return def == null ? message : def;
         } else {
             String translated;
             if(def == null || languageData.getString(message) != null)
@@ -84,20 +71,10 @@ public class LanguageManager {
                 translated = languageData.getString(message, def);
             }
 
-            if(!CraftBookPlugin.inst().getConfiguration().languageScanText || translated != null) {
-                if(translated != null)
-                    return translated;
-                else
-                    return def == null ? message : def;
-            } else {
-                String trans = message;
-                for(String tran : languageData.getMap().keySet()) {
-                    String trand = defaultMessages.get(tran) != null ? languageData.getString(tran, defaultMessages.get(tran)) : languageData.getString(tran);
-                    if(tran == null || trand == null) continue;
-                    trans = trans.replace(tran, trand);
-                }
-                return trans;
-            }
+          if (translated != null)
+            return translated;
+          else
+            return def == null ? message : def;
         }
     }
 
@@ -105,13 +82,7 @@ public class LanguageManager {
         return p.getLocale();
     }
 
-    public Set<String> getLanguages() {
-
-        return languageMap.keySet();
-    }
-
-    @SuppressWarnings("serial")
-    public static final HashMap<String, String> defaultMessages = new HashMap<String, String>(32, 1.0f) {{
+    public static final HashMap<String, String> defaultMessages = new HashMap<>(32, 1.0f) {{
         put("area.permissions", "You don't have permissions to do that in this area!");
         put("area.use-permissions", "You don't have permissions to use that in this area!");
         put("area.break-permissions", "You don't have permissions to break that in this area!");
@@ -166,7 +137,6 @@ public class LanguageManager {
         put("mech.xp-storer.success", "You package your experience into a bottle!");
         put("mech.xp-storer.not-enough-xp", "You do not have enough experience to fill a bottle!");
 
-
         put("circuits.pipes.create","Pipe created!");
         put("circuits.pipes.pipe-not-found", "Failed to find pipe!");
         put("circuits.pipes.warmup-notification", "[Pipe] Warming up... {tubes}T {pistons}P");
@@ -175,9 +145,7 @@ public class LanguageManager {
         put("circuits.pipes.no-sign-encountered", "[Pipe] Could not locate a valid sign anywhere on the pipe at {coordinates}; dropping item at input!");
         put("circuits.pipes.malformed-sign-token", "[Pipe] The token \"{token}\" on line {line} on the sign at {sign_coordinates} on the pipe at {coordinates} is invalid!");
 
-
         put("vehicles.create-permission","You don't have permissions to create this vehicle mechanic!");
-
 
         put("worldedit.ic.unsupported","WorldEdit selection type currently unsupported for IC's!");
         put("worldedit.ic.notfound","WorldEdit not found!");

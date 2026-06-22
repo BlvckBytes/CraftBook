@@ -38,15 +38,11 @@ import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.TreeMap;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.jar.JarFile;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -68,11 +64,6 @@ public class CraftBookPlugin extends JavaPlugin {
      * The language manager
      */
     private LanguageManager languageManager;
-
-    /**
-     * The random
-     */
-    private Random random;
 
     /**
      * Handles all configuration.
@@ -155,13 +146,6 @@ public class CraftBookPlugin extends JavaPlugin {
 
         PermissionsResolverManager.initialize(this);
 
-        if(config.realisticRandoms)
-            try {
-                random = SecureRandom.getInstance("SHA1PRNG");
-            } catch (NoSuchAlgorithmException e1) {
-                getLogger().severe(getStackTrace(e1));
-            }
-
         // Let's start the show
         setupCraftBook();
         registerGlobalEvents();
@@ -206,9 +190,7 @@ public class CraftBookPlugin extends JavaPlugin {
         Bukkit.getScheduler().runTaskLater(this, RecipeCache::update, 20L);
     }
 
-    private YAMLProcessor mechanismsConfig;
-
-    /**
+  /**
      * Register basic things to the plugin. For example, languages.
      */
     public void setupCraftBook() {
@@ -219,7 +201,7 @@ public class CraftBookPlugin extends JavaPlugin {
         mechanics = new ArrayList<>();
 
         createDefaultConfiguration(new File(getDataFolder(), "mechanisms.yml"), "mechanisms.yml");
-        mechanismsConfig = new YAMLProcessor(new File(getDataFolder(), "mechanisms.yml"), true, YAMLFormat.EXTENDED);
+        var mechanismsConfig = new YAMLProcessor(new File(getDataFolder(), "mechanisms.yml"), true, YAMLFormat.EXTENDED);
 
         try {
             mechanismsConfig.load();
@@ -284,9 +266,6 @@ public class CraftBookPlugin extends JavaPlugin {
      */
     @Override
     public void onDisable() {
-
-        if(languageManager != null)
-            languageManager.close();
         if(mechanics != null) {
             for(CraftBookMechanic mech : mechanics)
                 mech.disable();
@@ -302,14 +281,6 @@ public class CraftBookPlugin extends JavaPlugin {
     public static CraftBookPlugin inst() {
 
         return instance;
-    }
-
-    public static void setInstance(CraftBookPlugin instance) throws IllegalArgumentException {
-
-        if(CraftBookPlugin.instance != null)
-            throw new IllegalArgumentException("Instance already set!");
-
-        CraftBookPlugin.instance = instance;
     }
 
     /**
@@ -377,10 +348,6 @@ public class CraftBookPlugin extends JavaPlugin {
         return config;
     }
 
-    public YAMLProcessor getMechanismsConfig() {
-        return this.mechanismsConfig;
-    }
-
     /**
      * This method is used to get the CraftBook {@link LanguageManager}.
      *
@@ -389,17 +356,6 @@ public class CraftBookPlugin extends JavaPlugin {
     public LanguageManager getLanguageManager() {
 
         return languageManager;
-    }
-
-    /**
-     * This method is used to get CraftBook's {@link Random}.
-     *
-     * @return CraftBook's {@link Random}
-     */
-    public Random getRandom() {
-        if(random == null)
-            return ThreadLocalRandom.current(); // If none is set, use a thread local random.
-        return random;
     }
 
     public boolean hasPermission(Permissible permissible, String perm) {
@@ -414,9 +370,8 @@ public class CraftBookPlugin extends JavaPlugin {
         }
 
         // Invoke the permissions resolver
-        if (permissible instanceof Player) {
-            Player player = (Player) permissible;
-            return PermissionsResolverManager.getInstance().hasPermission(player.getWorld().getName(), player, perm);
+        if (permissible instanceof Player player) {
+          return PermissionsResolverManager.getInstance().hasPermission(player.getWorld().getName(), player, perm);
         }
 
         return false;

@@ -26,13 +26,9 @@ public class BukkitConfiguration {
     public boolean pedanticBlockChecks;
     public boolean showPermissionMessages;
     public long signClickTimeout;
-    public boolean convertNamesToCBID;
-
-    public boolean realisticRandoms;
 
     public String language;
     public List<String> languages;
-    public boolean languageScanText;
 
     public YAMLProcessor config;
     public Logger logger;
@@ -121,33 +117,8 @@ public class BukkitConfiguration {
         config.setComment("languages", "A list of languages supported by craftbook, if a user requests a language not listed... They will see default.");
         languages = config.getStringList("languages", Collections.singletonList("en_US"));
 
-        config.setComment("scan-text-for-localization", "If enabled, CraftBook will scan messages sent to players for localizable text, instead of just checking if the entire message is localizable.");
-        languageScanText = config.getBoolean("scan-text-for-localization", false);
-
-        config.setComment("realistic-randoms", "Random numbers are much more random, with a small cost to CPU usage.");
-        realisticRandoms = config.getBoolean("realistic-randoms", false);
-
         config.setComment("show-permission-messages", "Show messages when a player does not have permission to do something.");
         showPermissionMessages = config.getBoolean("show-permission-messages", true);
-
-        config.setComment("convert-names-to-cbids", "Causes mechanics to attempt to convert names to use CBIDs. This can and should be disabled after you believe your servers transition to UUIDs v Names is complete.");
-        convertNamesToCBID = config.getBoolean("convert-names-to-cbids", false);
-
-        config.save();
-    }
-
-    public void save() {
-
-        config.setProperty("enabled-mechanics", enabledMechanics);
-
-        List<String> disabledMechanics = new ArrayList<>();
-
-        for(String mech : CraftBookPlugin.availableMechanics.keySet()) {
-            if(!enabledMechanics.contains(mech))
-                disabledMechanics.add(mech);
-        }
-
-        config.setProperty("disabled-mechanics", disabledMechanics);
 
         config.save();
     }
