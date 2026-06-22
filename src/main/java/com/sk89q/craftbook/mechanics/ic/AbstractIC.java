@@ -24,7 +24,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.block.BlockBreakEvent;
 
 import com.sk89q.craftbook.ChangedSign;
-import com.sk89q.craftbook.util.RegexUtil;
 import com.sk89q.craftbook.util.SignUtil;
 
 /**
@@ -77,12 +76,7 @@ public abstract class AbstractIC implements IC {
     }
 
     @Override
-    public void onRightClick(Player p) {
-
-        if (p.isSneaking()) {
-            ICDocsParser.generateICDocs(p, RegexUtil.RIGHT_BRACKET_PATTERN.split(RegexUtil.LEFT_BRACKET_PATTERN.split(getSign().getLine(1))[1])[0]);
-        }
-    }
+    public void onRightClick(Player p) {}
 
     @Override
     public void onICBreak(BlockBreakEvent event) {
