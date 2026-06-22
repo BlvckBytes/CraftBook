@@ -5,9 +5,7 @@ import com.sk89q.craftbook.bukkit.CraftBookPlugin;
 import com.sk89q.craftbook.bukkit.util.CraftBookBukkitUtil;
 import com.sk89q.craftbook.mechanics.ic.AbstractICFactory;
 import com.sk89q.craftbook.mechanics.ic.AbstractSelfTriggeredIC;
-import com.sk89q.craftbook.mechanics.ic.ChipState;
 import com.sk89q.craftbook.mechanics.ic.IC;
-import com.sk89q.craftbook.mechanics.ic.ICFactory;
 import com.sk89q.craftbook.mechanics.ic.ICVerificationException;
 import com.sk89q.craftbook.util.ItemSyntax;
 import com.sk89q.craftbook.util.ItemUtil;
@@ -41,9 +39,9 @@ public class Planter extends AbstractSelfTriggeredIC {
     private Block cachedContainerBlock;
     private Inventory cachedChestInventory;
 
-    public Planter(Server server, ChangedSign block, ICFactory factory) {
+    public Planter(Server server, ChangedSign block) {
 
-        super(server, block, factory);
+        super(server, block);
     }
 
     ItemStack item;
@@ -74,22 +72,13 @@ public class Planter extends AbstractSelfTriggeredIC {
     }
 
     @Override
-    public void trigger(ChipState chip) {
-
-        if (chip.getInput(0)) chip.setOutput(0, plant());
-    }
-
-    @Override
-    public void think(ChipState state) {
-        if(state.getInput(0)) return;
-
+    public void think() {
         for (int i = 0; i < 4; i++)
             plant();
     }
 
-    public boolean plant() {
-
-        if (item != null && !plantableItem(item)) return false;
+    public void plant() {
+        if (item != null && !plantableItem(item)) return;
 
         if (cachedContainerBlock == null)
             cachedContainerBlock = getBackBlock().getRelative(0, 1, 0);
@@ -114,8 +103,7 @@ public class Planter extends AbstractSelfTriggeredIC {
 
                 // Current slot is unusable for planting - skip over
                 if (
-                  chestItem == null
-                    || !ItemUtil.isStackValid(chestItem)
+                  !ItemUtil.isStackValid(chestItem)
                     || !plantableItem(chestItem)
                     || (item != null && !item.isSimilar(chestItem))
                 ) {
@@ -135,11 +123,11 @@ public class Planter extends AbstractSelfTriggeredIC {
 
                 if (chestItem.getAmount() == 1) {
                     cachedChestInventory.setItem(chestSlot, null);
-                    return true;
+                    return;
                 }
 
                 chestItem.setAmount(chestItem.getAmount() - 1);
-                return true;
+                return;
             }
         }
 
@@ -185,11 +173,9 @@ public class Planter extends AbstractSelfTriggeredIC {
                 entityStack.setAmount(entityStack.getAmount() - 1);
                 itemEntity.setItemStack(entityStack);
 
-                return true;
+                return;
             }
         }
-
-        return false;
     }
 
     @Override
@@ -363,20 +349,7 @@ public class Planter extends AbstractSelfTriggeredIC {
 
         @Override
         public IC create(ChangedSign sign) {
-
-            return new Planter(getServer(), sign, this);
-        }
-
-        @Override
-        public String getShortDescription() {
-
-            return "Plants plantable things at set offset.";
-        }
-
-        @Override
-        public String[] getLineHelp() {
-
-            return new String[] {"+oItem to plant id{:data}", "SearchArea"};
+            return new Planter(getServer(), sign);
         }
 
         @Override

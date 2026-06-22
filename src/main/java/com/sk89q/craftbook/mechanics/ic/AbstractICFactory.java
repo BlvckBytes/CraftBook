@@ -47,30 +47,6 @@ public abstract class AbstractICFactory implements ICFactory {
     public void checkPlayer(ChangedSign sign, CraftBookPlayer player) {}
 
     @Override
-    public String getShortDescription() {
-
-        return "No Description.";
-    }
-
-    @Override
-    public String[] getLongDescription() {
-
-        return new String[]{"Missing Description"};
-    }
-
-    @Override
-    public String[] getLineHelp() {
-
-        return new String[] {null, null};
-    }
-
-    @Override
-    public String[] getPinDescription(ChipState state) {
-
-        return new String[state.getInputCount() + state.getOutputCount()];
-    }
-
-    @Override
     public void load() {}
 
     @Override

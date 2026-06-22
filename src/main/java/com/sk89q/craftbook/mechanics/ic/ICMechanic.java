@@ -33,9 +33,7 @@ import com.sk89q.craftbook.util.events.SelfTriggerThinkEvent;
 import com.sk89q.craftbook.util.events.SelfTriggerUnregisterEvent;
 import com.sk89q.craftbook.util.events.SelfTriggerUnregisterEvent.UnregisterReason;
 import com.sk89q.craftbook.util.events.SignClickEvent;
-import com.sk89q.craftbook.util.events.SourcedBlockRedstoneEvent;
 import com.sk89q.util.yaml.YAMLProcessor;
-import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import org.bukkit.Bukkit;
 import org.bukkit.block.Block;
 import org.bukkit.event.EventHandler;
@@ -82,7 +80,7 @@ public class ICMechanic extends AbstractCraftBookMechanic {
         manager.disable();
     }
 
-    public Object[] setupIC(Block block, boolean create) {
+    private IC setupIC(Block block, boolean create) {
 
         // if we're not looking at a wall sign, it can't be an IC.
         if (!SignUtil.isWallSign(block)) return null;
@@ -158,22 +156,6 @@ public class ICMechanic extends AbstractCraftBookMechanic {
             ICManager.addCachedIC(block.getLocation(), ic);
         } else
             return null;
-        // extract the suffix
-        String suffix = "";
-        String[] str = RegexUtil.RIGHT_BRACKET_PATTERN.split(sign.getLine(1));
-        if (str.length > 1) {
-            suffix = str[1];
-        }
-
-        ICFamily family = registration.getFamilies()[0];
-        if (suffix != null && !suffix.isEmpty()) {
-            for (ICFamily f : registration.getFamilies()) {
-                if (f.getSuffix().equalsIgnoreCase(suffix)) {
-                    family = f;
-                    break;
-                }
-            }
-        }
 
         // okay, everything checked out. we can finally make it.
         if (ic instanceof SelfTriggeredIC && (sign.getLine(1).trim().toUpperCase(Locale.ENGLISH).endsWith("S") || ((SelfTriggeredIC) ic).isAlwaysST())) {
@@ -182,56 +164,7 @@ public class ICMechanic extends AbstractCraftBookMechanic {
             CraftBookPlugin.inst().getSelfTriggerManager().registerSelfTrigger(block.getLocation());
         }
 
-        Object[] rets = new Object[3];
-        rets[0] = id;
-        rets[1] = family;
-        rets[2] = ic;
-
-        return rets;
-    }
-
-    @EventHandler(priority = EventPriority.HIGH)
-    public void onBlockRedstoneChange(final SourcedBlockRedstoneEvent event) {
-
-        if(!EventUtil.passesFilter(event)) return;
-
-        final Object[] icData = setupIC(event.getBlock(), true);
-
-        if(icData == null) return;
-
-        final Block block = event.getBlock();
-        // abort if the current did not change
-        if (event.getNewCurrent() == event.getOldCurrent()) return;
-
-        if (SignUtil.isWallSign(block)) {
-            final Block source = event.getSource();
-            // abort if the sign is the source or the block the sign is attached to
-            if (SignUtil.getBackBlock(block).equals(source) || block.equals(source)) return;
-
-
-            Runnable runnable = () -> {
-
-                if (!SignUtil.isWallSign(block)) return;
-                try {
-                    ChipState chipState = ((ICFamily) icData[1]).detect(BukkitAdapter.adapt(source.getLocation()), CraftBookBukkitUtil.toChangedSign(block));
-                    int cnt = 0;
-                    for (int i = 0; i < chipState.getInputCount(); i++) {
-                        if (chipState.isTriggered(i)) {
-                            cnt++;
-                        }
-                    }
-                    if (cnt > 0) {
-                        ((IC) icData[2]).trigger(chipState);
-                    }
-                } catch (IllegalArgumentException ex) {
-                    // Exclude these exceptions so that we don't spam consoles because of Bukkit
-                    if (!ex.getMessage().contains("Null ChangedSign found")) throw ex;
-                }
-            };
-            // FIXME: these should be registered with a global scheduler so we can end up with one runnable actually
-            // running per set of inputs in a given time window.
-            CraftBookPlugin.server().getScheduler().runTaskLater(CraftBookPlugin.inst(), runnable, 2);
-        }
+        return ic;
     }
 
     @EventHandler(priority = EventPriority.HIGH)
@@ -246,11 +179,11 @@ public class ICMechanic extends AbstractCraftBookMechanic {
             ICManager.removeCachedIC(event.getClickedBlock().getLocation());
         }
 
-        final Object[] icData = setupIC(event.getClickedBlock(), true);
+        var ic  = setupIC(event.getClickedBlock(), true);
 
-        if(icData == null) return;
+        if(ic == null) return;
 
-        ((IC) icData[2]).onRightClick(event.getPlayer());
+        ic.onRightClick(event.getPlayer());
     }
 
     @EventHandler(priority = EventPriority.HIGH)
@@ -266,53 +199,47 @@ public class ICMechanic extends AbstractCraftBookMechanic {
 
         if(!EventUtil.passesFilter(event)) return;
 
-        final Object[] icData = setupIC(event.getBlock(), false);
+        var ic = setupIC(event.getBlock(), false);
 
-        if(icData != null) {
+        if(ic != null) {
             if(event.getReason() == UnregisterReason.ERROR) {
                 if(breakOnError) {
-                    ((IC) icData[2]).unload();
+                    ic.unload();
                     event.getBlock().breakNaturally();
                     return;
                 }
             }
-            if(keepLoaded) {
-                event.setCancelled(true);
-                return;
-            }
-            ((IC) icData[2]).unload();
+
+            ic.unload();
         }
     }
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onThink(SelfTriggerThinkEvent event) {
-
         if(!EventUtil.passesFilter(event)) return;
 
-        final Object[] icData = setupIC(event.getBlock(), true);
+        var ic = setupIC(event.getBlock(), true);
 
-        if(icData != null && icData[2] instanceof SelfTriggeredIC) {
+        if(ic instanceof SelfTriggeredIC selfTriggeredIC) {
             event.setHandled(true);
-            ChipState chipState = ((ICFamily) icData[1]).detectSelfTriggered(BukkitAdapter.adapt(event.getBlock().getLocation()), ((IC) icData[2]).getSign());
-            ((SelfTriggeredIC) icData[2]).think(chipState);
+            selfTriggeredIC.think();
         }
     }
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onBlockBreak(BlockBreakEvent event) {
-
         if(!EventUtil.passesFilter(event)) return;
 
-        final Object[] icData = setupIC(event.getBlock(), false);
+        var ic = setupIC(event.getBlock(), false);
 
-        if(icData == null) return;
+        if(ic == null) return;
 
         // remove the ic from cache
         CraftBookPlugin.inst().getSelfTriggerManager().unregisterSelfTrigger(event.getBlock().getLocation(), UnregisterReason.BREAK);
         ICManager.removeCachedIC(event.getBlock().getLocation());
-        ((IC) icData[2]).onICBreak(event);
+        ic.onICBreak(event);
         if(!event.isCancelled())
-            ((IC) icData[2]).unload();
+            ic.unload();
     }
 
     @EventHandler(priority = EventPriority.HIGH)
@@ -322,12 +249,12 @@ public class ICMechanic extends AbstractCraftBookMechanic {
 
         if (!CachedBlock.isSign(event.getCachedPuttingBlock())) return;
 
-        final Object[] icData = setupIC(event.getPuttingBlock(), true);
+        var ic = setupIC(event.getPuttingBlock(), true);
 
-        if(icData == null) return;
+        if(ic == null) return;
 
-        if(icData[2] instanceof PipeInputIC)
-            ((PipeInputIC) icData[2]).onPipeTransfer(event);
+        if(ic instanceof PipeInputIC pipeIC)
+            pipeIC.onPipeTransfer(event);
     }
 
     @EventHandler(priority = EventPriority.HIGH)
@@ -454,8 +381,6 @@ public class ICMechanic extends AbstractCraftBookMechanic {
 
                 player.print(player.translate("mech.ic.create") + " " + registration.getId() + ": " + ic.getTitle() + ".");
             });
-
-            return;
         } else if (shortHand && event.getLine(0).startsWith("=")) {
             String id = event.getLine(0).substring(1);
 
@@ -477,7 +402,6 @@ public class ICMechanic extends AbstractCraftBookMechanic {
             event.setLine(1, "[" + shortId + "]" + (st ? "S" : ""));
 
             initializeIC(block, player, event, true);
-            return;
         }
     }
 
@@ -498,7 +422,6 @@ public class ICMechanic extends AbstractCraftBookMechanic {
     public boolean shortHand;
     public double maxRange;
     public List<String> disabledICs;
-    public boolean keepLoaded;
     public LocationCheckType defaultCoordinates;
     public boolean breakOnError;
     public boolean disableSelfTriggered;
@@ -514,9 +437,6 @@ public class ICMechanic extends AbstractCraftBookMechanic {
 
         config.setComment(path + "allow-short-hand", "Allows the usage of IC Shorthand, which is an easier way to create ICs.");
         shortHand = config.getBoolean(path + "allow-short-hand", true);
-
-        config.setComment(path + "keep-loaded", "Keep any chunk with an ST IC in it loaded.");
-        keepLoaded = config.getBoolean(path + "keep-loaded", false);
 
         config.setComment(path + "disallowed-ics", "A list of IC's which are never loaded. They will not work or show up in /ic list.");
         disabledICs = config.getStringList(path + "disallowed-ics", new ArrayList<>());

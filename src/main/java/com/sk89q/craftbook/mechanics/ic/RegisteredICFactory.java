@@ -25,21 +25,18 @@ public class RegisteredICFactory {
 
     protected final String id, longId;
     protected final ICFactory factory;
-    protected final ICFamily[] family;
 
     /**
      * Construct the object.
      *
      * @param id
      * @param factory
-     * @param family
      */
-    public RegisteredICFactory(String id, String longId, ICFactory factory, ICFamily... family) {
+    public RegisteredICFactory(String id, String longId, ICFactory factory) {
 
         this.id = id;
         this.longId = longId;
         this.factory = factory;
-        this.family = family;
     }
 
     public String getId() {
@@ -50,15 +47,5 @@ public class RegisteredICFactory {
     public ICFactory getFactory() {
 
         return factory;
-    }
-
-    public ICFamily[] getFamilies() {
-
-        return family;
-    }
-
-    public String getShorthand() {
-
-        return longId;
     }
 }

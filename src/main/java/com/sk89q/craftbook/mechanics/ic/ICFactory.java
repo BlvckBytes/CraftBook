@@ -64,39 +64,6 @@ public interface ICFactory {
     void checkPlayer(ChangedSign sign, CraftBookPlayer player) throws ICVerificationException;
 
     /**
-     * Get a short description of the IC
-     *
-     * @return a short description.
-     */
-    String getShortDescription();
-
-    /**
-     * Get a long description, to be used for wiki generation.
-     * 
-     * This description must fit the guidelines of MediaWiki syntax,
-     * as it is built to work on a wiki running MediaWiki.
-     * 
-     * @return an array containing each line of the long description of the IC's usage.
-     */
-    String[] getLongDescription();
-
-    /**
-     * Get line-by-line help.
-     *
-     * @return array of lines 3 and 4
-     */
-    String[] getLineHelp();
-
-    /**
-     * Get description of the function of each pin of the IC.
-     * 
-     * @param state The {@link ChipState} that the pins are attached to.
-     * 
-     * @return array of each pin in order.
-     */
-    String[] getPinDescription(ChipState state);
-
-    /**
      * Called on load to load extra information.
      */
     void load();

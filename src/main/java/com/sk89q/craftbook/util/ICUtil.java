@@ -31,10 +31,7 @@ import com.sk89q.worldedit.regions.RegionSelector;
 import com.sk89q.worldedit.regions.selector.CuboidRegionSelector;
 import com.sk89q.worldedit.regions.selector.SphereRegionSelector;
 import org.bukkit.Location;
-import org.bukkit.Material;
 import org.bukkit.block.Block;
-import org.bukkit.block.data.type.Switch;
-import org.bukkit.event.block.BlockRedstoneEvent;
 
 /**
  * IC utility functions.
@@ -42,47 +39,6 @@ import org.bukkit.event.block.BlockRedstoneEvent;
  * @author sk89q
  */
 public final class ICUtil {
-
-    /**
-     * Set an IC's output state at a block.
-     *
-     * @param block
-     * @param state
-     *
-     * @return whether something was changed
-     */
-    public static boolean setState(Block block, boolean state, Block source) {
-
-        if (block.getType() != Material.LEVER) return false;
-
-        // return if the lever is not attached to our IC block
-        Switch lever = (Switch) block.getBlockData();
-
-        if (!block.getRelative(lever.getFacing().getOppositeFace()).equals(source))
-            return false;
-
-        // check if the lever was toggled on
-        boolean wasOn = lever.isPowered();
-
-        // if the state changed lets apply physics to the source block and the lever itself
-        if (wasOn != state) {
-            // set the new data
-            lever.setPowered(state);
-            block.setBlockData(lever);
-            // apply physics to the source block the lever is attached to
-            source.setBlockData(source.getBlockData(), true);
-
-            // lets call blockredstone events on the source block and the lever
-            // in order to correctly update all surrounding blocks
-            BlockRedstoneEvent leverEvent = new BlockRedstoneEvent(block, wasOn ? 15 : 0, state ? 15 : 0);
-            BlockRedstoneEvent sourceEvent = new BlockRedstoneEvent(source, wasOn ? 15 : 0, state ? 15 : 0);
-            CraftBookPlugin.inst().getServer().getPluginManager().callEvent(leverEvent);
-            CraftBookPlugin.inst().getServer().getPluginManager().callEvent(sourceEvent);
-            return true;
-        }
-
-        return false;
-    }
 
     public static void parseSignFlags(CraftBookPlayer player, ChangedSign sign) {
 

@@ -51,13 +51,6 @@ public interface IC {
     void onICBreak(BlockBreakEvent event);
 
     /**
-     * Recieve a new state to process on.
-     *
-     * @param chip chip state.
-     */
-    void trigger(ChipState chip);
-
-    /**
      * Proceed to unload the IC.
      */
     void unload();

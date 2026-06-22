@@ -10,7 +10,6 @@ mechanics:
         cache: true
         max-radius: 10.0
         allow-short-hand: true
-        keep-loaded: false
         disallowed-ics: []
         default-coordinate-system: RELATIVE
         break-on-error: false

@@ -23,14 +23,7 @@ package com.sk89q.craftbook.mechanics.ic;
  */
 public interface SelfTriggeredIC {
 
-    /**
-     * Method is called when the {@link IC} "thinks" (as triggered by an external clock signal). The given state allows for
-     * accessing the data available on
-     * the pins.
-     *
-     * @param chip
-     */
-    void think(ChipState chip);
+    void think();
 
     /**
      * Checks whether an {@link IC} should always be considered ST, even without the 'S'.

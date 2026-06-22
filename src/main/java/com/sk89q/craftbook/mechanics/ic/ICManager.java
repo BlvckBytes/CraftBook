@@ -18,7 +18,6 @@ package com.sk89q.craftbook.mechanics.ic;
 
 import com.sk89q.craftbook.bukkit.CraftBookPlugin;
 import com.sk89q.craftbook.bukkit.util.CraftBookBukkitUtil;
-import com.sk89q.craftbook.mechanics.ic.families.*;
 import com.sk89q.craftbook.mechanics.ic.gates.world.blocks.Planter;
 import com.sk89q.craftbook.mechanics.ic.gates.world.items.crafter.AutomaticCrafter;
 import com.sk89q.craftbook.util.RegexUtil;
@@ -26,7 +25,6 @@ import com.sk89q.util.yaml.YAMLFormat;
 import com.sk89q.util.yaml.YAMLProcessor;
 import org.bukkit.Location;
 import org.bukkit.Server;
-import org.bukkit.entity.Player;
 
 import java.io.File;
 import java.util.*;
@@ -39,9 +37,6 @@ import java.util.regex.Matcher;
  * @author sk89q
  */
 public class ICManager {
-
-    public static final ICFamily familySISO = new FamilySISO();
-    public static final ICFamily familyAISO = new FamilyAISO();
 
     private ICConfiguration icConfiguration;
 
@@ -96,19 +91,12 @@ public class ICManager {
 
     private static final Set<String> customPrefix = new HashSet<>();
 
-    /**
-     * Register an ic if possible
-     *
-     * @param name
-     * @param factory
-     * @param families
-     */
-    public boolean registerIC(String name, String longName, ICFactory factory, ICFamily... families) {
+    public boolean registerIC(String name, String longName, ICFactory factory) {
 
         for(String ic : ICMechanic.instance.disabledICs)
             if(ic.equalsIgnoreCase(name))
                 return false;
-        return register(name, longName, factory, families);
+        return register(name, longName, factory);
     }
 
     /**
@@ -119,14 +107,11 @@ public class ICManager {
      * @param id       case-insensitive ID (such as MC1001)
      * @param longId   case-insensitive long name (such as inverter)
      * @param factory  factory to create ICs
-     * @param families families for the ic
      *
      * @return true if IC registration was a success
      */
-    public boolean register(String id, String longId, ICFactory factory, ICFamily... families) {
+    public boolean register(String id, String longId, ICFactory factory) {
 
-        // check if at least one family is given
-        if (families.length < 1) return false;
         // this is needed so we dont have two patterns
         String id2 = "[" + id + "]";
         // lets check if the IC ID has already been registered
@@ -138,7 +123,7 @@ public class ICManager {
         // lets get the custom prefix
         customPrefix.add(prefix);
 
-        RegisteredICFactory registration = new RegisteredICFactory(id, longId, factory, families);
+        RegisteredICFactory registration = new RegisteredICFactory(id, longId, factory);
         // Lowercase the ID so that we can do case in-sensitive lookups
         registered.put(id.toLowerCase(Locale.ENGLISH), registration);
 
@@ -243,28 +228,7 @@ public class ICManager {
     public void registerICs(Server server) {
 
         // SISOs
-        registerIC("MC1219", "auto craft", new AutomaticCrafter.Factory(server), familySISO, familyAISO);
-        registerIC("MC1234", "planter", new Planter.Factory(server), familySISO, familyAISO);
-    }
-
-    public String getSearchID(Player p, String search) {
-
-        ArrayList<String> icNameList = new ArrayList<>(registered.keySet());
-
-        Collections.sort(icNameList);
-
-        for (String ic : icNameList) {
-            try {
-                RegisteredICFactory ric = registered.get(ic);
-                IC tic = ric.getFactory().create(null);
-                if (search != null && !tic.getTitle().toLowerCase(Locale.ENGLISH).contains(search.toLowerCase(Locale.ENGLISH))
-                        && !ric.getId().toLowerCase(Locale.ENGLISH).contains(search.toLowerCase(Locale.ENGLISH))) continue;
-
-                return ic;
-            } catch (Exception ignored) {
-            }
-        }
-
-        return "";
+        registerIC("MC1219", "auto craft", new AutomaticCrafter.Factory(server));
+        registerIC("MC1234", "planter", new Planter.Factory(server));
     }
 }

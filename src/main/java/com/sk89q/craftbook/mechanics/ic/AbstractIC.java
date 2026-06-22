@@ -35,11 +35,9 @@ public abstract class AbstractIC implements IC {
 
     private final Server server;
     private final ChangedSign sign;
-    private final ICFactory factory;
 
-    public AbstractIC(Server server, ChangedSign sign, ICFactory factory) {
+    public AbstractIC(Server server, ChangedSign sign) {
 
-        this.factory = factory;
         this.server = server;
         this.sign = sign;
     }
@@ -68,11 +66,6 @@ public abstract class AbstractIC implements IC {
     public String getLine(int line) {
 
         return sign.getLine(line);
-    }
-
-    public ICFactory getFactory() {
-
-        return factory;
     }
 
     @Override

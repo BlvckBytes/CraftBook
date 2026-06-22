@@ -40,9 +40,8 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
     private long cachedRecipeMatrixLsb;
     private TriState wasMatrixInvalid = TriState.NULL;
 
-    public AutomaticCrafter(Server server, ChangedSign block, ICFactory factory) {
-
-        super(server, block, factory);
+    public AutomaticCrafter(Server server, ChangedSign block) {
+        super(server, block);
     }
 
     @Override
@@ -58,14 +57,8 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
     }
 
     @Override
-    public void trigger(ChipState chip) {
-        if (chip.getInput(0))
-            chip.setOutput(0, doStuff());
-    }
-
-    @Override
-    public void think(ChipState state) {
-        state.setOutput(0, doStuff());
+    public void think() {
+        collectAndCraft();
     }
 
     private long getSlotTypeOrdinal(int slot) {
@@ -127,7 +120,7 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
         this.wasMatrixInvalid = TriState.TRUE;
     }
 
-    public boolean craft() {
+    public void craft() {
         // Only called from itself or doStuff - caches already setup
 
         ItemStack[] contents = cachedDispenserOrDropperInventory.getContents();
@@ -135,20 +128,21 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
         for (ItemStack it : contents) {
             if (!ItemUtil.isStackValid(it))
                 continue;
-            if (it.getAmount() < 2) return false;
+            if (it.getAmount() < 2) return;
         }
 
         if (cachedRecipe == null) {
             computeRecipe();
         }
 
-        if (cachedRecipe == null) return false;
+        if (cachedRecipe == null) return;
 
         var doesMatrixEqual = cachedRecipeMatrixMsb == computeMatrixMsb() && cachedRecipeMatrixLsb == computeMatrixLsb();
 
         if (!doesMatrixEqual && !isValidRecipe(cachedRecipe)) {
             cachedRecipe = null;
-            return craft();
+            craft();
+            return;
         }
 
         ItemStack result = cachedRecipe.getHandle().getResult();
@@ -159,7 +153,7 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
                         + " has an invalid recipe! Result: " + result);
                 hasWarnedNoResult = true;
             }
-            return false;
+            return;
         }
 
         List<ItemStack> items = new ArrayList<>();
@@ -222,17 +216,15 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
 
             leftovers.clear();
         }
-
-        return true;
     }
 
-    private boolean collect() {
+    private void collect() {
         // Only called from doStuff - caches already setup
 
         if (cachedRecipe == null) {
             computeRecipe();
             if (cachedRecipe == null) {
-                return false; // Only collect items if valid recipe.
+                return; // Only collect items if valid recipe.
             }
         }
 
@@ -254,8 +246,6 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
             if (result.remainder() <= 0)
                 itemEntity.remove();
         }
-
-        return true;
     }
 
     private boolean updateCachesAndGetIfIsMalformed() {
@@ -279,16 +269,12 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
         return false;
     }
 
-    private boolean doStuff() {
+    private void collectAndCraft() {
         if (updateCachesAndGetIfIsMalformed())
-            return false;
+            return;
 
-        boolean ret = false;
-
-        ret |= collect();
-        ret |= craft();
-
-        return ret;
+        collect();
+        craft();
     }
 
     private boolean isValidRecipe(CachedRecipe recipe) {
@@ -379,28 +365,13 @@ public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInp
     }
 
     public static class Factory extends AbstractICFactory {
-
         public Factory(Server server) {
-
             super(server);
         }
 
         @Override
         public IC create(ChangedSign sign) {
-
-            return new AutomaticCrafter(getServer(), sign, this);
-        }
-
-        @Override
-        public String getShortDescription() {
-
-            return "Auto-crafts recipes in the above dispenser/dropper.";
-        }
-
-        @Override
-        public String[] getLineHelp() {
-
-            return new String[] {null, null};
+            return new AutomaticCrafter(getServer(), sign);
         }
     }
 

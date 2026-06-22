@@ -6,13 +6,8 @@ import com.sk89q.craftbook.ChangedSign;
 
 public abstract class AbstractSelfTriggeredIC extends AbstractIC implements SelfTriggeredIC {
 
-    public AbstractSelfTriggeredIC (Server server, ChangedSign sign, ICFactory factory) {
-        super(server, sign, factory);
-    }
-
-    @Override
-    public void think(ChipState chip) {
-        trigger(chip);
+    public AbstractSelfTriggeredIC (Server server, ChangedSign sign) {
+        super(server, sign);
     }
 
     @Override
