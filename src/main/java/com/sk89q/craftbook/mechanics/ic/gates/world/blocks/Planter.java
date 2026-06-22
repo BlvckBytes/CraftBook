@@ -23,14 +23,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
-/**
- * Sapling planter Hybrid variant of MCX206 and MCX203 chest collector When there is a sapling or seed item drop in
- * range it will auto plant it above
- * the IC.
- *
- * @authors Drathus, Me4502
- */
 public class Planter extends IC implements SelfTriggeredIC {
+
+    private static final int MAX_TRIAL_COUNT = 25;
 
     private Block cachedContainerBlock;
     private Inventory cachedChestInventory;
@@ -71,7 +66,7 @@ public class Planter extends IC implements SelfTriggeredIC {
             plant();
     }
 
-    public void plant() {
+    private void plant() {
         if (item != null && !plantableItem(item)) return;
 
         if (cachedContainerBlock == null)
@@ -86,13 +81,13 @@ public class Planter extends IC implements SelfTriggeredIC {
             if (cachedChestInventory == null)
                 cachedChestInventory = ((Chest) cachedContainerBlock.getState()).getInventory();
 
-            // By incrementing chest-slots separately and trying up to as many times as there are slots, we stay
-            // within sane limits but drastically increase the speed of planting, seeing how the chance of planting
-            // is no longer the result of finding a receptive block multiplied by finding a plantable item in the chest,
-            // but rather that we lock into the first matching item and try with that until it has been used up completely.
-            int chestSlot = 0;
+            var chestSlot = 0;
+            var chestSize = cachedChestInventory.getSize();
 
-            for (int trialIndex = 0; trialIndex < cachedChestInventory.getSize(); ++trialIndex) {
+            for (int trialIndex = 0; trialIndex < MAX_TRIAL_COUNT; ++trialIndex) {
+                if (chestSlot >= chestSize)
+                    break;
+
                 var chestItem = cachedChestInventory.getItem(chestSlot);
 
                 // Current slot is unusable for planting - skip over
@@ -131,10 +126,12 @@ public class Planter extends IC implements SelfTriggeredIC {
 
             List<Entity> areaEntities = area.getEntitiesInArea();
 
-            // Same reasoning holds true here as does for the above.
             int entityIndex = 0;
 
-            for (int trialIndex = 0; trialIndex < areaEntities.size(); ++trialIndex) {
+            for (int trialIndex = 0; trialIndex < MAX_TRIAL_COUNT; ++trialIndex) {
+                if (entityIndex >= areaEntities.size())
+                    break;
+
                 Entity entity = areaEntities.get(entityIndex);
 
                 ItemStack entityStack;
@@ -164,9 +161,13 @@ public class Planter extends IC implements SelfTriggeredIC {
                 if (!plantSuccess)
                     continue;
 
+                if (entityStack.getAmount() == 1) {
+                    itemEntity.remove();
+                    return;
+                }
+
                 entityStack.setAmount(entityStack.getAmount() - 1);
                 itemEntity.setItemStack(entityStack);
-
                 return;
             }
         }
@@ -178,9 +179,8 @@ public class Planter extends IC implements SelfTriggeredIC {
         cachedChestInventory = null;
     }
 
-    public Block searchBlocks(ItemStack stack) {
-
-        Block b = area.getRandomBlockInArea();
+    private Block searchBlocks(ItemStack stack) {
+        var b = area.getRandomBlockInArea();
 
         if (b == null || b.getType() != Material.AIR)
             return null;
@@ -191,34 +191,17 @@ public class Planter extends IC implements SelfTriggeredIC {
         return null;
     }
 
-    protected boolean plantableItem(ItemStack item) {
-        switch (item.getType()) {
-            case WHEAT_SEEDS:
-            case NETHER_WART:
-            case MELON_SEEDS:
-            case PUMPKIN_SEEDS:
-            case CACTUS:
-            case POTATO:
-            case CARROT:
-            case POPPY:
-            case DANDELION:
-            case RED_MUSHROOM:
-            case BROWN_MUSHROOM:
-            case LILY_PAD:
-            case BEETROOT_SEEDS:
-            case COCOA_BEANS:
-            case CRIMSON_FUNGUS:
-            case WARPED_FUNGUS:
-            case PITCHER_POD:
-            case TORCHFLOWER_SEEDS:
-                return true;
-            default:
-                return Tag.SAPLINGS.isTagged(item.getType());
-        }
+    private boolean plantableItem(ItemStack item) {
+      return switch (item.getType()) {
+        case WHEAT_SEEDS, NETHER_WART, MELON_SEEDS, PUMPKIN_SEEDS, CACTUS, POTATO, CARROT, POPPY, DANDELION,
+             RED_MUSHROOM, BROWN_MUSHROOM, LILY_PAD, BEETROOT_SEEDS, COCOA_BEANS, CRIMSON_FUNGUS, WARPED_FUNGUS,
+             PITCHER_POD, TORCHFLOWER_SEEDS -> true;
+        default -> Tag.SAPLINGS.isTagged(item.getType());
+      };
     }
 
-    protected boolean itemPlantableAtBlock(ItemStack item, Block block) {
-        Material belowType = block.getRelative(0, -1, 0).getType();
+    private boolean itemPlantableAtBlock(ItemStack item, Block block) {
+        var belowType = block.getRelative(0, -1, 0).getType();
 
         switch (item.getType()) {
             case WHEAT_SEEDS:
@@ -267,8 +250,7 @@ public class Planter extends IC implements SelfTriggeredIC {
         }
     }
 
-    protected boolean plantBlockAt(ItemStack item, Block block) {
-
+    private boolean plantBlockAt(ItemStack item, Block block) {
         switch (item.getType()) {
             case POPPY:
             case DANDELION:
