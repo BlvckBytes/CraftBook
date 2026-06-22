@@ -1,6 +1,5 @@
 package com.sk89q.craftbook;
 
-import io.papermc.lib.PaperLib;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
 import org.bukkit.block.Block;
@@ -41,7 +40,7 @@ public class ChangedSign {
 
     public Sign getOrAccessSign() {
         if (this.sign == null) {
-            this.sign = (Sign) PaperLib.getBlockState(this.block, false).getState();
+            this.sign = (Sign) this.block.getState(false);
         }
         return sign;
     }

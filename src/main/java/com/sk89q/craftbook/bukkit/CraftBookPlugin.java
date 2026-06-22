@@ -27,7 +27,6 @@ import com.sk89q.minecraft.util.commands.WrappedCommandException;
 import com.sk89q.util.yaml.YAMLFormat;
 import com.sk89q.util.yaml.YAMLProcessor;
 import com.sk89q.wepif.PermissionsResolverManager;
-import io.papermc.lib.PaperLib;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Chunk;
@@ -294,8 +293,6 @@ public class CraftBookPlugin extends JavaPlugin {
             Bukkit.getScheduler().runTaskTimer(this,
                     () -> getLogger().warning(ChatColor.RED + "Warning! You have no mechanics enabled, the plugin will appear to do nothing until a feature is enabled!"), 20L, 20*60*5);
         }
-
-        PaperLib.suggestPaper(this);
 
         Bukkit.getScheduler().runTaskLater(this, RecipeCache::update, 20L);
     }
