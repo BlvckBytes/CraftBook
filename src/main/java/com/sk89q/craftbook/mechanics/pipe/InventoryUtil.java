@@ -80,7 +80,9 @@ public class InventoryUtil {
         if (inventory instanceof BrewerInventory brewerInventory)
             return addItemsToBrewingStand(brewerInventory, stacks);
 
-        if (inventory instanceof CrafterInventory && inventory.getHolder() instanceof Crafter crafter)
+        // CrafterInventory is currently an empty interface and Paper API is not returning an
+        // instanceof; thus, let's simply do a material-check instead.
+        if (CachedBlock.isMaterial(cachedBlock, Material.CRAFTER) && inventory.getHolder() instanceof Crafter crafter)
             return distributeItemsToMakeEvenAndGetRemainders(stacks, inventory, (slot, contents) -> !crafter.isSlotDisabled(slot));
 
         if (inventory instanceof ChiseledBookshelfInventory)
@@ -314,8 +316,17 @@ public class InventoryUtil {
                 remainders.remove(itemIndex);
         }
 
-        if (createdStack)
-            inventory.setContents(inventoryContents);
+        // Write back the contents manually - this branch (currently) only executes
+        // with vanilla Crafters, who drop their disabled slots on a #setContents...
+        if (createdStack) {
+            for (var i = 0; i < inventoryContents.length; ++i) {
+                var contentsItem = inventoryContents[i];
+
+                // When distributing, we only ever add, never remove, so null-slots stay constant.
+                if (contentsItem != null)
+                    inventory.setItem(i, contentsItem);
+            }
+        }
 
         return remainders;
     }
