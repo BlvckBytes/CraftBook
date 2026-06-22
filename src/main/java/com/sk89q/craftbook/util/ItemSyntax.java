@@ -11,7 +11,6 @@ import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import com.sk89q.worldedit.extension.input.InputParseException;
 import com.sk89q.worldedit.extension.input.ParserContext;
 import com.sk89q.worldedit.world.registry.LegacyMapper;
-import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -25,20 +24,18 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.LeatherArmorMeta;
 import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.inventory.meta.SkullMeta;
-import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import org.jetbrains.annotations.NotNull;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map.Entry;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 /**
  * The Standard Item Syntax. This class is built to be able to survive on its own, without CraftBook.
- * 
+ *
  * @author Me4502
  *
  */
@@ -51,87 +48,6 @@ public final class ItemSyntax {
     private static final Pattern PIPE_PATTERN = Pattern.compile("(?<=[^\\\\])([|])");
     private static final Pattern FSLASH_PATTERN = Pattern.compile("(?<=[^\\\\])([/])");
 
-    /**
-     * The plugin that stores this ItemSyntax reference. Only set this if you have a method: "public String parseItemSyntax(String item) {" in your plugin class.
-     */
-    public static JavaPlugin plugin;
-
-    /**
-     * The opposite of {@link ItemSyntax#getItem(String)}. Returns the String made by an {@link ItemStack}. This can be used in getItem() to return the same {@link ItemStack}.
-     * 
-     * @author me4502
-     * 
-     * @param item The {@link ItemStack} to convert into a {@link String}.
-     * @return The {@link String} that represents the {@link ItemStack}.
-     */
-    public static String getStringFromItem(ItemStack item) {
-
-        StringBuilder builder = new StringBuilder();
-        builder.append(item.getType().getKey().toString());
-
-        if(item.hasItemMeta()) {
-            ItemMeta meta = item.getItemMeta();
-            if(meta.hasEnchants()) {
-                for (Entry<Enchantment, Integer> enchants : meta.getEnchants().entrySet()) {
-                    builder.append(';').append(enchants.getKey().getName()).append(':').append(enchants.getValue());
-                }
-            }
-            if(meta.hasDisplayName()) {
-                builder.append('|').append(meta.getDisplayName());
-            }
-            if(meta.hasLore()) {
-                if(!meta.hasDisplayName()) {
-                    builder.append("|$IGNORE");
-                }
-                List<String> list = meta.getLore();
-                for(String s : list) {
-                    builder.append('|').append(s);
-                }
-            }
-
-            if (meta.isUnbreakable()) {
-                builder.append("/unbreakable:true");
-            }
-            List<String> flags = new ArrayList<>();
-            for (ItemFlag flag : ItemFlag.values()) {
-                if (meta.hasItemFlag(flag)) {
-                    flags.add(flag.name());
-                }
-            }
-            if (!flags.isEmpty()) {
-                builder.append("/flags:").append(String.join(",", flags));
-            }
-
-            if (meta instanceof SkullMeta) {
-                if(((SkullMeta) meta).hasOwner())
-                    builder.append("/player:").append(((SkullMeta) meta).getOwner());
-            } else if (meta instanceof BookMeta) {
-                if(((BookMeta) meta).hasTitle())
-                    builder.append("/title:").append(((BookMeta) meta).getTitle());
-                if(((BookMeta) meta).hasAuthor())
-                    builder.append("/author:").append(((BookMeta) meta).getAuthor());
-                if(((BookMeta) meta).hasPages())
-                    for(String page : ((BookMeta) meta).getPages())
-                        builder.append("/page:").append(page);
-            } else if (meta instanceof LeatherArmorMeta) {
-                if(!((LeatherArmorMeta) meta).getColor().equals(Bukkit.getItemFactory().getDefaultLeatherColor()))
-                    builder.append("/color:").append(((LeatherArmorMeta) meta).getColor().getRed()).append(',').append(((LeatherArmorMeta) meta).getColor().getGreen()).append(',').append(((LeatherArmorMeta) meta).getColor().getBlue());
-            } else if (meta instanceof PotionMeta) {
-                if(!((PotionMeta) meta).hasCustomEffects())
-                    for(PotionEffect eff : ((PotionMeta) meta).getCustomEffects())
-                        builder.append("/potion:").append(eff.getType().getName()).append(';').append(eff.getDuration()).append(';').append(eff.getAmplifier());
-            } else if (meta instanceof EnchantmentStorageMeta) {
-                if(!((EnchantmentStorageMeta) meta).hasStoredEnchants())
-                    for(Entry<Enchantment, Integer> eff : ((EnchantmentStorageMeta) meta).getStoredEnchants().entrySet())
-                        builder.append("/enchant:").append(eff.getKey().getKey().toString()).append(';').append(eff.getValue());
-            } else if (meta instanceof Damageable && ((Damageable) meta).getDamage() > 0) {
-                builder.append("/damage:").append(((Damageable) meta).getDamage());
-            }
-        }
-
-        return builder.toString().replace("\u00A7", "&");
-    }
-
     private static ParserContext ITEM_CONTEXT = new ParserContext();
 
     static {
@@ -142,7 +58,7 @@ public final class ItemSyntax {
     private static final LoadingCache<String, ItemStack> itemCache = CacheBuilder.newBuilder().maximumSize(1024).expireAfterAccess(10, TimeUnit.MINUTES).build(new CacheLoader<String, ItemStack>() {
 
         @Override
-        public ItemStack load(String line) throws Exception {
+        public @NotNull ItemStack load(@NotNull String line) {
             int amount = 1;
 
             String[] advMetadataSplit = FSLASH_PATTERN.split(line);
@@ -274,27 +190,9 @@ public final class ItemSyntax {
         }
     });
 
-    /**
-     * Parse an item from a line of text.
-     * 
-     * @author me4502
-     * 
-     * @param line The line to parse it from.
-     * @return The item to create.
-     */
     public static ItemStack getItem(String line) {
-
         if (line == null || line.isEmpty())
             return null;
-
-        if(plugin != null) {
-            try {
-                line = (String) plugin.getClass().getMethod("parseItemSyntax", String.class).invoke(plugin, line);
-            } catch (NoSuchMethodException | InvocationTargetException | IllegalArgumentException | IllegalAccessException | SecurityException e) {
-                plugin = null;
-                e.printStackTrace();
-            }
-        }
 
         return itemCache.getUnchecked(line);
     }
