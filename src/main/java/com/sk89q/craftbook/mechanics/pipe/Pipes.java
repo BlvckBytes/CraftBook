@@ -14,7 +14,6 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.*;
 import org.bukkit.block.data.Levelled;
-import org.bukkit.block.data.type.Piston;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -71,9 +70,7 @@ public class Pipes implements CraftBookMechanic, PipesApi {
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onSignChange(SignChangeEvent event) {
-
         if (!EventUtil.passesFilter(event)) return;
-
         if (!event.getLine(1).equalsIgnoreCase("[pipe]")) return;
 
         CraftBookPlayer player = CraftBookPlugin.inst().wrapPlayer(event.getPlayer());
@@ -85,34 +82,22 @@ public class Pipes implements CraftBookMechanic, PipesApi {
             return;
         }
 
-        if (ProtectionUtil.shouldUseProtection()) {
-            Block pistonBlock = null;
+        Block pistonBlock = null;
 
-            if (SignUtil.isWallSign(event.getBlock())) {
-                pistonBlock = SignUtil.getBackBlock(event.getBlock());
-            } else if (SignUtil.isStandingSign(event.getBlock())) {
-                if (isPiston(event.getBlock().getRelative(BlockFace.DOWN))) {
-                    pistonBlock = event.getBlock().getRelative(BlockFace.DOWN);
-                } else if (isPiston(event.getBlock().getRelative(BlockFace.UP))) {
-                    pistonBlock = event.getBlock().getRelative(BlockFace.UP);
-                }
+        if (SignUtil.isWallSign(event.getBlock())) {
+            pistonBlock = SignUtil.getBackBlock(event.getBlock());
+        } else if (SignUtil.isStandingSign(event.getBlock())) {
+            if (isPiston(event.getBlock().getRelative(BlockFace.DOWN))) {
+                pistonBlock = event.getBlock().getRelative(BlockFace.DOWN);
+            } else if (isPiston(event.getBlock().getRelative(BlockFace.UP))) {
+                pistonBlock = event.getBlock().getRelative(BlockFace.UP);
             }
-            if (pistonBlock != null && isPiston(pistonBlock)) {
-                Piston pis = (Piston) pistonBlock.getBlockData();
-                Block off = pistonBlock.getRelative(pis.getFacing());
-                if (off.getState() instanceof Container) {
-                    if (!ProtectionUtil.canAccessInventory(event.getPlayer(), off)) {
-                        if (CraftBookPlugin.inst().getConfiguration().showPermissionMessages)
-                            player.printError("area.use-permission");
-                        SignUtil.cancelSign(event);
-                        return;
-                    }
-                }
-            } else {
-                player.printError("circuits.pipes.pipe-not-found");
-                SignUtil.cancelSign(event);
-                return;
-            }
+        }
+
+        if (pistonBlock == null || !isPiston(pistonBlock)) {
+            player.printError("circuits.pipes.pipe-not-found");
+            SignUtil.cancelSign(event);
+            return;
         }
 
         event.setLine(1, "[Pipe]");
