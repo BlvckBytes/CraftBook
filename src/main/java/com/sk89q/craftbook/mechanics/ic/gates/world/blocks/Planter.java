@@ -11,6 +11,7 @@ import org.bukkit.Tag;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.Chest;
+import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.type.Cocoa;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Item;
@@ -25,18 +26,20 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class Planter extends IC implements SelfTriggeredIC {
 
-    private static final int MAX_TRIAL_COUNT = 25;
+    // Finding a random block within the search-area often times yields one which is not
+    // even plantable in the first place; let's allow to try multiple times as a mitigation.
+    private static final int MAX_TRIAL_COUNT = 20;
 
     private Block cachedContainerBlock;
+    private BlockData cachedContainerData;
     private Inventory cachedChestInventory;
 
     public Planter(ChangedSign block) {
         super(block);
     }
 
-    ItemStack item;
-
-    SearchArea area;
+    private ItemStack item;
+    private SearchArea area;
 
     @Override
     public void load() {
@@ -50,13 +53,11 @@ public class Planter extends IC implements SelfTriggeredIC {
 
     @Override
     public String getTitle() {
-
         return "Planter";
     }
 
     @Override
     public String getSignTitle() {
-
         return "PLANTER";
     }
 
@@ -72,19 +73,28 @@ public class Planter extends IC implements SelfTriggeredIC {
         if (cachedContainerBlock == null)
             cachedContainerBlock = getBackBlock().getRelative(0, 1, 0);
 
-        var containerType = cachedContainerBlock.getType();
+        var containerData = cachedContainerBlock.getBlockData();
+        var containerType = containerData.getMaterial();
 
         // Has a chest attached on top of the block where the sign is mounted - take items from its storage
         if (containerType == Material.CHEST || containerType == Material.TRAPPED_CHEST) {
+            // This accounts for Chest.Type updates (SINGLE->DOUBLE, etc.), as to get a new inventory reference
+            if (!containerData.equals(cachedContainerData))
+                cachedChestInventory = null;
+
             // The inventory is live for as long as the chunk is loaded, and once it unloads, this IC is unloaded
             // just as well, invalidating the cache again; no need to access the inventory repeatedly.
-            if (cachedChestInventory == null)
+            if (cachedChestInventory == null) {
+                cachedContainerData = containerData;
                 cachedChestInventory = ((Chest) cachedContainerBlock.getState()).getInventory();
+            }
 
             var chestSlot = 0;
             var chestSize = cachedChestInventory.getSize();
 
-            for (int trialIndex = 0; trialIndex < MAX_TRIAL_COUNT; ++trialIndex) {
+            var trialIndex = 0;
+
+            while (trialIndex < MAX_TRIAL_COUNT) {
                 if (chestSlot >= chestSize)
                     break;
 
@@ -99,6 +109,8 @@ public class Planter extends IC implements SelfTriggeredIC {
                     ++chestSlot;
                     continue;
                 }
+
+                ++trialIndex;
 
                 Block targetBlock = searchBlocks(chestItem);
 
@@ -122,13 +134,16 @@ public class Planter extends IC implements SelfTriggeredIC {
 
         // Has no container attached - take items from nearby item-entities
         else {
+            cachedContainerData = null;
             cachedChestInventory = null;
 
             List<Entity> areaEntities = area.getEntitiesInArea();
 
             int entityIndex = 0;
 
-            for (int trialIndex = 0; trialIndex < MAX_TRIAL_COUNT; ++trialIndex) {
+            var trialIndex = 0;
+
+            while (trialIndex < MAX_TRIAL_COUNT) {
                 if (entityIndex >= areaEntities.size())
                     break;
 
@@ -149,6 +164,8 @@ public class Planter extends IC implements SelfTriggeredIC {
                 }
 
                 Block targetBlock = searchBlocks(entityStack);
+
+                ++trialIndex;
 
                 if (targetBlock == null)
                     continue;
@@ -176,6 +193,7 @@ public class Planter extends IC implements SelfTriggeredIC {
     @Override
     public void unload() {
         cachedContainerBlock = null;
+        cachedContainerData = null;
         cachedChestInventory = null;
     }
 
