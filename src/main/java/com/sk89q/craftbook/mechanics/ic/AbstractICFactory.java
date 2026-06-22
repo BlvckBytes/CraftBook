@@ -16,17 +16,10 @@
 
 package com.sk89q.craftbook.mechanics.ic;
 
-import java.io.DataInputStream;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-
-import com.sk89q.craftbook.bukkit.util.CraftBookBukkitUtil;
 import org.bukkit.Server;
 
 import com.sk89q.craftbook.ChangedSign;
 import com.sk89q.craftbook.CraftBookPlayer;
-import com.sk89q.craftbook.bukkit.CraftBookPlugin;
 
 /**
  * Abstract IC factory.
@@ -48,18 +41,10 @@ public abstract class AbstractICFactory implements ICFactory {
     }
 
     @Override
-    public void verify(ChangedSign sign) throws ICVerificationException {
-        // No default check needed; if the sign just has the right ID string,
-        // that's good enough in most cases.
-        // TODO make some IC's use this to check if its valid.
-    }
+    public void verify(ChangedSign sign) throws ICVerificationException {}
 
     @Override
-    public void checkPlayer(ChangedSign sign, CraftBookPlayer player) throws ICVerificationException {
-        // No default check needed; if the sign just has the right ID string,
-        // that's good enough in most cases.
-        // TODO Use this to make some restricted IC's allowed to normal users, but limited.
-    }
+    public void checkPlayer(ChangedSign sign, CraftBookPlayer player) {}
 
     @Override
     public String getShortDescription() {
@@ -86,22 +71,8 @@ public abstract class AbstractICFactory implements ICFactory {
     }
 
     @Override
-    public void load() {
-        if(this instanceof PersistentDataIC && ICMechanic.instance.savePersistentData) {
-            try {
-                if(((PersistentDataIC) this).getStorageFile().exists())
-                    ((PersistentDataIC) this).loadPersistentData(new DataInputStream(new FileInputStream(((PersistentDataIC) this).getStorageFile())));
-            } catch (FileNotFoundException e) {
-                CraftBookBukkitUtil.printStacktrace(e);
-            } catch (IOException e) {
-                CraftBookPlugin.logger().severe("An invalid ic save file was found!");
-                CraftBookBukkitUtil.printStacktrace(e);
-            }
-        }
-    }
+    public void load() {}
 
     @Override
-    public void unload() {
-
-    }
+    public void unload() {}
 }

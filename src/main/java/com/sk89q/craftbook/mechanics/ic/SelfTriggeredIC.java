@@ -21,7 +21,7 @@ package com.sk89q.craftbook.mechanics.ic;
  *
  * @author sk89q
  */
-public interface SelfTriggeredIC extends PersistentIC {
+public interface SelfTriggeredIC {
 
     /**
      * Method is called when the {@link IC} "thinks" (as triggered by an external clock signal). The given state allows for

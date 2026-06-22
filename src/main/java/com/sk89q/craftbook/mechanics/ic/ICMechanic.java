@@ -63,11 +63,6 @@ public class ICMechanic extends AbstractCraftBookMechanic {
     protected final ICManager manager;
     public static ICMechanic instance;
 
-    //protected final String id;
-    //protected final ICFamily family;
-    //protected final IC ic;
-    //protected final BlockWorldVector pos;
-
     public ICMechanic() {
 
         manager = new ICManager();
@@ -529,8 +524,6 @@ public class ICMechanic extends AbstractCraftBookMechanic {
     public List<String> disabledICs;
     public boolean keepLoaded;
     public LocationCheckType defaultCoordinates;
-    public boolean savePersistentData;
-    public boolean usePercussionMidi;
     public boolean breakOnError;
     public boolean disableSelfTriggered;
 
@@ -554,12 +547,6 @@ public class ICMechanic extends AbstractCraftBookMechanic {
 
         config.setComment(path + "default-coordinate-system", "The default coordinate system for ICs. This changes the way IC offsets work. From RELATIVE, OFFSET and ABSOLUTE.");
         defaultCoordinates = LocationCheckType.getTypeFromName(config.getString(path + "default-coordinate-system", "RELATIVE"));
-
-        config.setComment(path + "save-persistent-data", "Saves extra data to the CraftBook folder that allows some ICs to work better on server restart.");
-        savePersistentData = config.getBoolean(path + "save-persistent-data", true);
-
-        config.setComment(path + "midi-use-percussion", "Plays the MIDI percussion channel when using a MIDI playing IC. Note: This may sound horrible on some songs.");
-        usePercussionMidi = config.getBoolean(path + "midi-use-percussion", false);
 
         config.setComment(path + "break-on-error", "Break the IC sign when an error occurs from that specific IC.");
         breakOnError = config.getBoolean(path + "break-on-error", false);

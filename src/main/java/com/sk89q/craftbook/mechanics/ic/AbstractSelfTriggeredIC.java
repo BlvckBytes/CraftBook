@@ -16,12 +16,6 @@ public abstract class AbstractSelfTriggeredIC extends AbstractIC implements Self
     }
 
     @Override
-    public boolean isActive() {
-
-        return true;
-    }
-
-    @Override
     public boolean isAlwaysST() {
 
         return false;

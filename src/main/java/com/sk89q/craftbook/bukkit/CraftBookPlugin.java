@@ -14,7 +14,6 @@ import com.sk89q.craftbook.mechanics.pipe.Pipes;
 import com.sk89q.craftbook.util.ItemSyntax;
 import com.sk89q.craftbook.util.UUIDMappings;
 import com.sk89q.craftbook.util.compat.companion.CompanionPlugins;
-import com.sk89q.craftbook.util.persistent.PersistentStorage;
 import com.sk89q.util.yaml.YAMLFormat;
 import com.sk89q.util.yaml.YAMLProcessor;
 import com.sk89q.wepif.PermissionsResolverManager;
@@ -86,11 +85,6 @@ public class CraftBookPlugin extends JavaPlugin {
      * The adapter for events to the manager.
      */
     private MechanicListenerAdapter managerAdapter;
-
-  /**
-     * The persistent storage database of CraftBook.
-     */
-    private PersistentStorage persistentStorage;
 
     /**
      * The UUID Mappings for CraftBook.
@@ -176,11 +170,6 @@ public class CraftBookPlugin extends JavaPlugin {
             getServer().getPluginManager().disablePlugin(this);
             return;
         }
-
-        persistentStorage = PersistentStorage.createFromType(config.persistentStorageType);
-
-        if(persistentStorage != null)
-            persistentStorage.open();
 
         uuidMappings = new UUIDMappings();
         uuidMappings.enable();
@@ -332,11 +321,6 @@ public class CraftBookPlugin extends JavaPlugin {
             for(CraftBookMechanic mech : mechanics)
                 mech.disable();
             mechanics = null;
-        }
-
-        if(hasPersistentStorage()) {
-
-            persistentStorage.close();
         }
 
         if(uuidMappings != null)
@@ -575,22 +559,6 @@ public class CraftBookPlugin extends JavaPlugin {
         PrintWriter pw = new PrintWriter(out);
         ex.printStackTrace(pw);
         return out.toString();
-    }
-
-    public boolean hasPersistentStorage() {
-
-        return persistentStorage != null && persistentStorage.isValid();
-    }
-
-    public void setPersistentStorage(PersistentStorage storage) {
-
-        persistentStorage = storage;
-
-        config.persistentStorageType = storage.getType();
-
-        config.config.setProperty("persistent-storage-type", storage.getType());
-
-        config.config.save();
     }
 
     public static String getWikiDomain() {
