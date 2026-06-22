@@ -19,7 +19,7 @@ import org.bukkit.inventory.*;
 
 import java.util.*;
 
-public class AutomaticCrafter extends AbstractSelfTriggeredIC implements PipeInputIC {
+public class AutomaticCrafter extends AbstractIC implements SelfTriggeredIC, PipeInputIC {
 
     private static final ItemStack AIR_STACK = new ItemStack(Material.AIR);
 

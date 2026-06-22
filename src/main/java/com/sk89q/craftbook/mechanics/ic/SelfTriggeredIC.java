@@ -25,10 +25,4 @@ public interface SelfTriggeredIC {
 
     void think();
 
-    /**
-     * Checks whether an {@link IC} should always be considered ST, even without the 'S'.
-     * 
-     * @return if the {@link IC} should always be ST.
-     */
-    boolean isAlwaysST();
 }

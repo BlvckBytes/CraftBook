@@ -157,12 +157,8 @@ public class ICMechanic extends AbstractCraftBookMechanic {
         } else
             return null;
 
-        // okay, everything checked out. we can finally make it.
-        if (ic instanceof SelfTriggeredIC && (sign.getLine(1).trim().toUpperCase(Locale.ENGLISH).endsWith("S") || ((SelfTriggeredIC) ic).isAlwaysST())) {
-            if (disableSelfTriggered)
-                return null;
+        if (ic instanceof SelfTriggeredIC)
             CraftBookPlugin.inst().getSelfTriggerManager().registerSelfTrigger(block.getLocation());
-        }
 
         return ic;
     }
@@ -370,13 +366,8 @@ public class ICMechanic extends AbstractCraftBookMechanic {
 
                 sign.update(false);
 
-                if (ic instanceof SelfTriggeredIC && (event.getLine(1).trim().toUpperCase(Locale.ENGLISH).endsWith("S") || ((SelfTriggeredIC) ic).isAlwaysST())) {
-                    if (disableSelfTriggered) {
-                        player.printError("Self-triggered ICs are disabled!");
-                        return;
-                    }
+                if (ic instanceof SelfTriggeredIC)
                     CraftBookPlugin.inst().getSelfTriggerManager().registerSelfTrigger(block.getLocation());
-                }
 
                 player.print(player.translate("mech.ic.create") + " " + registration.getId() + ": " + ic.getTitle() + ".");
             });
@@ -423,7 +414,6 @@ public class ICMechanic extends AbstractCraftBookMechanic {
     public List<String> disabledICs;
     public LocationCheckType defaultCoordinates;
     public boolean breakOnError;
-    public boolean disableSelfTriggered;
 
     @Override
     public void loadConfiguration (YAMLProcessor config, String path) {
@@ -445,8 +435,5 @@ public class ICMechanic extends AbstractCraftBookMechanic {
 
         config.setComment(path + "break-on-error", "Break the IC sign when an error occurs from that specific IC.");
         breakOnError = config.getBoolean(path + "break-on-error", false);
-        
-        config.setComment(path + "disable-self-triggered", "Disable creation and checking of self-triggered ICs.");
-        disableSelfTriggered = config.getBoolean(path + "disable-self-triggered", false);
     }
 }

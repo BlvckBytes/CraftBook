@@ -3,10 +3,7 @@ package com.sk89q.craftbook.mechanics.ic.gates.world.blocks;
 import com.sk89q.craftbook.ChangedSign;
 import com.sk89q.craftbook.bukkit.CraftBookPlugin;
 import com.sk89q.craftbook.bukkit.util.CraftBookBukkitUtil;
-import com.sk89q.craftbook.mechanics.ic.AbstractICFactory;
-import com.sk89q.craftbook.mechanics.ic.AbstractSelfTriggeredIC;
-import com.sk89q.craftbook.mechanics.ic.IC;
-import com.sk89q.craftbook.mechanics.ic.ICVerificationException;
+import com.sk89q.craftbook.mechanics.ic.*;
 import com.sk89q.craftbook.util.ItemSyntax;
 import com.sk89q.craftbook.util.ItemUtil;
 import com.sk89q.craftbook.util.SearchArea;
@@ -34,7 +31,7 @@ import java.util.List;
  *
  * @authors Drathus, Me4502
  */
-public class Planter extends AbstractSelfTriggeredIC {
+public class Planter extends AbstractIC implements SelfTriggeredIC {
 
     private Block cachedContainerBlock;
     private Inventory cachedChestInventory;

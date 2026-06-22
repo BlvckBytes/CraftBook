@@ -25,10 +25,6 @@ public class ICConfiguration {
             e.printStackTrace();
         }
 
-        for (RegisteredICFactory factory : ICManager.inst().getICList())
-            if (factory.getFactory() instanceof ConfigurableIC)
-                ((ConfigurableIC) factory.getFactory()).addConfiguration(config, "ics." + factory.getId() + ".");
-
         config.save(); //Save all the added values.
     }
 }

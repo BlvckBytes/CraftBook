@@ -13,7 +13,6 @@ mechanics:
         disallowed-ics: []
         default-coordinate-system: RELATIVE
         break-on-error: false
-        disable-self-triggered: false
     Pipes:
         allow-diagonal: false
         insulator-block: minecraft:white_wool

@@ -256,8 +256,6 @@ public class CraftBookPlugin extends JavaPlugin {
 
         mechanismsConfig.save();
 
-        boolean hasSTMechanic = false;
-
         Iterator<CraftBookMechanic> iter = mechanics.iterator();
         while(iter.hasNext()) {
             CraftBookMechanic mech = iter.next();
@@ -269,17 +267,12 @@ public class CraftBookPlugin extends JavaPlugin {
                     continue;
                 }
                 getServer().getPluginManager().registerEvents(mech, this);
-                if(mech instanceof ICMechanic && !((ICMechanic) mech).disableSelfTriggered) {
-                    //TODO make this a better check.
-                    hasSTMechanic = true;
-                }
             } catch(Throwable t) {
                 getLogger().log(Level.WARNING, "Failed to enable mechanic: " + mech.getClass().getSimpleName(), t);
             }
         }
 
-        if(hasSTMechanic)
-            setupSelfTriggered();
+        setupSelfTriggered();
     }
 
     public void registerGlobalEvents() {
