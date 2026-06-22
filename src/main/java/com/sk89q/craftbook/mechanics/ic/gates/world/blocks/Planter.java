@@ -47,7 +47,6 @@ public class Planter extends AbstractIC implements SelfTriggeredIC {
 
     @Override
     public void load() {
-
         if(getLine(2).isEmpty())
             item = null;
         else
@@ -177,8 +176,6 @@ public class Planter extends AbstractIC implements SelfTriggeredIC {
 
     @Override
     public void unload() {
-        super.unload();
-
         cachedContainerBlock = null;
         cachedChestInventory = null;
     }

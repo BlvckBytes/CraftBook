@@ -76,17 +76,6 @@ public abstract class AbstractIC implements IC {
     }
 
     @Override
-    public void unload() {
-
-        sign.update(false);
-    }
-
-    @Override
-    public void load() {
-
-    }
-
-    @Override
     public boolean equals(Object o) {
 
         return o instanceof AbstractIC && getSignTitle().equalsIgnoreCase(((AbstractIC) o).getSignTitle()) && getTitle().equalsIgnoreCase(((AbstractIC) o).getTitle()) && sign.equals(((AbstractIC) o).sign);

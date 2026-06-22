@@ -387,9 +387,10 @@ public class AutomaticCrafter extends AbstractIC implements SelfTriggeredIC, Pip
     }
 
     @Override
-    public void unload() {
-        super.unload();
+    public void load() {}
 
+    @Override
+    public void unload() {
         cachedDispenserOrDropperBlock = null;
         cachedDispenserOrDropperInventory = null;
         cachedOutputBlock = null;
