@@ -85,9 +85,6 @@ public class InventoryUtil {
         if (CachedBlock.isMaterial(cachedBlock, Material.CRAFTER) && inventory.getHolder() instanceof Crafter crafter)
             return distributeItemsToMakeEvenAndGetRemainders(stacks, inventory, (slot, contents) -> !crafter.isSlotDisabled(slot));
 
-        if (inventory instanceof ChiseledBookshelfInventory)
-            return addItemsToChiseledBookshelf(inventory, stacks);
-
         // Basic inventories like chests, dispensers, storage carts, etc.
 
         var leftovers = new ArrayList<ItemStack>();
@@ -329,20 +326,5 @@ public class InventoryUtil {
         }
 
         return remainders;
-    }
-
-    private static List<ItemStack> addItemsToChiseledBookshelf(Inventory inventory, Iterable<ItemStack> stacks) {
-        var leftovers = new ArrayList<ItemStack>();
-
-        for (var stack : stacks) {
-            if (!Tag.ITEMS_BOOKSHELF_BOOKS.isTagged(stack.getType())) {
-                leftovers.add(stack);
-                continue;
-            }
-
-            leftovers.addAll(inventory.addItem(stack).values());
-        }
-
-        return leftovers;
     }
 }
