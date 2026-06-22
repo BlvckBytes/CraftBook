@@ -2,6 +2,7 @@ package com.sk89q.craftbook.mechanics.pipe;
 
 import com.sk89q.craftbook.bukkit.CraftBookPlugin;
 import com.sk89q.craftbook.mechanics.pipe.notification.PipeNotification;
+import com.sk89q.craftbook.util.WrappedInventory;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import org.bukkit.*;
@@ -12,6 +13,7 @@ import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.Powerable;
 import org.bukkit.block.data.type.Chest;
 import org.bukkit.block.data.type.WallSign;
+import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.scheduler.BukkitTask;
 import org.jetbrains.annotations.Nullable;
 
@@ -123,6 +125,27 @@ public class BlockCache implements CachedBlockResolver {
 
         if (pipeSignByPistonCompactId.remove(CompactId.computeWorldlessBlockId(pistonBlock)) != null)
             Bukkit.getPluginManager().callEvent(new PipeSignCacheInvalidedEvent(pistonBlock));
+    }
+
+    public @Nullable WrappedInventory getPossiblyUnloadedBlockInventory(Block block, int cachedBlock) {
+        if (!CachedBlock.hasHandledOutputInventory(cachedBlock))
+            return null;
+
+        // TODO: At this point, if the chunk's unloaded, we should access the last capture made at the
+        //       ChunkUnloadEvent (MONITOR), which buffers changes until loaded again or until shutdown.
+        //       Also consider periodically writing back (if dirty), loading the chunk async, of course.
+
+        // TODO: Also, we need to rethink how we handle running into unloaded chunks when creating cache-
+        //       entries. If we no longer want to use chunk-tickets, loading the chunk asynchronously will
+        //       not guarantee it still being around when the pipe re-tries a few ticks later. Maybe, tickets
+        //       are still necessary, but only when initially loading to build cache-entries. It could stay
+        //       for, say, 20 ticks and be touched each time the cache still needed to initialize yet another
+        //       entry. That's worlds better than the current approach.
+
+        if (!(block.getState(false) instanceof InventoryHolder holder))
+            return null;
+
+        return new WrappedInventory(holder, holder.getInventory());
     }
 
     @Override

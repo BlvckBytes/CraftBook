@@ -168,11 +168,10 @@ public class Pipes implements CraftBookMechanic, PipesApi {
 
             EnumerationResult subWalkResult = EnumerationResult.COMPLETED;
 
-            if (
-                CachedBlock.hasHandledOutputInventory(cachedPutBlock)
-                    && putBlock.getState(false) instanceof InventoryHolder holder
-            ) {
-                leftovers.addAll(InventoryUtil.addItemsToInventory(new WrappedInventory(holder, holder.getInventory()), cachedPutBlock, itemsToPut, EnumSet.noneOf(InventoryAddFlag.class)));
+            var blockInventory = currentBlockCache.getPossiblyUnloadedBlockInventory(putBlock, cachedPutBlock);
+
+            if (blockInventory != null) {
+                leftovers.addAll(InventoryUtil.addItemsToInventory(blockInventory, cachedPutBlock, itemsToPut, EnumSet.noneOf(InventoryAddFlag.class)));
             } else if (isSubPipe) {
                 // Handle sub-pipes which continue the walk from here on forwards with a (possibly) limited set of items.
                 List<ItemStack> subPipeItems = new ArrayList<>(itemsToPut);
