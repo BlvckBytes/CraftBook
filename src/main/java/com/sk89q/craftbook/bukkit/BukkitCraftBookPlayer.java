@@ -102,9 +102,4 @@ public final class BukkitCraftBookPlayer extends BukkitPlayer implements CraftBo
     public boolean isSneaking () {
         return player.isSneaking();
     }
-
-    @Override
-    public String getCraftBookId() {
-        return CraftBookPlugin.inst().getUUIDMappings().getCBID(getUniqueId());
-    }
 }

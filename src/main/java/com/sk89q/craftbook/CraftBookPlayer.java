@@ -25,8 +25,6 @@ import com.sk89q.worldedit.util.Location;
  */
 public interface CraftBookPlayer extends Player {
 
-    String getCraftBookId();
-
     void teleport(Location location); // TODO Add to WorldEdit
 
     void temporarilyAttachMetadataFlag(String key, boolean value, Runnable runnable);

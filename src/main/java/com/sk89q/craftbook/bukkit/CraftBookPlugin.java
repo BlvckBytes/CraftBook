@@ -12,7 +12,6 @@ import com.sk89q.craftbook.mechanics.ic.ICMechanic;
 import com.sk89q.craftbook.mechanics.ic.gates.world.items.crafter.RecipeCache;
 import com.sk89q.craftbook.mechanics.pipe.Pipes;
 import com.sk89q.craftbook.util.ItemSyntax;
-import com.sk89q.craftbook.util.UUIDMappings;
 import com.sk89q.craftbook.util.compat.companion.CompanionPlugins;
 import com.sk89q.util.yaml.YAMLFormat;
 import com.sk89q.util.yaml.YAMLProcessor;
@@ -87,11 +86,6 @@ public class CraftBookPlugin extends JavaPlugin {
     private MechanicListenerAdapter managerAdapter;
 
     /**
-     * The UUID Mappings for CraftBook.
-     */
-    private UUIDMappings uuidMappings;
-
-    /**
      * List of common mechanics.
      */
     private List<CraftBookMechanic> mechanics;
@@ -134,16 +128,6 @@ public class CraftBookPlugin extends JavaPlugin {
     }
 
     /**
-     * Retrieve the UUID Mappings system of CraftBook.
-     * 
-     * @return The UUID Mappings System.
-     */
-    public UUIDMappings getUUIDMappings() {
-
-        return uuidMappings;
-    }
-
-    /**
      * Called on plugin enable.
      */
     @Override
@@ -170,9 +154,6 @@ public class CraftBookPlugin extends JavaPlugin {
             getServer().getPluginManager().disablePlugin(this);
             return;
         }
-
-        uuidMappings = new UUIDMappings();
-        uuidMappings.enable();
 
         managerAdapter = new MechanicListenerAdapter();
 
@@ -322,9 +303,6 @@ public class CraftBookPlugin extends JavaPlugin {
                 mech.disable();
             mechanics = null;
         }
-
-        if(uuidMappings != null)
-            uuidMappings.disable();
     }
 
     /**

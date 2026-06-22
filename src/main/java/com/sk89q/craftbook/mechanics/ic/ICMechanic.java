@@ -481,16 +481,6 @@ public class ICMechanic extends AbstractCraftBookMechanic {
         }
     }
 
-    public static boolean checkPermissionsBoolean(CraftBookPlayer player, ICFactory factory, String id) {
-
-        try {
-            checkPermissions(player, factory, id);
-        } catch (ICVerificationException e) {
-            return false;
-        }
-        return true;
-    }
-
     public static void checkPermissions(CraftBookPlayer player, ICFactory factory, String id) throws ICVerificationException {
 
         if (player.hasPermission("craftbook.ic." + id.toLowerCase(Locale.ENGLISH))) {
@@ -501,21 +491,7 @@ public class ICMechanic extends AbstractCraftBookMechanic {
             return;
         }
 
-        if (factory instanceof RestrictedIC) {
-            if (hasRestrictedPermissions(player, factory, id)) return;
-        } else if (hasSafePermissions(player, factory, id)) {
-            return;
-        }
-
         throw new ICVerificationException("You don't have permission to use " + id.toLowerCase(Locale.ENGLISH) + ".");
-    }
-
-    public static boolean hasRestrictedPermissions(CraftBookPlayer player, ICFactory factory, String id) {
-        return player.hasPermission("craftbook.ic.restricted." + id.toLowerCase(Locale.ENGLISH));
-    }
-
-    public static boolean hasSafePermissions(CraftBookPlayer player, ICFactory factory, String id) {
-        return player.hasPermission("craftbook.ic.safe." + id.toLowerCase(Locale.ENGLISH));
     }
 
     public boolean cache;
