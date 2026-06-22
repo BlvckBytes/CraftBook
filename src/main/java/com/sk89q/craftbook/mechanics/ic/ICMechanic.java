@@ -40,6 +40,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.SignChangeEvent;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -109,10 +110,10 @@ public class ICMechanic implements CraftBookMechanic {
         factoryByIcId.put(id.toLowerCase(), factory);
     }
 
-    private IC setupOrAccessIC(Block block, boolean create) {
+    private @Nullable IC setupOrAccessIC(Block block, boolean create) {
+        if (!SignUtil.isWallSign(block))
+            return null;
 
-        // if we're not looking at a wall sign, it can't be an IC.
-        if (!SignUtil.isWallSign(block)) return null;
         ChangedSign sign = CraftBookBukkitUtil.toChangedSign(block);
 
         // detect the text on the sign to see if it's any kind of IC at all.
