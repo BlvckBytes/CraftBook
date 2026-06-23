@@ -188,15 +188,7 @@ public class CachedBlock {
                 if (Tag.SHULKER_BOXES.isTagged(material))
                     return true;
 
-                // Currently, this includes copper-chests. Once we're bumping the API to 1.21.10,
-                // this hackish inclusion can be once again removed in favor of typed constants.
-
-                if (material == Material.ENDER_CHEST)
-                    return false;
-
-                var name = material.name();
-
-                return !name.contains("LEGACY") && name.endsWith("_CHEST");
+                return Tag.COPPER_CHESTS.isTagged(material);
             }
         }
     }
