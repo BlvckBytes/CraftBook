@@ -3,6 +3,7 @@ package com.sk89q.craftbook.mechanics.pipe;
 import com.sk89q.craftbook.util.NamedSlot;
 import com.sk89q.craftbook.util.GenericInventory;
 import com.sk89q.craftbook.util.ItemUtil;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Tag;
@@ -263,7 +264,7 @@ public class InventoryUtil {
       ItemStack source
     ) {
         var remainingAmount = source.getAmount();
-        var createdStack = false;
+        var createdSlotIndices = new IntArrayList();
 
         while (remainingAmount > 0) {
             var destinationIndex = InventoryUtil.getSmallestAmountOrPossiblyVacantIndex(destinations, slotPredicate, source);
@@ -278,7 +279,7 @@ public class InventoryUtil {
                 destination.setAmount(1);
                 destinations[destinationIndex] = destination;
                 --remainingAmount;
-                createdStack = true;
+                createdSlotIndices.add(destinationIndex);
                 continue;
             }
 
@@ -289,7 +290,7 @@ public class InventoryUtil {
             --remainingAmount;
         }
 
-        return new DistributeResult(remainingAmount, createdStack);
+        return new DistributeResult(remainingAmount, createdSlotIndices);
     }
 
     public static List<ItemStack> distributeItemsToMakeEvenAndGetRemainders(
@@ -298,7 +299,7 @@ public class InventoryUtil {
       @Nullable SlotPredicate slotPredicate
     ) {
         var remainders = new ArrayList<>(itemsToAdd);
-        var createdStack = false;
+        var createdSlotIndices = new IntArrayList();
 
         var inventoryContents = inventory.getContents();
 
@@ -311,7 +312,8 @@ public class InventoryUtil {
             }
 
             var result = distributeToMakeEven(inventoryContents, slotPredicate, itemToPut);
-            createdStack |= result.createdStack();
+
+            createdSlotIndices.addAll(result.createdSlotIndices());
 
             itemToPut.setAmount(result.remainder());
 
@@ -319,17 +321,8 @@ public class InventoryUtil {
                 remainders.remove(itemIndex);
         }
 
-        // Write back the contents manually - this branch (currently) only executes
-        // with vanilla Crafters, who drop their disabled slots on a #setContents...
-        if (createdStack) {
-            for (var i = 0; i < inventoryContents.length; ++i) {
-                var contentsItem = inventoryContents[i];
-
-                // When distributing, we only ever add, never remove, so null-slots stay constant.
-                if (contentsItem != null)
-                    inventory.set(i, contentsItem);
-            }
-        }
+        for (var createdSlotIndex : createdSlotIndices)
+            inventory.set(createdSlotIndex, inventoryContents[createdSlotIndex]);
 
         return remainders;
     }
