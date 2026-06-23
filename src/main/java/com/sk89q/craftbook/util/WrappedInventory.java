@@ -32,12 +32,12 @@ public class WrappedInventory extends GenericInventory {
   }
 
   @Override
-  public void set(int slot, ItemStack item) {
+  protected void setCheckedSlot(int slot, ItemStack item) {
     inventory.setItem(slot, item);
   }
 
   @Override
-  public @Nullable ItemStack get(int slot) {
+  protected @Nullable ItemStack getCheckedSlot(int slot) {
     return inventory.getItem(slot);
   }
 }

@@ -9,17 +9,31 @@ public abstract class GenericInventory {
 
   public abstract int getSize();
 
-  public abstract void set(int slot, ItemStack item);
+  public void set(int slot, ItemStack item) {
+    if (slot < 0 || slot >= getSize())
+      throw new IllegalArgumentException("Slot " + slot + " exceeds bounds of inventory");
+
+    setCheckedSlot(slot, item);
+  }
 
   public void set(NamedSlot namedSlot, ItemStack item) {
     set(namedSlot.slot, item);
   }
 
-  public abstract @Nullable ItemStack get(int slot);
+  protected abstract void setCheckedSlot(int slot, ItemStack item);
+
+  public @Nullable ItemStack get(int slot) {
+    if (slot < 0 || slot >= getSize())
+      throw new IllegalArgumentException("Slot " + slot + " exceeds bounds of inventory");
+
+    return getCheckedSlot(slot);
+  }
 
   public @Nullable ItemStack get(NamedSlot namedSlot) {
     return get(namedSlot.slot);
   }
+
+  protected abstract @Nullable ItemStack getCheckedSlot(int slot);
 
   public @Nullable ItemStack addAndGetRemainder(ItemStack item) {
     var remainingAmount = addItemAndGetRemainingAmount(item);
