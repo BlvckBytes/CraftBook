@@ -6,9 +6,7 @@ import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Collection;
-
-public class WrappedInventory implements GenericInventory {
+public class WrappedInventory extends GenericInventory {
 
   private final @Nullable InventoryHolder holder;
   private final Inventory inventory;
@@ -49,10 +47,5 @@ public class WrappedInventory implements GenericInventory {
   @Override
   public @Nullable ItemStack get(NamedSlot namedSlot) {
     return inventory.getItem(namedSlot.slot);
-  }
-
-  @Override
-  public Collection<ItemStack> addAndGetRemainders(ItemStack item) {
-    return inventory.addItem(item).values();
   }
 }

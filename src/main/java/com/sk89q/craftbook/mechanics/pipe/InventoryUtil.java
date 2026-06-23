@@ -102,7 +102,10 @@ public class InventoryUtil {
                 continue;
             }
 
-            leftovers.addAll(inventory.addAndGetRemainders(stack));
+            var remainder = inventory.addAndGetRemainder(stack);
+
+            if (remainder != null)
+                leftovers.add(remainder);
         }
 
         return leftovers;
