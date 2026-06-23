@@ -228,7 +228,7 @@ public class AutomaticCrafter extends IC implements SelfTriggeredIC, PipeInputIC
             }
         }
 
-        var matrixContents = cachedDispenserOrDropperInventory.getContents();
+        var inventory = new WrappedInventory(null, cachedDispenserOrDropperInventory);
 
         for (var itemEntity : getItemsAtBlock(getSign().getBlock())) {
             if (itemEntity.isDead() || !itemEntity.isValid())
@@ -236,14 +236,12 @@ public class AutomaticCrafter extends IC implements SelfTriggeredIC, PipeInputIC
 
             var itemStack = itemEntity.getItemStack();
 
-            // There's no need to track whether we've created a stack in the matrix and need to set the array back, seeing how
-            // we only ever increase the amount of valid items (the matrix is to be understood as a mask).
-            var result = InventoryUtil.distributeToMakeEven(matrixContents, (slot, contents) -> ItemUtil.isStackValid(contents), itemStack);
+            var remainingAmount = InventoryUtil.distributeToMakeEvenAndGetRemainder(inventory, (slot, contents) -> ItemUtil.isStackValid(contents), itemStack);
 
-            itemStack.setAmount(result.remainder());
+            itemStack.setAmount(remainingAmount);
             itemEntity.setItemStack(itemStack);
 
-            if (result.remainder() <= 0)
+            if (remainingAmount <= 0)
                 itemEntity.remove();
         }
     }

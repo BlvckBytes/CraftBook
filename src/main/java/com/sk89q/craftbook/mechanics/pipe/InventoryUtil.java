@@ -3,7 +3,6 @@ package com.sk89q.craftbook.mechanics.pipe;
 import com.sk89q.craftbook.util.NamedSlot;
 import com.sk89q.craftbook.util.GenericInventory;
 import com.sk89q.craftbook.util.ItemUtil;
-import it.unimi.dsi.fastutil.ints.IntArrayList;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Tag;
@@ -233,15 +232,15 @@ public class InventoryUtil {
     }
 
     private static int getSmallestAmountOrPossiblyVacantIndex(
-      ItemStack[] candidates,
+      GenericInventory inventory,
       @Nullable SlotPredicate slotPredicate,
       @NotNull ItemStack similarItem
     ) {
         ItemStack smallest = null;
         var smallestIndex = -1;
 
-        for (var index = 0; index < candidates.length; ++index) {
-            var candidate = candidates[index];
+        for (var index = 0; index < inventory.getSize(); ++index) {
+            var candidate = inventory.get(index);
 
             if (slotPredicate != null && !slotPredicate.test(index, candidate))
                 continue;
@@ -261,28 +260,26 @@ public class InventoryUtil {
         return smallestIndex;
     }
 
-    public static DistributeResult distributeToMakeEven(
-      ItemStack[] destinations,
+    public static int distributeToMakeEvenAndGetRemainder(
+      GenericInventory inventory,
       @Nullable SlotPredicate slotPredicate,
       ItemStack source
     ) {
         var remainingAmount = source.getAmount();
-        var createdSlotIndices = new IntArrayList();
 
         while (remainingAmount > 0) {
-            var destinationIndex = InventoryUtil.getSmallestAmountOrPossiblyVacantIndex(destinations, slotPredicate, source);
+            var destinationIndex = InventoryUtil.getSmallestAmountOrPossiblyVacantIndex(inventory, slotPredicate, source);
 
             if (destinationIndex < 0)
                 break;
 
-            var destination = destinations[destinationIndex];
+            var destination = inventory.get(destinationIndex);
 
             if (!ItemUtil.isStackValid(destination)) {
                 destination = new ItemStack(source);
                 destination.setAmount(1);
-                destinations[destinationIndex] = destination;
+                inventory.set(destinationIndex, destination);
                 --remainingAmount;
-                createdSlotIndices.add(destinationIndex);
                 continue;
             }
 
@@ -293,7 +290,7 @@ public class InventoryUtil {
             --remainingAmount;
         }
 
-        return new DistributeResult(remainingAmount, createdSlotIndices);
+        return remainingAmount;
     }
 
     public static List<ItemStack> distributeItemsToMakeEvenAndGetRemainders(
@@ -302,9 +299,6 @@ public class InventoryUtil {
       @Nullable SlotPredicate slotPredicate
     ) {
         var remainders = new ArrayList<>(itemsToAdd);
-        var createdSlotIndices = new IntArrayList();
-
-        var inventoryContents = inventory.getContents();
 
         for (var itemIndex = remainders.size() - 1; itemIndex >= 0; --itemIndex) {
             var itemToPut = remainders.get(itemIndex);
@@ -314,18 +308,13 @@ public class InventoryUtil {
                 continue;
             }
 
-            var result = distributeToMakeEven(inventoryContents, slotPredicate, itemToPut);
+            var remainingAmount = distributeToMakeEvenAndGetRemainder(inventory, slotPredicate, itemToPut);
 
-            createdSlotIndices.addAll(result.createdSlotIndices());
+            itemToPut.setAmount(remainingAmount);
 
-            itemToPut.setAmount(result.remainder());
-
-            if (result.remainder() <= 0)
+            if (remainingAmount <= 0)
                 remainders.remove(itemIndex);
         }
-
-        for (var createdSlotIndex : createdSlotIndices)
-            inventory.set(createdSlotIndex, inventoryContents[createdSlotIndex]);
 
         return remainders;
     }

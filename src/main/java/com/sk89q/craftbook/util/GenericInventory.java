@@ -7,18 +7,22 @@ public abstract class GenericInventory {
 
   public abstract boolean isSlotDisabled(int slot);
 
-  public abstract ItemStack[] getContents();
+  public abstract int getSize();
 
   public abstract void set(int slot, ItemStack item);
 
-  public abstract void set(NamedSlot namedSlot, ItemStack item);
+  public void set(NamedSlot namedSlot, ItemStack item) {
+    set(namedSlot.slot, item);
+  }
 
   public abstract @Nullable ItemStack get(int slot);
 
-  public abstract @Nullable ItemStack get(NamedSlot namedSlot);
+  public @Nullable ItemStack get(NamedSlot namedSlot) {
+    return get(namedSlot.slot);
+  }
 
   public @Nullable ItemStack addAndGetRemainder(ItemStack item) {
-    var remainingAmount = addItemToInventoryAndGetRemainingAmount(item);
+    var remainingAmount = addItemAndGetRemainingAmount(item);
 
     if (remainingAmount <= 0)
       return null;
@@ -30,16 +34,14 @@ public abstract class GenericInventory {
     return remainder;
   }
 
-  private int addItemToInventoryAndGetRemainingAmount(ItemStack itemToAdd) {
+  private int addItemAndGetRemainingAmount(ItemStack itemToAdd) {
     var firstVacantSlotIndex = -1;
     var remainingAmount = itemToAdd.getAmount();
 
-    var contents = getContents();
-
     // 1. Fill up all partial stacks
 
-    for (var slotIndex = 0; slotIndex < contents.length; ++slotIndex) {
-      var currentItem = contents[slotIndex];
+    for (var slotIndex = 0; slotIndex < getSize(); ++slotIndex) {
+      var currentItem = get(slotIndex);
 
       if (currentItem == null || currentItem.getType().isAir()) {
         if (firstVacantSlotIndex < 0)
@@ -91,8 +93,8 @@ public abstract class GenericInventory {
     //    a rather seldom, special case, we don't keep a list of vacant slots but rather just
     //    iterate again - that's plenty fast.
 
-    for (var slotIndex = 0; slotIndex < contents.length; ++slotIndex) {
-      var currentItem = contents[slotIndex];
+    for (var slotIndex = 0; slotIndex < getSize(); ++slotIndex) {
+      var currentItem = get(slotIndex);
 
       if (currentItem == null || currentItem.getType().isAir()) {
         remainder = new ItemStack(itemToAdd);

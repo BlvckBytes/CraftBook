@@ -10,10 +10,12 @@ public class WrappedInventory extends GenericInventory {
 
   private final @Nullable InventoryHolder holder;
   private final Inventory inventory;
+  private final int size;
 
   public WrappedInventory(@Nullable InventoryHolder holder, Inventory inventory) {
     this.holder = holder;
     this.inventory = inventory;
+    this.size = inventory.getSize();
   }
 
   @Override
@@ -25,8 +27,8 @@ public class WrappedInventory extends GenericInventory {
   }
 
   @Override
-  public ItemStack[] getContents() {
-    return inventory.getContents();
+  public int getSize() {
+    return size;
   }
 
   @Override
@@ -35,17 +37,7 @@ public class WrappedInventory extends GenericInventory {
   }
 
   @Override
-  public void set(NamedSlot namedSlot, ItemStack item) {
-    inventory.setItem(namedSlot.slot, item);
-  }
-
-  @Override
   public @Nullable ItemStack get(int slot) {
     return inventory.getItem(slot);
-  }
-
-  @Override
-  public @Nullable ItemStack get(NamedSlot namedSlot) {
-    return inventory.getItem(namedSlot.slot);
   }
 }
