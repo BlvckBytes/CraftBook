@@ -7,10 +7,7 @@ import com.sk89q.craftbook.util.events.SelfTriggerPingEvent;
 import com.sk89q.craftbook.util.events.SelfTriggerThinkEvent;
 import com.sk89q.craftbook.util.events.SelfTriggerUnregisterEvent;
 import com.sk89q.craftbook.util.events.SelfTriggerUnregisterEvent.UnregisterReason;
-import org.bukkit.Bukkit;
-import org.bukkit.Chunk;
-import org.bukkit.Location;
-import org.bukkit.World;
+import org.bukkit.*;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.Sign;
 import org.bukkit.event.EventHandler;
@@ -34,7 +31,7 @@ public class SelfTriggeringManager implements Listener {
         if (!chunk.getWorld().isChunkLoaded(chunk))
             return;
         try {
-            for(BlockState state : chunk.getTileEntities()) {
+            for(BlockState state : chunk.getTileEntities(block -> Tag.WALL_SIGNS.isTagged(block.getType()), false)) {
                 if(!(state instanceof Sign)) continue;
                 if(thinkingMechanics.contains(state.getLocation())) continue;
                 SelfTriggerPingEvent event = new SelfTriggerPingEvent(state.getBlock());
