@@ -9,41 +9,32 @@ import java.util.logging.Level;
 
 public class ChunkTicket {
 
+    public static final long EXPIRY_TIME_T = 20 * 5;
+
     private @Nullable Chunk chunk;
-    private boolean didStartPipe;
+    private long expiryTicksStamp;
 
-    public long expiryTicksStamp;
-
-    public boolean hasChunkSet() {
-        return chunk != null;
-    }
-
-    public void setChunk(@NotNull Chunk chunk) {
+    public void setChunk(@NotNull Chunk chunk, long relativeTime) {
         if (this.chunk != null)
             throw new IllegalStateException("Tried to override an already set chunk");
 
         this.chunk = chunk;
-        this.expiryTicksStamp = 0;
-        this.didStartPipe = false;
+        this.expiryTicksStamp = relativeTime + EXPIRY_TIME_T;
 
         if (!chunk.addPluginChunkTicket(CraftBookPlugin.inst()))
             CraftBookPlugin.logger().log(Level.WARNING, "Could not add plugin-ticket to chunk at " + chunk.getX() + " " + chunk.getZ());
     }
 
-    public void onPipeStart() {
-        didStartPipe = true;
-    }
-
-    public void handleExpiration(int ticksNow, boolean force) {
+    public boolean handleExpiration(int ticksNow, boolean force) {
         if (chunk == null)
-            return;
+            return false;
 
-        if (!force && !didStartPipe && ticksNow < expiryTicksStamp)
-            return;
+        if (!force && ticksNow < expiryTicksStamp)
+            return false;
 
         if (!chunk.removePluginChunkTicket(CraftBookPlugin.inst()))
             CraftBookPlugin.logger().log(Level.WARNING, "Could not remove plugin-ticket from chunk at " + chunk.getX() + " " + chunk.getZ());
 
-        chunk = null;
+        return true;
     }
 }

@@ -136,10 +136,6 @@ public class CachedBlock {
         return CHEST_TYPE_VALUES[index];
     }
 
-    public static boolean shouldContinueToRetainChunks(int cachedBlock) {
-        return hasHandledOutputInventory(cachedBlock);
-    }
-
     public static int fromBlock(Block block) {
         var blockData = block.getBlockData();
         var material = blockData.getMaterial();

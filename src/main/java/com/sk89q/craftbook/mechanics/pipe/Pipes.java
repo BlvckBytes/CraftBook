@@ -125,7 +125,7 @@ public class Pipes implements CraftBookMechanic, PipesApi {
                 return EnumerationDecision.CONTINUE;
 
             Block putBlock = pipeBlock.getRelative(CachedBlock.getFacing(cachedPipeBlock));
-            int cachedPutBlock = currentBlockCache.getCachedBlock(putBlock, true);
+            int cachedPutBlock = currentBlockCache.getCachedBlock(putBlock);
             boolean isSubPipe = CachedBlock.isTube(cachedPutBlock) && !CachedBlock.isPane(cachedPutBlock);
 
             // Add the sub-pipe tube-block to the visited-set as to avoid it being walked into again
@@ -346,9 +346,6 @@ public class Pipes implements CraftBookMechanic, PipesApi {
         int cachedContainerBlock;
 
         try {
-            // Input-blocks (sticky-piston and corresponding container) never touch chunk-tickets by themselves, as to
-            // avoid self-retaining farms that continue to produce transported items unendingly; these will later also
-            // invalidate existing tickets for their corresponding chunks.
             int cachedInputPistonBlock = currentBlockCache.getCachedBlock(inputPistonBlock);
 
             if (!CachedBlock.isMaterial(cachedInputPistonBlock, Material.STICKY_PISTON))
@@ -381,7 +378,6 @@ public class Pipes implements CraftBookMechanic, PipesApi {
         // Suck items from container-block
 
         InventoryHolder inventoryHolder = null;
-        Block secondaryInventoryBlock = null;
         Levelled levelled = null;
 
         //noinspection StatementWithEmptyBody
@@ -417,12 +413,6 @@ public class Pipes implements CraftBookMechanic, PipesApi {
                     }
                 }
             } else {
-                secondaryInventoryBlock = CachedBlock.getOtherChestBlock(
-                  containerBlock,
-                  CachedBlock.getChestType(cachedContainerBlock),
-                  CachedBlock.getFacing(cachedContainerBlock)
-                );
-
                 for (int slot = 0; slot < blockInventory.getSize(); ++slot) {
                     ItemStack stack = blockInventory.getItem(slot);
 
@@ -481,18 +471,6 @@ public class Pipes implements CraftBookMechanic, PipesApi {
                 CraftBookPlugin.logger().log(Level.SEVERE, "An error occurred while trying to locate exit-nodes for an item in a pipe", e);
             }
         }
-
-        // Do not mark the corresponding chunk-tickets earlier, as to not needlessly unload
-        // chunks which did not even cause a proper item-carrying pipe-start; also, wait for all
-        // other blocks as required for locating exit-nodes to have called into the cache, as to
-        // possibly set-up chunk-tickets which we can then mark as having started a pipe.
-        currentBlockCache.onItemsCarryingPipeStart(inputPistonBlock);
-        currentBlockCache.onItemsCarryingPipeStart(containerBlock);
-
-        // In case of sucking from a double-chest, the container is made up of two individual blocks who
-        // may reside in different chunks that could both have an active ticket which each needs to be marked.
-        if (secondaryInventoryBlock != null)
-            currentBlockCache.onItemsCarryingPipeStart(secondaryInventoryBlock);
 
         // Try to put leftovers back into the block and drop the rest at the input-piston.
 
@@ -771,12 +749,6 @@ public class Pipes implements CraftBookMechanic, PipesApi {
 
         config.setComment(path + "max-cache-load-count", "When initially warming up caches, how many blocks to load in one go at max; -1 for no limit.");
         maxCacheLoadCount = config.getInt(path + "max-cache-load-count", 500);
-
-        config.setComment(path + "initial-chunk-retain-duration", "For how long, in seconds, to retain chunks in memory after having loaded them while traversing pipes; -1 for no retainment at all.");
-        cacheRegistry.setInitialChunkTicketDurationTicks(config.getInt(path + "initial-chunk-retain-duration", BlockCacheRegistry.DEFAULT_INITIAL_CHUNK_TICKET_DURATION_S) * 20);
-
-        config.setComment(path + "continued-chunk-retain-duration", "For how long, in seconds, to retain chunks in memory that contain regularly accessed blocks; -1 for no continued retainment.");
-        cacheRegistry.setContinuedChunkTicketDurationTicks(config.getInt(path + "continued-chunk-retain-duration", BlockCacheRegistry.DEFAULT_CONTINUED_CHUNK_TICKET_DURATION_S) * 20);
 
         config.setComment(path + "notification-radius", "In what radius around an input-block to send notifications to player's action-bars; -1 to hide them");
         notificationRadiusSquared = config.getInt(path + "notification-radius", 5);

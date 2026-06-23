@@ -24,18 +24,12 @@ public class BlockCacheRegistry implements Listener {
 
   private static final int EXPIRED_TICKET_REMOVAL_INTERVAL_T = 5;
 
-  public static final int DEFAULT_INITIAL_CHUNK_TICKET_DURATION_S = 20;
-  public static final int DEFAULT_CONTINUED_CHUNK_TICKET_DURATION_S = 20;
-
   static {
     CachedBlock.setupPresetTable();
   }
 
   private final BukkitTask chunkTicketTask;
   private final Map<UUID, BlockCache> blockCacheByWorldUid;
-
-  private int initialChunkTicketDurationTicks = DEFAULT_INITIAL_CHUNK_TICKET_DURATION_S * 20;
-  private int continuedChunkTicketDurationTicks = DEFAULT_CONTINUED_CHUNK_TICKET_DURATION_S * 20;
 
   private int relativeTimeTicks;
 
@@ -68,22 +62,6 @@ public class BlockCacheRegistry implements Listener {
       cache.disable();
 
     blockCacheByWorldUid.clear();
-  }
-
-  public void setInitialChunkTicketDurationTicks(int duration) {
-    this.initialChunkTicketDurationTicks = duration;
-  }
-
-  public void setContinuedChunkTicketDurationTicks(int duration) {
-    this.continuedChunkTicketDurationTicks = duration;
-  }
-
-  public int getInitialChunkTicketDurationTicks() {
-    return initialChunkTicketDurationTicks;
-  }
-
-  public int getContinuedChunkTicketDurationTicks() {
-    return continuedChunkTicketDurationTicks;
   }
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
