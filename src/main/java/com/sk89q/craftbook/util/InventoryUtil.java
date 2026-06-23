@@ -1,8 +1,6 @@
-package com.sk89q.craftbook.mechanics.pipe;
+package com.sk89q.craftbook.util;
 
-import com.sk89q.craftbook.util.NamedSlot;
-import com.sk89q.craftbook.util.GenericInventory;
-import com.sk89q.craftbook.util.ItemUtil;
+import com.sk89q.craftbook.mechanics.pipe.CachedBlock;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Tag;

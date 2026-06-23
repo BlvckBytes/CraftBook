@@ -1,4 +1,4 @@
-package com.sk89q.craftbook.mechanics.pipe;
+package com.sk89q.craftbook.util;
 
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.Nullable;
