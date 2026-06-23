@@ -126,7 +126,7 @@ public class ICMechanic implements CraftBookMechanic {
         ICFactory factory = getFactoryById(id);
 
         if (factory == null) {
-            CraftBookPlugin.logger().warning("\"" + sign.getLine(1) + "\" should be an IC ID, but no IC registered under that ID could be found.");
+            CraftBookPlugin.logger().warning("Unknown IC \"" + sign.getLine(1) + "\" at " + block.getX() + " " + block.getY() + " " + block.getZ() + " " + block.getWorld().getName());
             block.breakNaturally();
             return null;
         }
