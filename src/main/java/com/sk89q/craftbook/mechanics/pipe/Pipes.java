@@ -366,6 +366,9 @@ public class Pipes implements CraftBookMechanic, PipesApi {
             return;
         }
 
+        if (!(containerBlock.getWorld().isChunkLoaded(containerBlock.getX() >> 4, containerBlock.getZ() >> 4)))
+            return;
+
         if (itemsInPipe == null)
             itemsInPipe = new ArrayList<>();
 
