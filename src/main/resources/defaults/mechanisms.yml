@@ -9,16 +9,20 @@ mechanics:
     ICs:
         max-radius: 10.0
     Pipes:
-        allow-diagonal: false
-        insulator-block: minecraft:white_wool
         stack-per-move: true
         require-sign: false
+        drop-exceeded-limits: true
+        drop-no-sign: true
         max-tube-block-count: -1
         max-piston-block-count: -1
         max-cache-load-count: 500
         initial-chunk-retain-duration: 20
         continued-chunk-retain-duration: 20
         notification-radius: 5
+        notify-owners-of-region: true
+        notify-members-of-region: true
+        notify-ignored-regions: []
+        notification-debounce-delay: 15
     Teleporter:
         require-sign: false
         max-range: 0
