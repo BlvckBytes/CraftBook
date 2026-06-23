@@ -748,7 +748,6 @@ public class Pipes implements CraftBookMechanic, PipesApi {
 
     @Override
     public void loadConfiguration(YAMLProcessor config, String path) {
-
         config.setComment(path + "stack-per-move", "This option stops the pipes taking the entire chest on power, and makes it just take a single stack.");
         pipeStackPerPull = config.getBoolean(path + "stack-per-move", true);
 
@@ -784,7 +783,7 @@ public class Pipes implements CraftBookMechanic, PipesApi {
         notifyOwnersOfRegion = config.getBoolean(path + "notify-owners-of-region", true);
 
         config.setComment(path + "notify-members-of-region", "Whether to display warning-notifications to all members of the region(s) the input-piston resides in");
-        notifyMembersOfRegion = config.getBoolean(path + "notify-members-of-region", true);
+        notifyMembersOfRegion = config.getBoolean(path + "notify-members-of-region", false);
 
         ignoredRegionsLower = new HashSet<>();
 

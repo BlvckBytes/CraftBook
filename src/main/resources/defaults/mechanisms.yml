@@ -20,7 +20,7 @@ mechanics:
         continued-chunk-retain-duration: 20
         notification-radius: 5
         notify-owners-of-region: true
-        notify-members-of-region: true
+        notify-members-of-region: false
         notify-ignored-regions: []
         notification-debounce-delay: 15
     Teleporter:
