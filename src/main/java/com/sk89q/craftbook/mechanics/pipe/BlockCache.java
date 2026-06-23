@@ -222,7 +222,7 @@ public class BlockCache implements CachedBlockResolver {
                 continue;
             }
 
-            if (!(faceBlock.getState() instanceof Sign sign))
+            if (!(faceBlock.getState(false) instanceof Sign sign))
                 continue;
 
             String[] lines = sign.getLines();
