@@ -7,7 +7,6 @@ import com.sk89q.craftbook.mechanics.ic.*;
 import com.sk89q.craftbook.util.InventoryUtil;
 import com.sk89q.craftbook.mechanics.pipe.PipePutEvent;
 import com.sk89q.craftbook.mechanics.pipe.PipeRequestEvent;
-import com.sk89q.craftbook.util.WrappedInventory;
 import com.sk89q.craftbook.util.ItemUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -228,15 +227,13 @@ public class AutomaticCrafter extends IC implements SelfTriggeredIC, PipeInputIC
             }
         }
 
-        var inventory = new WrappedInventory(null, cachedDispenserOrDropperInventory);
-
         for (var itemEntity : getItemsAtBlock(getSign().getBlock())) {
             if (itemEntity.isDead() || !itemEntity.isValid())
                 continue;
 
             var itemStack = itemEntity.getItemStack();
 
-            var remainingAmount = InventoryUtil.distributeToMakeEvenAndGetRemainder(inventory, (slot, contents) -> ItemUtil.isStackValid(contents), itemStack);
+            var remainingAmount = InventoryUtil.distributeToMakeEvenAndGetRemainder(cachedDispenserOrDropperInventory, (slot, contents) -> ItemUtil.isStackValid(contents), itemStack);
 
             itemStack.setAmount(remainingAmount);
             itemEntity.setItemStack(itemStack);
@@ -384,7 +381,7 @@ public class AutomaticCrafter extends IC implements SelfTriggeredIC, PipeInputIC
 
         var remainders = InventoryUtil.distributeItemsToMakeEvenAndGetRemainders(
           event.getItems(),
-          new WrappedInventory(null, cachedDispenserOrDropperInventory),
+          cachedDispenserOrDropperInventory,
           (slot, contents) -> ItemUtil.isStackValid(contents)
         );
 

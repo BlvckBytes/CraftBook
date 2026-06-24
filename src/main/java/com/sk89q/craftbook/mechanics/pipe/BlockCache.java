@@ -2,8 +2,6 @@ package com.sk89q.craftbook.mechanics.pipe;
 
 import com.sk89q.craftbook.bukkit.CraftBookPlugin;
 import com.sk89q.craftbook.mechanics.pipe.notification.PipeNotification;
-import com.sk89q.craftbook.util.GenericInventory;
-import com.sk89q.craftbook.util.WrappedInventory;
 import it.unimi.dsi.fastutil.longs.Long2ObjectArrayMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
@@ -15,6 +13,7 @@ import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.Powerable;
 import org.bukkit.block.data.type.Chest;
 import org.bukkit.block.data.type.WallSign;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.scheduler.BukkitTask;
 import org.jetbrains.annotations.Nullable;
@@ -127,7 +126,7 @@ public class BlockCache implements CachedBlockResolver {
             Bukkit.getPluginManager().callEvent(new PipeSignCacheInvalidedEvent(pistonBlock));
     }
 
-    public @Nullable GenericInventory getPossiblyUnloadedBlockInventory(Block block, int cachedBlock) {
+    public @Nullable Inventory getPossiblyUnloadedBlockInventory(Block block, int cachedBlock) {
         if (!CachedBlock.hasHandledOutputInventory(cachedBlock))
             return null;
 
@@ -135,7 +134,7 @@ public class BlockCache implements CachedBlockResolver {
         if (!(block.getState(false) instanceof InventoryHolder holder))
             return null;
 
-        return new WrappedInventory(holder, holder.getInventory());
+        return holder.getInventory();
     }
 
     @Override

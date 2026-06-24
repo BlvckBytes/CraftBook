@@ -488,7 +488,7 @@ public class Pipes implements CraftBookMechanic, PipesApi {
                 leftovers.addAll(itemsInPipe);
             } else if (inventoryHolder != null) {
                 // Allow to put items that have been sucked from the result-slot back into the furnace.
-                leftovers.addAll(InventoryUtil.addItemsToInventory(new WrappedInventory(inventoryHolder, inventoryHolder.getInventory()), cachedContainerBlock, itemsInPipe, EnumSet.of(InventoryAddFlag.ADD_TO_FURNACE_RESULT)));
+                leftovers.addAll(InventoryUtil.addItemsToInventory(inventoryHolder.getInventory(), cachedContainerBlock, itemsInPipe, EnumSet.of(InventoryAddFlag.ADD_TO_FURNACE_RESULT)));
             } else if (levelled != null) {
                 for (ItemStack item : itemsInPipe) {
                     if (levelled.getLevel() == levelled.getMaximumLevel() || item.getType() != Material.BONE_MEAL) {

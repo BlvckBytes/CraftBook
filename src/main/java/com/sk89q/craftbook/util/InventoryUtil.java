@@ -4,6 +4,7 @@ import com.sk89q.craftbook.mechanics.pipe.CachedBlock;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Tag;
+import org.bukkit.block.Crafter;
 import org.bukkit.inventory.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -72,17 +73,25 @@ public class InventoryUtil {
       };
     }
 
-    public static List<ItemStack> addItemsToInventory(GenericInventory inventory, int cachedBlock, List<ItemStack> stacks, EnumSet<InventoryAddFlag> flags) {
-        var furnaceIgredientSet = getFurnaceIngredientSetForBlock(cachedBlock);
+    public static List<ItemStack> addItemsToInventory(Inventory inventory, int cachedBlock, List<ItemStack> stacks, EnumSet<InventoryAddFlag> flags) {
+        if (inventory instanceof FurnaceInventory furnaceInventory) {
+            var furnaceIgredientSet = getFurnaceIngredientSetForBlock(cachedBlock);
 
-        if (furnaceIgredientSet != null)
-            return addItemsToFurnace(inventory, furnaceIgredientSet, stacks, flags.contains(InventoryAddFlag.ADD_TO_FURNACE_RESULT));
+            if (furnaceIgredientSet == null)
+                return stacks;
 
-        if (CachedBlock.isMaterial(cachedBlock, Material.BREWING_STAND))
-            return addItemsToBrewingStand(inventory, stacks);
+            return addItemsToFurnace(furnaceInventory, furnaceIgredientSet, stacks, flags.contains(InventoryAddFlag.ADD_TO_FURNACE_RESULT));
+        }
 
-        if (CachedBlock.isMaterial(cachedBlock, Material.CRAFTER))
-            return distributeItemsToMakeEvenAndGetRemainders(stacks, inventory, (slot, contents) -> !inventory.isSlotDisabled(slot));
+        if (inventory instanceof BrewerInventory brewerInventory)
+            return addItemsToBrewingStand(brewerInventory, stacks);
+
+        if (CachedBlock.isMaterial(cachedBlock, Material.CRAFTER)) {
+            if (!(inventory.getHolder(false) instanceof Crafter crafter))
+                return stacks;
+
+            return distributeItemsToMakeEvenAndGetRemainders(stacks, inventory, (slot, contents) -> !crafter.isSlotDisabled(slot));
+        }
 
         // Basic inventories like chests, dispensers, storage carts, etc.
 
@@ -99,10 +108,7 @@ public class InventoryUtil {
                 continue;
             }
 
-            var remainder = inventory.addAndGetRemainder(stack);
-
-            if (remainder != null)
-                leftovers.add(remainder);
+            leftovers.addAll(inventory.addItem(stack).values());
         }
 
         return leftovers;
@@ -121,7 +127,7 @@ public class InventoryUtil {
         return null;
     }
 
-    private static List<ItemStack> addItemsToFurnace(GenericInventory inventory, Set<Material> ingredientSet, List<ItemStack> stacks, boolean addToResult) {
+    private static List<ItemStack> addItemsToFurnace(FurnaceInventory inventory, Set<Material> ingredientSet, List<ItemStack> stacks, boolean addToResult) {
         var leftovers = new ArrayList<ItemStack>();
 
         ItemStack leftover;
@@ -132,8 +138,8 @@ public class InventoryUtil {
                 continue;
 
             if (ingredientSet.contains(stack.getType())) {
-                if ((slot = inventory.get(NamedSlot.FURNACE_SMELTING)) == null) {
-                    inventory.set(NamedSlot.FURNACE_SMELTING, stack);
+                if ((slot = inventory.getSmelting()) == null) {
+                    inventory.setSmelting(stack);
                     continue;
                 }
 
@@ -144,8 +150,8 @@ public class InventoryUtil {
             }
 
             if (stack.getType().isFuel()) {
-                if ((slot = inventory.get(NamedSlot.FURNACE_FUEL)) == null) {
-                    inventory.set(NamedSlot.FURNACE_FUEL, stack);
+                if ((slot = inventory.getFuel()) == null) {
+                    inventory.setFuel(stack);
                     continue;
                 }
 
@@ -156,8 +162,8 @@ public class InventoryUtil {
             }
 
             if (addToResult) {
-                if ((slot = inventory.get(NamedSlot.FURNACE_RESULT)) == null) {
-                    inventory.set(NamedSlot.FURNACE_RESULT, stack);
+                if ((slot = inventory.getResult()) == null) {
+                    inventory.setResult(stack);
                     continue;
                 }
 
@@ -174,15 +180,15 @@ public class InventoryUtil {
         return leftovers;
     }
 
-    private static List<ItemStack> addItemsToBrewingStand(GenericInventory inventory, Iterable<ItemStack> stacks) {
+    private static List<ItemStack> addItemsToBrewingStand(BrewerInventory inventory, Iterable<ItemStack> stacks) {
         List<ItemStack> leftovers = new ArrayList<>();
 
         ItemStack slot;
 
         stackLoop: for (ItemStack stack : stacks) {
             if (isAPotionIngredient(stack)) {
-                if ((slot = inventory.get(NamedSlot.BREWER_INGREDIENT)) == null) {
-                    inventory.set(NamedSlot.BREWER_INGREDIENT, stack);
+                if ((slot = inventory.getIngredient()) == null) {
+                    inventory.setIngredient(stack);
                     continue;
                 }
 
@@ -193,8 +199,8 @@ public class InventoryUtil {
             }
 
             if (stack.getType() == Material.BLAZE_POWDER) {
-                if ((slot = inventory.get(NamedSlot.BREWER_FUEL)) == null) {
-                    inventory.set(NamedSlot.BREWER_FUEL, stack);
+                if ((slot = inventory.getFuel()) == null) {
+                    inventory.setFuel(stack);
                     continue;
                 }
 
@@ -209,10 +215,10 @@ public class InventoryUtil {
                     || stack.getType() == Material.LINGERING_POTION
                     || stack.getType() == Material.SPLASH_POTION) {
                 for (int i = 0; i < 3; i++) {
-                    var currentItem = inventory.get(i);
+                    var currentItem = inventory.getItem(i);
 
                     if (currentItem == null) {
-                        inventory.set(i, stack);
+                        inventory.setItem(i, stack);
                         continue stackLoop;
                     }
 
@@ -230,7 +236,7 @@ public class InventoryUtil {
     }
 
     private static int getSmallestAmountOrPossiblyVacantIndex(
-      GenericInventory inventory,
+      Inventory inventory,
       @Nullable SlotPredicate slotPredicate,
       @NotNull ItemStack similarItem
     ) {
@@ -238,7 +244,7 @@ public class InventoryUtil {
         var smallestIndex = -1;
 
         for (var index = 0; index < inventory.getSize(); ++index) {
-            var candidate = inventory.get(index);
+            var candidate = inventory.getItem(index);
 
             if (slotPredicate != null && !slotPredicate.test(index, candidate))
                 continue;
@@ -259,7 +265,7 @@ public class InventoryUtil {
     }
 
     public static int distributeToMakeEvenAndGetRemainder(
-      GenericInventory inventory,
+      Inventory inventory,
       @Nullable SlotPredicate slotPredicate,
       ItemStack source
     ) {
@@ -271,12 +277,12 @@ public class InventoryUtil {
             if (destinationIndex < 0)
                 break;
 
-            var destination = inventory.get(destinationIndex);
+            var destination = inventory.getItem(destinationIndex);
 
             if (!ItemUtil.isStackValid(destination)) {
                 destination = new ItemStack(source);
                 destination.setAmount(1);
-                inventory.set(destinationIndex, destination);
+                inventory.setItem(destinationIndex, destination);
                 --remainingAmount;
                 continue;
             }
@@ -293,7 +299,7 @@ public class InventoryUtil {
 
     public static List<ItemStack> distributeItemsToMakeEvenAndGetRemainders(
       Collection<ItemStack> itemsToAdd,
-      GenericInventory inventory,
+      Inventory inventory,
       @Nullable SlotPredicate slotPredicate
     ) {
         var remainders = new ArrayList<>(itemsToAdd);
