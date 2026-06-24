@@ -280,19 +280,12 @@ public class BlockCache implements CachedBlockResolver {
             var chunkX = block.getX() >> 4;
             var chunkZ = block.getZ() >> 4;
 
-            var chunkId = CompactId.computeWorldlessChunkId(chunkX, chunkZ);
-
-            if (world.isChunkLoaded(chunkX, chunkZ)) {
-                var existingTicket = chunkTicketByCompactId.get(chunkId);
-
-                if (existingTicket != null)
-                    existingTicket.touch(registry.getRelativeTimeTicks(), loadReason);
-
+            if (world.isChunkLoaded(chunkX, chunkZ))
                 continue;
-            }
 
             encounteredUnloaded = true;
 
+            var chunkId = CompactId.computeWorldlessChunkId(chunkX, chunkZ);
             var existingTicket = chunkTicketByCompactId.get(chunkId);
 
             if (existingTicket == null) {
