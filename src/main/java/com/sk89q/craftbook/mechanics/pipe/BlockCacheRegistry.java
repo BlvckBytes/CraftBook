@@ -51,7 +51,7 @@ public class BlockCacheRegistry implements Listener {
   }
 
   public BlockCache getBlockCache(World world) {
-    return blockCacheByWorldUid.computeIfAbsent(world.getUID(), k -> new BlockCache(this));
+    return blockCacheByWorldUid.computeIfAbsent(world.getUID(), k -> new BlockCache(world, this));
   }
 
   public void disable() {

@@ -168,7 +168,7 @@ public class Pipes implements CraftBookMechanic, PipesApi {
 
             EnumerationResult subWalkResult = EnumerationResult.COMPLETED;
 
-            var blockInventory = currentBlockCache.getPossiblyUnloadedBlockInventory(putBlock, cachedPutBlock);
+            var blockInventory = currentBlockCache.tryAccessPossiblyUnloadedBlockInventory(putBlock, cachedPutBlock);
 
             if (blockInventory != null) {
                 leftovers.addAll(InventoryUtil.addItemsToInventory(blockInventory, cachedPutBlock, itemsToPut, EnumSet.noneOf(InventoryAddFlag.class)));
@@ -341,6 +341,9 @@ public class Pipes implements CraftBookMechanic, PipesApi {
     private void startPipe(Block inputPistonBlock, @Nullable Block overrideContainerBlock, @Nullable List<ItemStack> itemsInPipe, boolean wasRequest, List<PipeNotification> notificationOutput) {
         this.currentBlockCache = cacheRegistry.getBlockCache(inputPistonBlock.getWorld());
 
+        if (currentBlockCache.isPipeOriginDisabled(inputPistonBlock))
+            return;
+
         PipeSign sign;
         Block containerBlock;
         int cachedContainerBlock;
@@ -351,10 +354,14 @@ public class Pipes implements CraftBookMechanic, PipesApi {
             if (!CachedBlock.isMaterial(cachedInputPistonBlock, Material.STICKY_PISTON))
                 return;
 
-            sign = currentBlockCache.getSignOnPiston(inputPistonBlock, cachedInputPistonBlock, notificationOutput);
-
             containerBlock = overrideContainerBlock != null ? overrideContainerBlock : inputPistonBlock.getRelative(CachedBlock.getFacing(cachedInputPistonBlock));
+
+            if (currentBlockCache.isPipeOriginDisabled(containerBlock))
+                return;
+
             cachedContainerBlock = currentBlockCache.getCachedBlock(containerBlock);
+
+            sign = currentBlockCache.getSignOnPiston(inputPistonBlock, cachedInputPistonBlock, notificationOutput);
         }
         // If the very beginning of the pipe already (partially) is within an unloaded chunk,
         // there's no need to start the process at all.
@@ -363,7 +370,9 @@ public class Pipes implements CraftBookMechanic, PipesApi {
             return;
         }
 
-        if (!(containerBlock.getWorld().isChunkLoaded(containerBlock.getX() >> 4, containerBlock.getZ() >> 4)))
+        var otherChestBlock = CachedBlock.getOtherChestBlock(containerBlock, CachedBlock.getChestType(cachedContainerBlock), CachedBlock.getFacing(cachedContainerBlock));
+
+        if (otherChestBlock != null && currentBlockCache.isPipeOriginDisabled(otherChestBlock))
             return;
 
         if (itemsInPipe == null)
@@ -694,6 +703,10 @@ public class Pipes implements CraftBookMechanic, PipesApi {
         // If all constraints of the above hold, there is no reason to move into the hopper, seeing
         // how the intention of the setup is rather unambiguous. This hopper is but a mediator.
         event.setCancelled(true);
+
+        // #startPipe checks for target/source, so let's check for the hopper itself here as well to make it complete.
+        if (worldBlockCache.isPipeOriginDisabled(destinationBlock))
+            return;
 
         // During this event, Bukkit gets the moved item from the input-inventory and actually
         // sets its amount to 1 (or whatever's configured) by reference, so we have no way of

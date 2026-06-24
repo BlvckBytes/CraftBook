@@ -2,9 +2,7 @@ package com.sk89q.craftbook.mechanics.pipe;
 
 import com.sk89q.craftbook.bukkit.CraftBookPlugin;
 import com.sk89q.craftbook.mechanics.pipe.notification.PipeNotification;
-import it.unimi.dsi.fastutil.longs.Long2ObjectArrayMap;
-import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
-import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.longs.*;
 import org.bukkit.*;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -23,6 +21,8 @@ import java.util.List;
 
 public class BlockCache implements CachedBlockResolver {
 
+    private static final long RECENT_EXPIRY_DURATION_T = 60;
+
     private static final int CHUNK_BUCKET_DIMENSION = 32;
     private static final int CHUNK_BUCKET_SIZE = CHUNK_BUCKET_DIMENSION * CHUNK_BUCKET_DIMENSION * CHUNK_BUCKET_DIMENSION;
     private static final int CHUNK_BUCKET_MASK = CHUNK_BUCKET_DIMENSION - 1;
@@ -38,16 +38,43 @@ public class BlockCache implements CachedBlockResolver {
     private final Long2ObjectMap<int[]> cachedBlockByRelativeIdByChunkBucketId;
     private final Long2ObjectMap<PipeSign> pipeSignByPistonCompactId;
     private final Long2ObjectMap<BukkitTask> tempPowerResetTaskByCompactId;
+    private final Long2LongMap ticketExpiryByCompactId;
 
     private int cacheLoadCounter = 0;
 
-    public BlockCache(BlockCacheRegistry registry) {
+    private final World world;
+
+    public BlockCache(World world, BlockCacheRegistry registry) {
+        this.world = world;
         this.registry = registry;
 
         this.chunkTicketByCompactId = new Long2ObjectArrayMap<>();
         this.cachedBlockByRelativeIdByChunkBucketId = new Long2ObjectOpenHashMap<>();
         this.pipeSignByPistonCompactId = new Long2ObjectOpenHashMap<>(15_000, .5f);
         this.tempPowerResetTaskByCompactId = new Long2ObjectOpenHashMap<>();
+        this.ticketExpiryByCompactId = new Long2LongOpenHashMap();
+    }
+
+    public boolean isPipeOriginDisabled(Block block) {
+        return isBlockUnloaded(block) || hasOrRecentlyHadTicket(block);
+    }
+
+    private boolean isBlockUnloaded(Block block) {
+        return !world.isChunkLoaded(block.getX() >> 4, block.getZ() >> 4);
+    }
+
+    private boolean hasOrRecentlyHadTicket(Block block) {
+        var chunkId = CompactId.computeWorldlessChunkId(block.getX() >> 4, block.getZ() >> 4);
+
+        if (chunkTicketByCompactId.containsKey(chunkId))
+            return true;
+
+        var expiryStamp = ticketExpiryByCompactId.getOrDefault(chunkId, -1);
+
+        if (expiryStamp < 0)
+            return false;
+
+        return registry.getRelativeTimeTicks() - expiryStamp < RECENT_EXPIRY_DURATION_T;
     }
 
     public void temporarilyPowerBlock(Block block, int ticks) {
@@ -69,7 +96,15 @@ public class BlockCache implements CachedBlockResolver {
 
     public void expireChunkTickets(boolean force) {
         var now = registry.getRelativeTimeTicks();
-        chunkTicketByCompactId.values().removeIf(chunkTicket -> chunkTicket.handleExpiration(now, force));
+
+        chunkTicketByCompactId.long2ObjectEntrySet().removeIf(entry -> {
+            if (entry.getValue().handleExpiration(now, force)) {
+                ticketExpiryByCompactId.put(entry.getLongKey(), now);
+                return true;
+            }
+
+            return false;
+        });
     }
 
     public void disable() {
@@ -126,13 +161,26 @@ public class BlockCache implements CachedBlockResolver {
             Bukkit.getPluginManager().callEvent(new PipeSignCacheInvalidedEvent(pistonBlock));
     }
 
-    public @Nullable Inventory getPossiblyUnloadedBlockInventory(Block block, int cachedBlock) {
+    public @Nullable Inventory tryAccessPossiblyUnloadedBlockInventory(Block block, int cachedBlock) throws LoadingChunkException {
         if (!CachedBlock.hasHandledOutputInventory(cachedBlock))
             return null;
 
-        // TODO: This call still loads chunks (synchronously!) - but we're in the midst of changing that.
-        if (!(block.getState(false) instanceof InventoryHolder holder))
+        var otherChestBlock = CachedBlock.getOtherChestBlock(block, CachedBlock.getChestType(cachedBlock), CachedBlock.getFacing(cachedBlock));
+
+        ensureBlockIsLoaded(ChunkLoadReason.ACCESS_BLOCK_INVENTORY, block, otherChestBlock);
+
+        if (!(block.getState(false) instanceof InventoryHolder holder)) {
+            CraftBookPlugin.logger().warning("Expected an inventory-holder, but found none at block " + block);
+
+            // If this happened, despite the check earlier on, our cache must have been inaccurate...
+
+            invalidateCache(block);
+
+            if (otherChestBlock != null)
+                invalidateCache(otherChestBlock);
+
             return null;
+        }
 
         return holder.getInventory();
     }
@@ -153,7 +201,7 @@ public class BlockCache implements CachedBlockResolver {
         if (cachedBlock != CachedBlock.NULL_SENTINEL)
             return cachedBlock;
 
-        ensureChunkIsLoadedForBlockCacheLoading(block);
+        ensureBlockIsLoaded(ChunkLoadReason.UPDATE_BLOCK_CACHE, block);
 
         var loadedBlock = CachedBlock.fromBlock(block);
 
@@ -222,32 +270,48 @@ public class BlockCache implements CachedBlockResolver {
         return cachedSign;
     }
 
-    private void ensureChunkIsLoadedForBlockCacheLoading(Block block) throws LoadingChunkException {
-        int chunkX = block.getX() >> 4;
-        int chunkZ = block.getZ() >> 4;
-        World world = block.getWorld();
+    private void ensureBlockIsLoaded(ChunkLoadReason loadReason, @Nullable Block... blocks) throws LoadingChunkException {
+        var encounteredUnloaded = false;
 
-        if (world.isChunkLoaded(chunkX, chunkZ))
-            return;
+        for (var block : blocks) {
+            if (block == null)
+                continue;
 
-        var chunkId = CompactId.computeWorldlessChunkId(chunkX, chunkZ);
-        var existingTicket = chunkTicketByCompactId.get(chunkId);
+            var chunkX = block.getX() >> 4;
+            var chunkZ = block.getZ() >> 4;
 
-        if (existingTicket == null) {
-            var newTicket = new ChunkTicket();
+            var chunkId = CompactId.computeWorldlessChunkId(chunkX, chunkZ);
 
-            chunkTicketByCompactId.put(chunkId, newTicket);
+            if (world.isChunkLoaded(chunkX, chunkZ)) {
+                var existingTicket = chunkTicketByCompactId.get(chunkId);
 
-            world.getChunkAtAsync(chunkX, chunkZ, true, chunk -> {
-                newTicket.setChunk(chunk, registry.getRelativeTimeTicks());
-            });
+                if (existingTicket != null)
+                    existingTicket.touch(registry.getRelativeTimeTicks(), loadReason);
+
+                continue;
+            }
+
+            encounteredUnloaded = true;
+
+            var existingTicket = chunkTicketByCompactId.get(chunkId);
+
+            if (existingTicket == null) {
+                var newTicket = new ChunkTicket();
+
+                chunkTicketByCompactId.put(chunkId, newTicket);
+
+                world.getChunkAtAsync(chunkX, chunkZ, true, chunk -> {
+                    newTicket.setChunk(chunk, registry.getRelativeTimeTicks(), loadReason);
+                });
+            }
         }
 
-        throw new LoadingChunkException();
+        if (encounteredUnloaded)
+            throw new LoadingChunkException();
     }
 
     private boolean setBlockPower(Block block, boolean state) {
-        if (!block.getWorld().isChunkLoaded(block.getX() >> 4, block.getZ() >> 4))
+        if (isBlockUnloaded(block))
             return false;
 
         var blockData = block.getBlockData();
