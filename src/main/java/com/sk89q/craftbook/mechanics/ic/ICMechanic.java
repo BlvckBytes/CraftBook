@@ -125,11 +125,8 @@ public class ICMechanic implements CraftBookMechanic {
         // now actually try to pull up an IC of that id number.
         ICFactory factory = getFactoryById(id);
 
-        if (factory == null) {
-            CraftBookPlugin.logger().warning("Unknown IC \"" + sign.getLine(1) + "\" at " + block.getX() + " " + block.getY() + " " + block.getZ() + " " + block.getWorld().getName());
-            block.breakNaturally();
+        if (factory == null)
             return null;
-        }
 
         var ic = getCachedIC(block.getLocation());
 
