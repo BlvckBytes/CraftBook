@@ -30,9 +30,9 @@ import java.util.logging.Level;
 public class Pipes implements CraftBookMechanic, PipesApi {
 
     private static final BlockFace[] DROP_ITEM_FACES = new BlockFace[] {
-      BlockFace.UP, BlockFace.DOWN,
       BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST,
-      BlockFace.NORTH_EAST, BlockFace.NORTH_WEST, BlockFace.SOUTH_EAST, BlockFace.SOUTH_WEST
+      BlockFace.NORTH_EAST, BlockFace.NORTH_WEST, BlockFace.SOUTH_EAST, BlockFace.SOUTH_WEST,
+      BlockFace.UP, BlockFace.DOWN,
     };
 
     private static final BlockFace[] PIPE_NEIGHBOR_FACES = new BlockFace[] {
