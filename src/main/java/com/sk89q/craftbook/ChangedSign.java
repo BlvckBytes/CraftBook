@@ -5,6 +5,7 @@ import net.kyori.adventure.text.TextComponent;
 import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
 import org.bukkit.block.sign.Side;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import java.util.Objects;
@@ -39,9 +40,10 @@ public class ChangedSign {
         return block;
     }
 
-    public Sign getOrAccessSign() {
+    public @Nullable Sign getOrAccessSign() {
         if (this.sign == null) {
-            this.sign = (Sign) this.block.getState(false);
+            if (this.block.getState(false) instanceof Sign _sign)
+                this.sign = _sign;
         }
         return sign;
     }
@@ -54,11 +56,15 @@ public class ChangedSign {
         lines[index] = line;
     }
 
-    public boolean update(boolean force) {
+    public void update(boolean force) {
         if(!hasChanged() && !force)
-            return false;
+            return;
 
         var currentSign = getOrAccessSign();
+
+        if (currentSign == null)
+            return;
+
         var frontSide = currentSign.getSide(Side.FRONT);
 
         for (var lineIndex = 0; lineIndex < lines.length; lineIndex++) {
@@ -72,7 +78,7 @@ public class ChangedSign {
 
         System.arraycopy(this.lines, 0, this.oldLines, 0, this.lines.length);
 
-        return currentSign.update(force, false);
+        currentSign.update(force, false);
     }
 
     public boolean hasChanged() {
@@ -87,9 +93,14 @@ public class ChangedSign {
     private void flushLines() {
         this.sign = null;
 
+        var currentSign = getOrAccessSign();
+
+        if (currentSign == null)
+            return;
+
         this.lines = new String[SIGN_LINE_COUNT];
 
-        var componentLines = getOrAccessSign().getSide(Side.FRONT).lines();
+        var componentLines = currentSign.getSide(Side.FRONT).lines();
         var lineBuffer = new StringBuilder();
 
         for (var lineIndex = 0; lineIndex < lines.length; ++lineIndex) {

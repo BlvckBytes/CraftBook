@@ -10,6 +10,7 @@ import org.bukkit.Tag;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.Sign;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -44,7 +45,7 @@ public final class CraftBookBukkitUtil {
         return new ChangedSign(block, lines);
     }
 
-    public static Sign toSign(ChangedSign sign) {
+    public static @Nullable Sign toSign(ChangedSign sign) {
         if (sign.hasChanged())
             sign.update(false);
 
