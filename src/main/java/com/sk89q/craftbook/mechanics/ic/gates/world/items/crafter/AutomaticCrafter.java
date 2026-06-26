@@ -8,6 +8,7 @@ import com.sk89q.craftbook.util.InventoryUtil;
 import com.sk89q.craftbook.mechanics.pipe.PipePutEvent;
 import com.sk89q.craftbook.mechanics.pipe.PipeRequestEvent;
 import com.sk89q.craftbook.util.ItemUtil;
+import com.sk89q.craftbook.util.LiveAddOnlyInventory;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.block.*;
@@ -233,7 +234,11 @@ public class AutomaticCrafter extends IC implements SelfTriggeredIC, PipeInputIC
 
             var itemStack = itemEntity.getItemStack();
 
-            var remainingAmount = InventoryUtil.distributeToMakeEvenAndGetRemainder(cachedDispenserOrDropperInventory, (slot, contents) -> ItemUtil.isStackValid(contents), itemStack);
+            var remainingAmount = InventoryUtil.distributeToMakeEvenAndGetRemainder(
+              new LiveAddOnlyInventory(cachedDispenserOrDropperInventory),
+              (slot, vacant) -> !vacant,
+              itemStack
+            );
 
             itemStack.setAmount(remainingAmount);
             itemEntity.setItemStack(itemStack);
@@ -381,8 +386,8 @@ public class AutomaticCrafter extends IC implements SelfTriggeredIC, PipeInputIC
 
         var remainders = InventoryUtil.distributeItemsToMakeEvenAndGetRemainders(
           event.getItems(),
-          cachedDispenserOrDropperInventory,
-          (slot, contents) -> ItemUtil.isStackValid(contents)
+          new LiveAddOnlyInventory(cachedDispenserOrDropperInventory),
+          (slot, vacant) -> !vacant
         );
 
         event.getItems().clear();

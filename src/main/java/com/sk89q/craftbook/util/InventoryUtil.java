@@ -1,17 +1,21 @@
 package com.sk89q.craftbook.util;
 
-import com.sk89q.craftbook.mechanics.pipe.CachedBlock;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Tag;
-import org.bukkit.block.Crafter;
 import org.bukkit.inventory.*;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
 public class InventoryUtil {
+
+    private static final int FURNACE_SMELTING_INDEX = 0;
+    private static final int FURNACE_FUEL_INDEX = 1;
+    private static final int FURNACE_RESULT_INDEX = 2;
+
+    private static final int BREWER_INGREDIENT_INDEX = 3;
+    private static final int BREWER_FUEL_INDEX = 4;
 
     private static final Set<Material> furnaceIngredients;
     private static final Set<Material> blastFurnaceIngredients;
@@ -45,25 +49,6 @@ public class InventoryUtil {
         }
     }
 
-    private static ItemStack addToStack(ItemStack base, ItemStack toAdd) {
-        var spaceOnBase = base.getMaxStackSize() - base.getAmount();
-
-        if (spaceOnBase <= 0)
-            return toAdd;
-
-        if (!base.isSimilar(toAdd))
-            return toAdd;
-
-        if (toAdd.getAmount() > spaceOnBase) {
-            toAdd.setAmount(toAdd.getAmount() - spaceOnBase);
-            base.setAmount(base.getAmount() + spaceOnBase);
-            return toAdd;
-        }
-
-        base.setAmount(base.getAmount() + toAdd.getAmount());
-        return null;
-    }
-
     private static boolean isAPotionIngredient(ItemStack item) {
       return switch (item.getType()) {
         case NETHER_WART, GLOWSTONE_DUST, REDSTONE, SPIDER_EYE, MAGMA_CREAM, SUGAR, GLISTERING_MELON_SLICE, GHAST_TEAR,
@@ -73,253 +58,233 @@ public class InventoryUtil {
       };
     }
 
-    public static List<ItemStack> addItemsToInventory(Inventory inventory, int cachedBlock, List<ItemStack> stacks, EnumSet<InventoryAddFlag> flags) {
-        if (inventory instanceof FurnaceInventory furnaceInventory) {
-            var furnaceIgredientSet = getFurnaceIngredientSetForBlock(cachedBlock);
+    public static List<ItemStack> addItemsToInventory(
+      AddOnlyInventory inventory,
+      Material blockMaterial,
+      List<ItemStack> itemsToAdd,
+      EnumSet<InventoryAddFlag> flags
+    ) {
+        var furnaceIgredientSet = switch (blockMaterial) {
+            case FURNACE -> furnaceIngredients;
+            case SMOKER -> smokerIngredients;
+            case BLAST_FURNACE -> blastFurnaceIngredients;
+            default -> null;
+        };
 
-            if (furnaceIgredientSet == null)
-                return stacks;
+        if (furnaceIgredientSet != null)
+            return addItemsToFurnace(inventory, furnaceIgredientSet, itemsToAdd, flags.contains(InventoryAddFlag.ADD_TO_FURNACE_RESULT));
 
-            return addItemsToFurnace(furnaceInventory, furnaceIgredientSet, stacks, flags.contains(InventoryAddFlag.ADD_TO_FURNACE_RESULT));
-        }
+        if (blockMaterial == Material.BREWING_STAND)
+            return addItemsToBrewingStand(inventory, itemsToAdd);
 
-        if (inventory instanceof BrewerInventory brewerInventory)
-            return addItemsToBrewingStand(brewerInventory, stacks);
-
-        if (CachedBlock.isMaterial(cachedBlock, Material.CRAFTER)) {
-            if (!(inventory.getHolder(false) instanceof Crafter crafter))
-                return stacks;
-
-            return distributeItemsToMakeEvenAndGetRemainders(stacks, inventory, (slot, contents) -> !crafter.isSlotDisabled(slot));
-        }
+        if (blockMaterial == Material.CRAFTER)
+            return distributeItemsToMakeEvenAndGetRemainders(itemsToAdd, inventory, (slot, vacant) -> !inventory.isSlotDisabled(slot));
 
         // Basic inventories like chests, dispensers, storage carts, etc.
 
         var leftovers = new ArrayList<ItemStack>();
-        var isAddingToShulkerBox = Tag.SHULKER_BOXES.isTagged(CachedBlock.getMaterial(cachedBlock));
+        var isAddingToShulkerBox = Tag.SHULKER_BOXES.isTagged(blockMaterial);
 
-        for (var stack : stacks) {
-            if (stack == null)
+        for (var itemToAdd : itemsToAdd) {
+            if (!ItemUtil.isStackValid(itemToAdd))
                 continue;
 
             // Shulker-boxes do not nest
-            if (isAddingToShulkerBox && Tag.SHULKER_BOXES.isTagged(stack.getType())) {
-                leftovers.add(stack);
+            if (isAddingToShulkerBox && Tag.SHULKER_BOXES.isTagged(itemToAdd.getType())) {
+                leftovers.add(itemToAdd);
                 continue;
             }
 
-            leftovers.addAll(inventory.addItem(stack).values());
+            var amountToAdd = itemToAdd.getAmount();
+            var addedAmount = inventory.addItemAndGetAddedAmount(itemToAdd, amountToAdd);
+
+            if (addedAmount >= itemToAdd.getAmount())
+                continue;
+
+            itemToAdd.setAmount(amountToAdd - addedAmount);
+
+            leftovers.add(itemToAdd);
         }
 
         return leftovers;
     }
 
-    private static @Nullable Set<Material> getFurnaceIngredientSetForBlock(int cachedBlock) {
-        if (CachedBlock.isMaterial(cachedBlock, Material.FURNACE))
-            return furnaceIngredients;
-
-        if (CachedBlock.isMaterial(cachedBlock, Material.SMOKER))
-            return smokerIngredients;
-
-        if (CachedBlock.isMaterial(cachedBlock, Material.BLAST_FURNACE))
-            return blastFurnaceIngredients;
-
-        return null;
-    }
-
-    private static List<ItemStack> addItemsToFurnace(FurnaceInventory inventory, Set<Material> ingredientSet, List<ItemStack> stacks, boolean addToResult) {
+    private static List<ItemStack> addItemsToFurnace(
+      AddOnlyInventory inventory,
+      Set<Material> ingredientSet,
+      List<ItemStack> itemsToAdd,
+      boolean addToResult
+    ) {
         var leftovers = new ArrayList<ItemStack>();
 
-        ItemStack leftover;
-        ItemStack slot;
-
-        for (var stack : stacks) {
-            if (!ItemUtil.isStackValid(stack))
+        for (var itemToAdd : itemsToAdd) {
+            if (!ItemUtil.isStackValid(itemToAdd))
                 continue;
 
-            if (ingredientSet.contains(stack.getType())) {
-                if ((slot = inventory.getSmelting()) == null) {
-                    inventory.setSmelting(stack);
+            var remainingAmount = itemToAdd.getAmount();
+
+            if (itemToAdd.getType().isFuel()) {
+                remainingAmount -= inventory.addItemToSlotAndGetAddedAmount(FURNACE_FUEL_INDEX, itemToAdd, remainingAmount);
+
+                if (remainingAmount <= 0)
                     continue;
-                }
-
-                if ((leftover = addToStack(slot, stack)) != null)
-                    leftovers.add(leftover);
-
-                continue;
             }
 
-            if (stack.getType().isFuel()) {
-                if ((slot = inventory.getFuel()) == null) {
-                    inventory.setFuel(stack);
+            if (ingredientSet.contains(itemToAdd.getType())) {
+                remainingAmount -= inventory.addItemToSlotAndGetAddedAmount(FURNACE_SMELTING_INDEX, itemToAdd, remainingAmount);
+
+                if (remainingAmount <= 0)
                     continue;
-                }
-
-                if ((leftover = addToStack(slot, stack)) != null)
-                    leftovers.add(leftover);
-
-                continue;
             }
 
             if (addToResult) {
-                if ((slot = inventory.getResult()) == null) {
-                    inventory.setResult(stack);
+                remainingAmount -= inventory.addItemToSlotAndGetAddedAmount(FURNACE_RESULT_INDEX, itemToAdd, remainingAmount);
+
+                if (remainingAmount <= 0)
                     continue;
-                }
-
-                if ((leftover = addToStack(slot, stack)) != null)
-                    leftovers.add(leftover);
-
-                continue;
             }
 
-            // Not compatible with any of the furnace input-slots
-            leftovers.add(stack);
+            itemToAdd.setAmount(remainingAmount);
+
+            leftovers.add(itemToAdd);
         }
 
         return leftovers;
     }
 
-    private static List<ItemStack> addItemsToBrewingStand(BrewerInventory inventory, Iterable<ItemStack> stacks) {
-        List<ItemStack> leftovers = new ArrayList<>();
-
-        ItemStack slot;
-
-        stackLoop: for (ItemStack stack : stacks) {
-            if (isAPotionIngredient(stack)) {
-                if ((slot = inventory.getIngredient()) == null) {
-                    inventory.setIngredient(stack);
-                    continue;
-                }
-
-                stack = addToStack(slot, stack);
-
-                if (stack == null)
-                    continue;
-            }
-
-            if (stack.getType() == Material.BLAZE_POWDER) {
-                if ((slot = inventory.getFuel()) == null) {
-                    inventory.setFuel(stack);
-                    continue;
-                }
-
-                stack = addToStack(slot, stack);
-
-                if (stack == null)
-                    continue;
-            }
-
-            if (stack.getType() == Material.GLASS_BOTTLE
-                    || stack.getType() == Material.POTION
-                    || stack.getType() == Material.LINGERING_POTION
-                    || stack.getType() == Material.SPLASH_POTION) {
-                for (int i = 0; i < 3; i++) {
-                    var currentItem = inventory.getItem(i);
-
-                    if (currentItem == null) {
-                        inventory.setItem(i, stack);
-                        continue stackLoop;
-                    }
-
-                    stack = addToStack(currentItem, stack);
-
-                    if (stack == null)
-                        continue stackLoop;
-                }
-            }
-
-            leftovers.add(stack);
-        }
-
-        return leftovers;
-    }
-
-    private static int getSmallestAmountOrPossiblyVacantIndex(
-      Inventory inventory,
-      @Nullable SlotPredicate slotPredicate,
-      @NotNull ItemStack similarItem
+    private static List<ItemStack> addItemsToBrewingStand(
+      AddOnlyInventory inventory,
+      List<ItemStack> itemsToAdd
     ) {
-        ItemStack smallest = null;
-        var smallestIndex = -1;
+        var leftovers = new ArrayList<ItemStack>();
 
-        for (var index = 0; index < inventory.getSize(); ++index) {
-            var candidate = inventory.getItem(index);
-
-            if (slotPredicate != null && !slotPredicate.test(index, candidate))
+        addLoop:
+        for (ItemStack itemToAdd : itemsToAdd) {
+            if (!ItemUtil.isStackValid(itemToAdd))
                 continue;
 
-            if (!ItemUtil.isStackValid(candidate))
-                return index;
+            var remainingAmount = itemToAdd.getAmount();
 
-            if (!similarItem.isSimilar(candidate))
-                continue;
+            if (itemToAdd.getType() == Material.BLAZE_POWDER) {
+                remainingAmount -= inventory.addItemToSlotAndGetAddedAmount(BREWER_FUEL_INDEX, itemToAdd, remainingAmount);
 
-            if (smallest == null || candidate.getAmount() < smallest.getAmount()) {
-                smallest = candidate;
-                smallestIndex = index;
+                if (remainingAmount <= 0)
+                    continue;
             }
+
+            if (isAPotionIngredient(itemToAdd)) {
+                remainingAmount -= inventory.addItemToSlotAndGetAddedAmount(BREWER_INGREDIENT_INDEX, itemToAdd, remainingAmount);
+
+                if (remainingAmount <= 0)
+                    continue;
+            }
+
+            if (isABottleItem(itemToAdd)) {
+                for (int bottleSlot = 0; bottleSlot < 3; bottleSlot++) {
+                    remainingAmount -= inventory.addItemToSlotAndGetAddedAmount(bottleSlot, itemToAdd, remainingAmount);
+
+                    if (remainingAmount <= 0)
+                        continue addLoop;
+                }
+            }
+
+            itemToAdd.setAmount(remainingAmount);
+
+            leftovers.add(itemToAdd);
         }
 
-        return smallestIndex;
+        return leftovers;
+    }
+
+    private static boolean isABottleItem(ItemStack item) {
+        return switch (item.getType()) {
+            case GLASS_BOTTLE, POTION, LINGERING_POTION, SPLASH_POTION -> true;
+            default -> false;
+        };
     }
 
     public static int distributeToMakeEvenAndGetRemainder(
-      Inventory inventory,
+      AddOnlyInventory inventory,
       @Nullable SlotPredicate slotPredicate,
-      ItemStack source
+      ItemStack itemToAdd
     ) {
-        var remainingAmount = source.getAmount();
+        var stackSize = itemToAdd.getMaxStackSize();
+        var spaceByIndex = new int[inventory.getSize()];
+        var addedAmountByIndex = new int[inventory.getSize()];
 
-        while (remainingAmount > 0) {
-            var destinationIndex = InventoryUtil.getSmallestAmountOrPossiblyVacantIndex(inventory, slotPredicate, source);
+        for (var index = 0; index < spaceByIndex.length; ++index) {
+            var availableSpace = inventory.getSpaceFor(index, itemToAdd);
 
-            if (destinationIndex < 0)
-                break;
-
-            var destination = inventory.getItem(destinationIndex);
-
-            if (!ItemUtil.isStackValid(destination)) {
-                destination = new ItemStack(source);
-                destination.setAmount(1);
-                inventory.setItem(destinationIndex, destination);
-                --remainingAmount;
+            if (slotPredicate != null && !slotPredicate.test(index, availableSpace >= stackSize))
                 continue;
-            }
 
-            if (destination.getAmount() >= 64)
-                break;
-
-            destination.setAmount(destination.getAmount() + 1);
-            --remainingAmount;
+            spaceByIndex[index] = availableSpace;
         }
 
-        return remainingAmount;
+        var simulatedRemainingAmount = itemToAdd.getAmount();
+
+        while (simulatedRemainingAmount > 0) {
+            var maxSpace = 0;
+            var maxSpaceIndex = -1;
+
+            for (var index = 0; index < spaceByIndex.length; ++index) {
+                var currentSpace = spaceByIndex[index];
+
+                if (currentSpace <= 0)
+                    continue;
+
+                if (maxSpaceIndex < 0 || currentSpace > maxSpace) {
+                    maxSpaceIndex = index;
+                    maxSpace = currentSpace;
+                }
+            }
+
+            if (maxSpaceIndex < 0)
+                break;
+
+            ++addedAmountByIndex[maxSpaceIndex];
+            --spaceByIndex[maxSpaceIndex];
+            --simulatedRemainingAmount;
+        }
+
+        var actualRemainingAmount = itemToAdd.getAmount();
+
+        for (var index = 0; index < addedAmountByIndex.length; ++index) {
+            var simulatedAddedAmount = addedAmountByIndex[index];
+
+            if (simulatedAddedAmount <= 0)
+                continue;
+
+            actualRemainingAmount -= inventory.addItemToSlotAndGetAddedAmount(index, itemToAdd, simulatedAddedAmount);
+
+            if (actualRemainingAmount <= 0)
+                break;
+        }
+
+        return Math.max(0, actualRemainingAmount);
     }
 
     public static List<ItemStack> distributeItemsToMakeEvenAndGetRemainders(
-      Collection<ItemStack> itemsToAdd,
-      Inventory inventory,
+      List<ItemStack> itemsToAdd,
+      AddOnlyInventory inventory,
       @Nullable SlotPredicate slotPredicate
     ) {
-        var remainders = new ArrayList<>(itemsToAdd);
+        var leftovers = new ArrayList<ItemStack>();
 
-        for (var itemIndex = remainders.size() - 1; itemIndex >= 0; --itemIndex) {
-            var itemToPut = remainders.get(itemIndex);
-
-            if (!ItemUtil.isStackValid(itemToPut)) {
-                remainders.remove(itemIndex);
+        for (var itemToAdd : itemsToAdd) {
+            if (!ItemUtil.isStackValid(itemToAdd))
                 continue;
-            }
 
-            var remainingAmount = distributeToMakeEvenAndGetRemainder(inventory, slotPredicate, itemToPut);
+            var remainingAmount = distributeToMakeEvenAndGetRemainder(inventory, slotPredicate, itemToAdd);
 
-            itemToPut.setAmount(remainingAmount);
+            itemToAdd.setAmount(remainingAmount);
 
             if (remainingAmount <= 0)
-                remainders.remove(itemIndex);
+                continue;
+
+            leftovers.add(itemToAdd);
         }
 
-        return remainders;
+        return leftovers;
     }
 }

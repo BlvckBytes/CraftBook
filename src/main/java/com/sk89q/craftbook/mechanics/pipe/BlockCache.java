@@ -2,6 +2,8 @@ package com.sk89q.craftbook.mechanics.pipe;
 
 import com.sk89q.craftbook.bukkit.CraftBookPlugin;
 import com.sk89q.craftbook.mechanics.pipe.notification.PipeNotification;
+import com.sk89q.craftbook.util.AddOnlyInventory;
+import com.sk89q.craftbook.util.LiveAddOnlyInventory;
 import it.unimi.dsi.fastutil.longs.*;
 import org.bukkit.*;
 import org.bukkit.block.Block;
@@ -11,7 +13,6 @@ import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.Powerable;
 import org.bukkit.block.data.type.Chest;
 import org.bukkit.block.data.type.WallSign;
-import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.scheduler.BukkitTask;
 import org.jetbrains.annotations.Nullable;
@@ -161,7 +162,7 @@ public class BlockCache implements CachedBlockResolver {
             Bukkit.getPluginManager().callEvent(new PipeSignCacheInvalidedEvent(pistonBlock));
     }
 
-    public @Nullable Inventory tryAccessPossiblyUnloadedBlockInventory(Block block, int cachedBlock) throws LoadingChunkException {
+    public @Nullable AddOnlyInventory tryAccessPossiblyUnloadedBlockInventory(Block block, int cachedBlock) throws LoadingChunkException {
         if (!CachedBlock.hasHandledOutputInventory(cachedBlock))
             return null;
 
@@ -182,7 +183,7 @@ public class BlockCache implements CachedBlockResolver {
             return null;
         }
 
-        return holder.getInventory();
+        return new LiveAddOnlyInventory(holder);
     }
 
     @Override

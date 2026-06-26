@@ -171,7 +171,7 @@ public class Pipes implements CraftBookMechanic, PipesApi {
             var blockInventory = currentBlockCache.tryAccessPossiblyUnloadedBlockInventory(putBlock, cachedPutBlock);
 
             if (blockInventory != null) {
-                leftovers.addAll(InventoryUtil.addItemsToInventory(blockInventory, cachedPutBlock, itemsToPut, EnumSet.noneOf(InventoryAddFlag.class)));
+                leftovers.addAll(InventoryUtil.addItemsToInventory(blockInventory, CachedBlock.getMaterial(cachedPutBlock), itemsToPut, EnumSet.noneOf(InventoryAddFlag.class)));
             } else if (isSubPipe) {
                 // Handle sub-pipes which continue the walk from here on forwards with a (possibly) limited set of items.
                 List<ItemStack> subPipeItems = new ArrayList<>(itemsToPut);
@@ -497,7 +497,7 @@ public class Pipes implements CraftBookMechanic, PipesApi {
                 leftovers.addAll(itemsInPipe);
             } else if (inventoryHolder != null) {
                 // Allow to put items that have been sucked from the result-slot back into the furnace.
-                leftovers.addAll(InventoryUtil.addItemsToInventory(inventoryHolder.getInventory(), cachedContainerBlock, itemsInPipe, EnumSet.of(InventoryAddFlag.ADD_TO_FURNACE_RESULT)));
+                leftovers.addAll(InventoryUtil.addItemsToInventory(new LiveAddOnlyInventory(inventoryHolder), CachedBlock.getMaterial(cachedContainerBlock), itemsInPipe, EnumSet.of(InventoryAddFlag.ADD_TO_FURNACE_RESULT)));
             } else if (levelled != null) {
                 for (ItemStack item : itemsInPipe) {
                     if (levelled.getLevel() == levelled.getMaximumLevel() || item.getType() != Material.BONE_MEAL) {
