@@ -236,7 +236,12 @@ public class AutomaticCrafter extends IC implements SelfTriggeredIC, PipeInputIC
         if (cachedDispenserOrDropperBlock == null)
             cachedDispenserOrDropperBlock = getBackBlock().getRelative(0, 1, 0);
 
-        if (cachedDispenserOrDropperBlock.getType() != Material.DISPENSER && cachedDispenserOrDropperBlock.getType() != Material.DROPPER) {
+        Material blockType;
+
+        if (
+          !cachedDispenserOrDropperBlock.getWorld().isChunkLoaded(cachedDispenserOrDropperBlock.getX() >> 4, cachedDispenserOrDropperBlock.getZ() >> 4)
+            || (blockType = cachedDispenserOrDropperBlock.getType()) != Material.DISPENSER && blockType != Material.DROPPER
+        ) {
             cachedDispenserOrDropperInventory = null;
             cachedOutputBlock = null;
             return true;
