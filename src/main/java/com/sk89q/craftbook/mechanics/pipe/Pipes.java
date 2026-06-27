@@ -341,7 +341,11 @@ public class Pipes implements CraftBookMechanic, PipesApi {
     private void startPipe(Block inputPistonBlock, @Nullable Block overrideContainerBlock, @Nullable List<ItemStack> itemsInPipe, boolean wasRequest, List<PipeNotification> notificationOutput) {
         this.currentBlockCache = cacheRegistry.getBlockCache(inputPistonBlock.getWorld());
 
-        if (currentBlockCache.isBlockedDueToMinRequestTimeDelta(inputPistonBlock))
+        // For now, we need to let requests pass unthrottled, which - in this system - only affects the
+        // AutoCrafter - it can emit way quicker than the min-delta and would drop results otherwise. Ideally,
+        // said mechanic should only operate with a buffer-chest that then feeds a pipe, but I don't think we
+        // can convince all users on our server to migrate...
+        if (!wasRequest && currentBlockCache.isBlockedDueToMinRequestTimeDelta(inputPistonBlock))
             return;
 
         if (currentBlockCache.isPipeOriginDisabled(inputPistonBlock))
