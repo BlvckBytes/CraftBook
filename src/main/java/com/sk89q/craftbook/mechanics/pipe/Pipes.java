@@ -157,13 +157,18 @@ public class Pipes implements CraftBookMechanic, PipesApi {
             if (filteredPipeItems.isEmpty())
                 return EnumerationDecision.CONTINUE;
 
-            PipePutEvent putEvent = new PipePutEvent(pipeBlock, new ArrayList<>(filteredPipeItems), putBlock, cachedPutBlock);
-            Bukkit.getPluginManager().callEvent(putEvent);
+            List<ItemStack> itemsToPut = new ArrayList<>(filteredPipeItems);
 
-            if (putEvent.isCancelled())
-                return EnumerationDecision.CONTINUE;
+            if (putBlock.getWorld().isChunkLoaded(putBlock.getX() >> 4, putBlock.getZ() >> 4)) {
+                PipePutEvent putEvent = new PipePutEvent(pipeBlock, itemsToPut, putBlock, cachedPutBlock);
+                Bukkit.getPluginManager().callEvent(putEvent);
 
-            List<ItemStack> itemsToPut = putEvent.getItems();
+                if (putEvent.isCancelled())
+                    return EnumerationDecision.CONTINUE;
+
+                itemsToPut = putEvent.getItems();
+            }
+
             List<ItemStack> leftovers = new ArrayList<>();
 
             EnumerationResult subWalkResult = EnumerationResult.COMPLETED;
