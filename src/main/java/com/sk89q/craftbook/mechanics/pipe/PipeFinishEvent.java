@@ -13,13 +13,11 @@ public class PipeFinishEvent extends PipeEvent {
 
     private final Block origin;
     private final int cachedOrigin;
-    private final boolean request;
 
-    public PipeFinishEvent(Block theBlock, List<ItemStack> items, Block origin, int cachedOrigin, boolean request) {
+    public PipeFinishEvent(Block theBlock, List<ItemStack> items, Block origin, int cachedOrigin) {
         super(theBlock, items);
         this.origin = origin;
         this.cachedOrigin = cachedOrigin;
-        this.request = request;
     }
 
     public Block getOrigin() {
@@ -28,10 +26,6 @@ public class PipeFinishEvent extends PipeEvent {
 
     public int getCachedOrigin() {
         return cachedOrigin;
-    }
-
-    public boolean isRequest() {
-        return request;
     }
 
     @Override

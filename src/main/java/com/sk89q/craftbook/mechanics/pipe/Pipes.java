@@ -338,14 +338,10 @@ public class Pipes implements CraftBookMechanic, PipesApi {
         return maxCacheLoadCount;
     }
 
-    private void startPipe(Block inputPistonBlock, @Nullable Block overrideContainerBlock, @Nullable List<ItemStack> itemsInPipe, boolean wasRequest, List<PipeNotification> notificationOutput) {
+    private void startPipe(Block inputPistonBlock, @Nullable Block overrideContainerBlock, List<PipeNotification> notificationOutput) {
         this.currentBlockCache = cacheRegistry.getBlockCache(inputPistonBlock.getWorld());
 
-        // For now, we need to let requests pass unthrottled, which - in this system - only affects the
-        // AutoCrafter - it can emit way quicker than the min-delta and would drop results otherwise. Ideally,
-        // said mechanic should only operate with a buffer-chest that then feeds a pipe, but I don't think we
-        // can convince all users on our server to migrate...
-        if (!wasRequest && currentBlockCache.isBlockedDueToMinRequestTimeDelta(inputPistonBlock))
+        if (currentBlockCache.isBlockedDueToMinRequestTimeDelta(inputPistonBlock))
             return;
 
         if (currentBlockCache.isPipeOriginDisabled(inputPistonBlock))
@@ -382,8 +378,7 @@ public class Pipes implements CraftBookMechanic, PipesApi {
         if (otherChestBlock != null && currentBlockCache.isPipeOriginDisabled(otherChestBlock))
             return;
 
-        if (itemsInPipe == null)
-            itemsInPipe = new ArrayList<>();
+        var itemsInPipe = new ArrayList<ItemStack>();
 
         LongSet visitedBlocks = new LongOpenHashSet();
         visitedBlocks.add(CompactId.computeWorldlessBlockId(containerBlock));
@@ -396,11 +391,7 @@ public class Pipes implements CraftBookMechanic, PipesApi {
         InventoryHolder inventoryHolder = null;
         Levelled levelled = null;
 
-        //noinspection StatementWithEmptyBody
-        if (wasRequest && !itemsInPipe.isEmpty()) {
-            // Do not try to suck a container when an external request provided items already, such
-            // that we are also not going to try to put them back - the caller handles leftovers.
-        } else if (
+        if (
             CachedBlock.hasHandledInputInventory(cachedContainerBlock)
                 && containerBlock.getState(false) instanceof InventoryHolder holder
         ) {
@@ -527,7 +518,7 @@ public class Pipes implements CraftBookMechanic, PipesApi {
 
         // Finish up the pipe and possibly drop leftovers
 
-        PipeFinishEvent finishEvent = new PipeFinishEvent(inputPistonBlock, leftovers, containerBlock, cachedContainerBlock, wasRequest);
+        PipeFinishEvent finishEvent = new PipeFinishEvent(inputPistonBlock, leftovers, containerBlock, cachedContainerBlock);
         Bukkit.getPluginManager().callEvent(finishEvent);
 
         leftovers = finishEvent.getItems();
@@ -564,10 +555,10 @@ public class Pipes implements CraftBookMechanic, PipesApi {
         }
     }
 
-    private void startPipeAndHandleNotifications(Block inputPistonBlock, @Nullable Block overrideContainerBlock, @Nullable List<ItemStack> itemsInPipe, boolean wasRequest) {
+    private void startPipeAndHandleNotifications(Block inputPistonBlock, @Nullable Block overrideContainerBlock) {
         var notifications = new ArrayList<PipeNotification>(1);
 
-        pipeTimingsCommand.timeExecutionOf(inputPistonBlock, () -> startPipe(inputPistonBlock, overrideContainerBlock, itemsInPipe, wasRequest, notifications));
+        pipeTimingsCommand.timeExecutionOf(inputPistonBlock, () -> startPipe(inputPistonBlock, overrideContainerBlock, notifications));
 
         if (notifications.isEmpty())
             return;
@@ -616,15 +607,7 @@ public class Pipes implements CraftBookMechanic, PipesApi {
         if (!EventUtil.passesFilter(event))
             return;
 
-        startPipeAndHandleNotifications(event.getBlock(), null, null, false);
-    }
-
-    @EventHandler(priority = EventPriority.HIGH)
-    public void onPipeRequest(PipeRequestEvent event) {
-        if (!EventUtil.passesFilter(event))
-            return;
-
-        startPipeAndHandleNotifications(event.getBlock(), null, event.getItems(), true);
+        startPipeAndHandleNotifications(event.getBlock(), null);
     }
 
     @EventHandler(priority = EventPriority.HIGH)
@@ -641,7 +624,7 @@ public class Pipes implements CraftBookMechanic, PipesApi {
         if (sourceOrDestination.getY() > hopper.getY())
             return;
 
-        startPipeAndHandleNotifications(sourceOrDestination, null, null, false);
+        startPipeAndHandleNotifications(sourceOrDestination, null);
     }
 
     @EventHandler
@@ -721,13 +704,13 @@ public class Pipes implements CraftBookMechanic, PipesApi {
         // tick (instead every 8), so we're absolutely safe to postpone this action by
         // one tick, as to get access to the unmanipulated inventory again for sucking.
 
-        Bukkit.getScheduler().runTaskLater(CraftBookPlugin.inst(), () -> startPipeAndHandleNotifications(hopperTargetBlock, sourceBlock, null, false), 1);
+        Bukkit.getScheduler().runTaskLater(CraftBookPlugin.inst(), () -> startPipeAndHandleNotifications(hopperTargetBlock, sourceBlock), 1);
 
         // Then, also call once more after 5 ticks, meaning 4 ticks later than the first attempt to suck,
         // as to make it become a steady 200ms clock if there are more items to transport, instead
         // of the 400ms as the 8 ticks would yield, which is actually noticeably slower.
 
-        Bukkit.getScheduler().runTaskLater(CraftBookPlugin.inst(), () -> startPipeAndHandleNotifications(hopperTargetBlock, sourceBlock, null, false), 5);
+        Bukkit.getScheduler().runTaskLater(CraftBookPlugin.inst(), () -> startPipeAndHandleNotifications(hopperTargetBlock, sourceBlock), 5);
     }
 
     @EventHandler

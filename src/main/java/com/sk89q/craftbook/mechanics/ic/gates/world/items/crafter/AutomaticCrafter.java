@@ -6,10 +6,8 @@ import com.sk89q.craftbook.bukkit.util.CraftBookBukkitUtil;
 import com.sk89q.craftbook.mechanics.ic.*;
 import com.sk89q.craftbook.util.InventoryUtil;
 import com.sk89q.craftbook.mechanics.pipe.PipePutEvent;
-import com.sk89q.craftbook.mechanics.pipe.PipeRequestEvent;
 import com.sk89q.craftbook.util.ItemUtil;
 import com.sk89q.craftbook.util.LiveAddOnlyInventory;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.block.*;
 import org.bukkit.block.data.Directional;
@@ -180,31 +178,17 @@ public class AutomaticCrafter extends IC implements SelfTriggeredIC, PipeInputIC
 
         items.add(result);
 
-        PipeRequestEvent event = new PipeRequestEvent(cachedOutputBlock, items, cachedDispenserOrDropperBlock);
-        Bukkit.getPluginManager().callEvent(event);
-
-        items = event.getItems();
-
         List<ItemStack> leftovers = new ArrayList<>();
-
-        // The Pipe will have put remainders back into the dispenser/dropper, so let's also collect them
-        // into the leftovers, as to not override them when setting back the replace-matrix afterward.
-        for (ItemStack item : cachedDispenserOrDropperInventory.getContents()) {
-            if (item != null && !item.getType().isAir() && item.getAmount() > 0)
-                leftovers.add(item);
-        }
 
         cachedDispenserOrDropperInventory.setContents(replace);
 
-        if(!items.isEmpty()) {
-            if (cachedOutputBlock.getState(false) instanceof InventoryHolder inventoryHolder) {
-                var outputInventory = inventoryHolder.getInventory();
+        if (cachedOutputBlock.getState(false) instanceof InventoryHolder inventoryHolder) {
+            var outputInventory = inventoryHolder.getInventory();
 
-                for (ItemStack stack : items)
-                    leftovers.addAll(outputInventory.addItem(stack).values());
-            } else {
-                leftovers.addAll(items);
-            }
+            for (ItemStack stack : items)
+                leftovers.addAll(outputInventory.addItem(stack).values());
+        } else {
+            leftovers.addAll(items);
         }
 
         if (!leftovers.isEmpty()) {
