@@ -341,6 +341,9 @@ public class Pipes implements CraftBookMechanic, PipesApi {
     private void startPipe(Block inputPistonBlock, @Nullable Block overrideContainerBlock, @Nullable List<ItemStack> itemsInPipe, boolean wasRequest, List<PipeNotification> notificationOutput) {
         this.currentBlockCache = cacheRegistry.getBlockCache(inputPistonBlock.getWorld());
 
+        if (currentBlockCache.isBlockedDueToMinRequestTimeDelta(inputPistonBlock))
+            return;
+
         if (currentBlockCache.isPipeOriginDisabled(inputPistonBlock))
             return;
 

@@ -23,6 +23,7 @@ import java.util.List;
 public class BlockCache implements CachedBlockResolver {
 
     private static final long RECENT_EXPIRY_DURATION_T = 60;
+    private static final long MIN_REQUEST_TIME_DELTA_T = 4;
 
     private static final int CHUNK_BUCKET_DIMENSION = 32;
     private static final int CHUNK_BUCKET_SIZE = CHUNK_BUCKET_DIMENSION * CHUNK_BUCKET_DIMENSION * CHUNK_BUCKET_DIMENSION;
@@ -40,6 +41,7 @@ public class BlockCache implements CachedBlockResolver {
     private final Long2ObjectMap<PipeSign> pipeSignByPistonCompactId;
     private final Long2ObjectMap<BukkitTask> tempPowerResetTaskByCompactId;
     private final Long2LongMap ticketExpiryByCompactId;
+    private final Long2LongMap lastRequestTimeByInputPistonCompactId;
 
     private int cacheLoadCounter = 0;
 
@@ -54,6 +56,20 @@ public class BlockCache implements CachedBlockResolver {
         this.pipeSignByPistonCompactId = new Long2ObjectOpenHashMap<>(15_000, .5f);
         this.tempPowerResetTaskByCompactId = new Long2ObjectOpenHashMap<>();
         this.ticketExpiryByCompactId = new Long2LongOpenHashMap();
+        this.lastRequestTimeByInputPistonCompactId = new Long2LongOpenHashMap();
+    }
+
+    public boolean isBlockedDueToMinRequestTimeDelta(Block inputPistonBlock) {
+        var compactId = CompactId.computeWorldlessBlockId(inputPistonBlock);
+        var lastRequestStamp = lastRequestTimeByInputPistonCompactId.getOrDefault(compactId, 0);
+        var now = registry.getRelativeTimeTicks();
+        var timeDelta = now - lastRequestStamp;
+
+        if (timeDelta < MIN_REQUEST_TIME_DELTA_T)
+            return true;
+
+        lastRequestTimeByInputPistonCompactId.put(compactId, now);
+        return false;
     }
 
     public boolean isPipeOriginDisabled(Block block) {
