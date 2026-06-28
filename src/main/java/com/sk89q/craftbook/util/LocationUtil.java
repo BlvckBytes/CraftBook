@@ -5,7 +5,6 @@ import com.sk89q.craftbook.CraftBookPlayer;
 import com.sk89q.craftbook.bukkit.BukkitCraftBookPlayer;
 import com.sk89q.craftbook.bukkit.CraftBookPlugin;
 import com.sk89q.craftbook.bukkit.util.CraftBookBukkitUtil;
-import com.sk89q.worldedit.math.Vector3;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -19,33 +18,6 @@ import java.util.HashSet;
  * @author Silthus, Me4502
  */
 public final class LocationUtil {
-
-    public static boolean isWithinSphericalRadius(Location l1, Location l2, double radius) {
-        return l1.getWorld().equals(l2.getWorld()) && Math.floor(getDistanceSquared(l1, l2)) <= radius * radius; // Floor for more accurate readings
-    }
-
-    public static boolean isWithinRadiusPolygon(Location l1, Location l2, Vector3 radius) {
-
-        if(!l1.getWorld().equals(l2.getWorld())) return false;
-        if(l2.getX() < l1.getX() + radius.x() && l2.getX() > l1.getX() - radius.x())
-            if(l2.getY() < l1.getY() + radius.y() && l2.getY() > l1.getY() - radius.y())
-                if(l2.getZ() < l1.getZ() + radius.z() && l2.getZ() > l1.getZ() - radius.z())
-                    return true;
-        return false;
-    }
-
-    /**
-     * Passed a vector, and it smartly detects if its spherical or polygon.
-     * 
-     * @param l1
-     * @param l2
-     * @param radius
-     * @return
-     */
-    public static boolean isWithinRadius(Location l1, Location l2, Vector3 radius) {
-
-        return radius.x() == radius.z() && radius.x() == radius.y() && isWithinSphericalRadius(l1,l2,radius.x()) || (radius.x() != radius.y() || radius.y() != radius.z() || radius.x() != radius.z()) && isWithinRadiusPolygon(l1,l2,radius);
-    }
 
     public static double getDistanceSquared(Location l1, Location l2) {
 

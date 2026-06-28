@@ -21,7 +21,6 @@ import com.sk89q.craftbook.CraftBookMechanic;
 import com.sk89q.craftbook.CraftBookPlayer;
 import com.sk89q.craftbook.bukkit.CraftBookPlugin;
 import com.sk89q.craftbook.bukkit.util.CraftBookBukkitUtil;
-import com.sk89q.craftbook.mechanics.ic.gates.world.blocks.Planter;
 import com.sk89q.craftbook.mechanics.ic.gates.world.items.crafter.AutomaticCrafter;
 import com.sk89q.craftbook.mechanics.pipe.CachedBlock;
 import com.sk89q.craftbook.mechanics.pipe.PipePutEvent;
@@ -63,7 +62,6 @@ public class ICMechanic implements CraftBookMechanic {
 
     public ICMechanic() {
         registerIC(new AutomaticCrafter.Factory());
-        registerIC(new Planter.Factory());
 
         instance = this;
     }
