@@ -16,6 +16,8 @@
 
 package com.sk89q.craftbook.util;
 
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.TextComponent;
 import org.bukkit.Material;
 import org.bukkit.Tag;
 import org.bukkit.block.Block;
@@ -23,7 +25,10 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.type.Sign;
 import org.bukkit.block.data.type.WallSign;
+import org.bukkit.block.sign.Side;
 import org.bukkit.event.block.SignChangeEvent;
+
+import java.util.function.Consumer;
 
 /**
  * <p>
@@ -104,5 +109,37 @@ public final class SignUtil {
     public static void cancelSign(SignChangeEvent event) {
         event.setCancelled(true);
         event.getBlock().breakNaturally();
+    }
+
+    public static String[] getFrontLinesOrEmpty(Block maybeSignBlock) {
+        if (maybeSignBlock.getState(false) instanceof org.bukkit.block.Sign sign)
+            return getFrontLines(sign);
+
+        return new String[] { "", "", "", "" };
+    }
+
+    public static String[] getFrontLines(org.bukkit.block.Sign sign) {
+        var lineComponents = sign.getSide(Side.FRONT).lines();
+        var lineStrings = new String[lineComponents.size()];
+
+        for (var index = 0; index < lineComponents.size(); ++index) {
+            var lineBuilder = new StringBuilder();
+            var lineComponent = lineComponents.get(index);
+
+            if (lineComponent != null)
+                forEachTextOfComponent(lineComponent, lineBuilder::append);
+
+            lineStrings[index] = lineBuilder.toString();
+        }
+
+        return lineStrings;
+    }
+
+    private static void forEachTextOfComponent(Component component, Consumer<String> handler) {
+        if (component instanceof TextComponent textComponent)
+            handler.accept(textComponent.content());
+
+        for (var child : component.children())
+            forEachTextOfComponent(child, handler);
     }
 }

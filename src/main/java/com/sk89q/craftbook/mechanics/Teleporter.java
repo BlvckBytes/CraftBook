@@ -1,6 +1,5 @@
 package com.sk89q.craftbook.mechanics;
 
-import com.sk89q.craftbook.ChangedSign;
 import com.sk89q.craftbook.CraftBookMechanic;
 import com.sk89q.craftbook.CraftBookPlayer;
 import com.sk89q.craftbook.bukkit.CraftBookPlugin;
@@ -126,10 +125,10 @@ public class Teleporter implements CraftBookMechanic {
         if (event.getAction() == Action.RIGHT_CLICK_BLOCK && SignUtil.isSign(event.getClickedBlock())) {
             if (event.getHand() != EquipmentSlot.HAND) return;
             localPlayer = CraftBookPlugin.inst().wrapPlayer(event.getPlayer());
-            ChangedSign s = CraftBookBukkitUtil.toChangedSign(event.getClickedBlock());
-            if (!s.getLine(1).equals("[Teleporter]")) return;
-            String[] pos = RegexUtil.COLON_PATTERN.split(s.getLine(2));
-            noBack = s.getLine(3).equalsIgnoreCase("no-back");
+            var signLines = SignUtil.getFrontLinesOrEmpty(event.getClickedBlock());
+            if (!signLines[1].equalsIgnoreCase("[Teleporter]")) return;
+            String[] pos = RegexUtil.COLON_PATTERN.split(signLines[2]);
+            noBack = signLines[3].equalsIgnoreCase("no-back");
             if (pos.length <= 2) {
                 localPlayer.printError("mech.teleport.invalidcoords");
                 return;
@@ -140,10 +139,10 @@ public class Teleporter implements CraftBookMechanic {
             Directional b = (Directional) event.getClickedBlock().getBlockData();
             Block sign = event.getClickedBlock().getRelative(b.getFacing().getOppositeFace(), 2);
             if (SignUtil.isSign(sign)) {
-                ChangedSign s = CraftBookBukkitUtil.toChangedSign(sign);
-                if (!s.getLine(1).equals("[Teleporter]")) return;
-                String[] pos = RegexUtil.COLON_PATTERN.split(s.getLine(2));
-                noBack = s.getLine(3).equalsIgnoreCase("no-back");
+                var signLines = SignUtil.getFrontLinesOrEmpty(sign);
+                if (!signLines[1].equalsIgnoreCase("[Teleporter]")) return;
+                String[] pos = RegexUtil.COLON_PATTERN.split(signLines[2]);
+                noBack = signLines[3].equalsIgnoreCase("no-back");
                 if (pos.length <= 2) {
                     localPlayer.printError("mech.teleport.invalidcoords");
                     return;
@@ -162,13 +161,13 @@ public class Teleporter implements CraftBookMechanic {
                 var sign = offset.getRelative(event.getClickedBlock());
 
                 if (SignUtil.isSign(sign)) {
-                    ChangedSign s = CraftBookBukkitUtil.toChangedSign(sign);
+                    var signLines = SignUtil.getFrontLinesOrEmpty(sign);
 
-                    if (!s.getLine(1).equals("[Teleporter]"))
+                    if (!signLines[1].equalsIgnoreCase("[Teleporter]"))
                         continue;
 
-                    String[] pos = RegexUtil.COLON_PATTERN.split(s.getLine(2));
-                    noBack = s.getLine(3).equalsIgnoreCase("no-back");
+                    String[] pos = RegexUtil.COLON_PATTERN.split(signLines[2]);
+                    noBack = signLines[3].equalsIgnoreCase("no-back");
 
                     if (pos.length <= 2) {
                         localPlayer.printError("mech.teleport.invalidcoords");
@@ -211,8 +210,8 @@ public class Teleporter implements CraftBookMechanic {
         double toZ = 0;
 
         if (SignUtil.isSign(trigger)) {
-            ChangedSign s = CraftBookBukkitUtil.toChangedSign(trigger);
-            String[] pos = RegexUtil.COLON_PATTERN.split(s.getLine(2));
+            var signLines = SignUtil.getFrontLinesOrEmpty(trigger);
+            String[] pos = RegexUtil.COLON_PATTERN.split(signLines[2]);
             if (pos.length > 2) {
                 try {
                     toX = Double.parseDouble(pos[0]);
@@ -319,8 +318,9 @@ public class Teleporter implements CraftBookMechanic {
             return false;
         }
 
-        ChangedSign s = CraftBookBukkitUtil.toChangedSign(sign);
-        if (!s.getLine(1).equals("[Teleporter]")) {
+        var signLines = SignUtil.getFrontLinesOrEmpty(sign);
+
+        if (!signLines[1].equalsIgnoreCase("[Teleporter]")) {
             player.printError("mech.teleport.sign");
             return false;
         }

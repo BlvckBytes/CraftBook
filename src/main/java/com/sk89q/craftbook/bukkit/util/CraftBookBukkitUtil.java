@@ -1,13 +1,11 @@
 package com.sk89q.craftbook.bukkit.util;
 
-import com.sk89q.craftbook.ChangedSign;
 import com.sk89q.craftbook.bukkit.CraftBookPlugin;
 import com.sk89q.worldedit.bukkit.BukkitWorld;
 import com.sk89q.worldedit.util.Location;
 import org.bukkit.Material;
 import org.bukkit.Tag;
 import org.bukkit.World;
-import org.bukkit.block.Block;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -32,14 +30,6 @@ public final class CraftBookBukkitUtil {
 
     public static void printStacktrace(Throwable e) {
         CraftBookPlugin.inst().getLogger().severe(CraftBookPlugin.getStackTrace(e));
-    }
-
-    public static ChangedSign toChangedSign(Block sign) {
-        return toChangedSign(sign, null);
-    }
-
-    public static ChangedSign toChangedSign(Block block, String[] lines) {
-        return new ChangedSign(block, lines);
     }
 
     /**
