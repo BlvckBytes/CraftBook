@@ -161,18 +161,6 @@ public class Pipes implements CraftBookMechanic, PipesApi {
             if (filteredPipeItems.isEmpty())
                 return EnumerationDecision.CONTINUE;
 
-            List<ItemStack> itemsToPut = new ArrayList<>(filteredPipeItems);
-
-            if (putBlock.getWorld().isChunkLoaded(putBlock.getX() >> 4, putBlock.getZ() >> 4)) {
-                PipePutEvent putEvent = new PipePutEvent(pipeBlock, itemsToPut, putBlock, cachedPutBlock);
-                Bukkit.getPluginManager().callEvent(putEvent);
-
-                if (putEvent.isCancelled())
-                    return EnumerationDecision.CONTINUE;
-
-                itemsToPut = putEvent.getItems();
-            }
-
             List<ItemStack> leftovers = new ArrayList<>();
 
             EnumerationResult subWalkResult = EnumerationResult.COMPLETED;
@@ -180,17 +168,17 @@ public class Pipes implements CraftBookMechanic, PipesApi {
             var blockInventory = currentBlockCache.tryAccessPossiblyUnloadedBlockInventory(putBlock, cachedPutBlock);
 
             if (blockInventory != null) {
-                leftovers.addAll(InventoryUtil.addItemsToInventory(blockInventory, CachedBlock.getMaterial(cachedPutBlock), itemsToPut, EnumSet.noneOf(InventoryAddFlag.class)));
+                leftovers.addAll(InventoryUtil.addItemsToInventory(blockInventory, CachedBlock.getMaterial(cachedPutBlock), filteredPipeItems, EnumSet.noneOf(InventoryAddFlag.class)));
             } else if (isSubPipe) {
                 // Handle sub-pipes which continue the walk from here on forwards with a (possibly) limited set of items.
-                List<ItemStack> subPipeItems = new ArrayList<>(itemsToPut);
+                List<ItemStack> subPipeItems = new ArrayList<>(filteredPipeItems);
                 subWalkResult = locateExitNodesForItems(putBlock, visitedBlocks, flags, subPipeItems, notificationOutput);
                 leftovers.addAll(subPipeItems);
             } else {
                 if (CachedBlock.isPowerable(cachedPutBlock))
                     currentBlockCache.temporarilyPowerBlock(putBlock, 5);
 
-                leftovers.addAll(itemsToPut);
+                leftovers.addAll(filteredPipeItems);
             }
 
             itemsInPipe.removeAll(filteredPipeItems);
@@ -456,16 +444,6 @@ public class Pipes implements CraftBookMechanic, PipesApi {
             }
         }
 
-        PipeSuckEvent suckEvent = new PipeSuckEvent(inputPistonBlock, new ArrayList<>(itemsInPipe), containerBlock, cachedContainerBlock);
-        Bukkit.getPluginManager().callEvent(suckEvent);
-
-        itemsInPipe.clear();
-
-        for (ItemStack item : suckEvent.getItems()) {
-            if (ItemUtil.isStackValid(item))
-                itemsInPipe.add(item);
-        }
-
         if (itemsInPipe.isEmpty())
             return;
 
@@ -479,13 +457,11 @@ public class Pipes implements CraftBookMechanic, PipesApi {
 
         var threwError = false;
 
-        if (!suckEvent.isCancelled()) {
-            try {
-                enumerationResult = locateExitNodesForItems(inputPistonBlock, visitedBlocks, locateFlags, itemsInPipe, notificationOutput);
-            } catch (Throwable e) {
-                threwError = true;
-                CraftBookPlugin.logger().log(Level.SEVERE, "An error occurred while trying to locate exit-nodes for an item in a pipe", e);
-            }
+        try {
+            enumerationResult = locateExitNodesForItems(inputPistonBlock, visitedBlocks, locateFlags, itemsInPipe, notificationOutput);
+        } catch (Throwable e) {
+            threwError = true;
+            CraftBookPlugin.logger().log(Level.SEVERE, "An error occurred while trying to locate exit-nodes for an item in a pipe", e);
         }
 
         // Try to put leftovers back into the block and drop the rest at the input-piston.
@@ -527,10 +503,6 @@ public class Pipes implements CraftBookMechanic, PipesApi {
 
         // Finish up the pipe and possibly drop leftovers
 
-        PipeFinishEvent finishEvent = new PipeFinishEvent(inputPistonBlock, leftovers, containerBlock, cachedContainerBlock);
-        Bukkit.getPluginManager().callEvent(finishEvent);
-
-        leftovers = finishEvent.getItems();
         itemsInPipe.clear();
 
         if (!leftovers.isEmpty()) {
