@@ -213,6 +213,8 @@ public class InventoryUtil {
         var addedAmountByIndex = new int[inventory.getSize()];
 
         for (var index = 0; index < spaceByIndex.length; ++index) {
+            // TODO: We only use this for the Crafter, which should have a max stack-size of 64
+            //       as to also stack bottles etc. efficiently.
             var availableSpace = inventory.getSpaceFor(index, itemToAdd);
 
             if (slotPredicate != null && !slotPredicate.test(index, availableSpace >= stackSize))

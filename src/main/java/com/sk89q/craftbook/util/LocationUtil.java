@@ -1,13 +1,9 @@
 package com.sk89q.craftbook.util;
 
-import com.sk89q.craftbook.ChangedSign;
 import com.sk89q.craftbook.CraftBookPlayer;
 import com.sk89q.craftbook.bukkit.BukkitCraftBookPlayer;
 import com.sk89q.craftbook.bukkit.CraftBookPlugin;
-import com.sk89q.craftbook.bukkit.util.CraftBookBukkitUtil;
 import org.bukkit.Location;
-import org.bukkit.block.Block;
-import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -47,116 +43,6 @@ public final class LocationUtil {
         else if (y >= z) // Since x is not the largest, either y or z must be
             return y;
         else return z;
-    }
-
-    /**
-     * Gets the offset of the blocks location based on the coordiante grid.
-     *
-     * @param block   to get offsetfrom
-     * @param offsetX to add
-     * @param offsetY to add
-     * @param offsetZ to add
-     *
-     * @return block offset by given coordinates
-     */
-    public static Block getOffset(Block block, int offsetX, int offsetY, int offsetZ) {
-
-        return block.getWorld().getBlockAt(block.getX() + offsetX, block.getY() + offsetY, block.getZ() + offsetZ);
-    }
-
-    public static Block getRelativeOffset(ChangedSign sign, int offsetX, int offsetY, int offsetZ) {
-
-        return getRelativeOffset(SignUtil.getBackBlock(CraftBookBukkitUtil.toSign(sign).getBlock()),
-                SignUtil.getFacing(CraftBookBukkitUtil.toSign(sign).getBlock()),
-                offsetX, offsetY, offsetZ);
-    }
-
-    /**
-     * Gets the block located relative to the signs front. That means that when the sign is attached to a block and
-     * the player is looking at it it
-     * will add the offsetX to left or right, offsetY is added up or down and offsetZ is added front or back.
-     *
-     * @param block   to get relative position from
-     * @param front   to work with
-     * @param offsetX amount to move left(negative) or right(positive)
-     * @param offsetY amount to move up(positive) or down(negative)
-     * @param offsetZ amount to move back(negative) or front(positive)
-     *
-     * @return block located at the relative offset position
-     */
-    public static Block getRelativeOffset(Block block, BlockFace front, int offsetX, int offsetY, int offsetZ) {
-
-        BlockFace back;
-        BlockFace right;
-        BlockFace left;
-
-        switch (front) {
-
-            case SOUTH:
-                back = BlockFace.NORTH;
-                left = BlockFace.EAST;
-                right = BlockFace.WEST;
-                break;
-            case WEST:
-                back = BlockFace.EAST;
-                left = BlockFace.SOUTH;
-                right = BlockFace.NORTH;
-                break;
-            case NORTH:
-                back = BlockFace.SOUTH;
-                left = BlockFace.WEST;
-                right = BlockFace.EAST;
-                break;
-            case EAST:
-                back = BlockFace.WEST;
-                left = BlockFace.NORTH;
-                right = BlockFace.SOUTH;
-                break;
-            default:
-                back = BlockFace.SOUTH;
-                left = BlockFace.EAST;
-                right = BlockFace.WEST;
-        }
-
-        // apply left and right offset
-        if (offsetX > 0) {
-            block = getRelativeBlock(block, right, offsetX);
-        } else if (offsetX < 0) {
-            block = getRelativeBlock(block, left, offsetX);
-        }
-
-        // apply front and back offset
-        if (offsetZ > 0) {
-            block = getRelativeBlock(block, front, offsetZ);
-        } else if (offsetZ < 0) {
-            block = getRelativeBlock(block, back, offsetZ);
-        }
-
-        // apply up and down offset
-        if (offsetY > 0) {
-            block = getRelativeBlock(block, BlockFace.UP, offsetY);
-        } else if (offsetY < 0) {
-            block = getRelativeBlock(block, BlockFace.DOWN, offsetY);
-        }
-        return block;
-    }
-
-    /**
-     * Get relative block X that way.
-     *
-     * @param block
-     * @param facing
-     * @param amount
-     *
-     * @return The block
-     */
-    private static Block getRelativeBlock(Block block, BlockFace facing, int amount) {
-
-        amount = Math.abs(amount);
-        for (int i = 0; i < amount; i++) {
-            block = block.getRelative(facing);
-        }
-        return block;
     }
 
     public static Player[] getNearbyPlayers(Location l, int radius) {

@@ -83,25 +83,11 @@ public class LanguageManager {
     }
 
     public static final HashMap<String, String> defaultMessages = new HashMap<>(32, 1.0f) {{
-        put("area.permissions", "You don't have permissions to do that in this area!");
         put("area.use-permissions", "You don't have permissions to use that in this area!");
         put("area.break-permissions", "You don't have permissions to break that in this area!");
 
         put("mech.create-permission", "You don't have permission to create this mechanic.");
         put("mech.use-permission", "You don't have permission to use this mechanic.");
-        put("mech.restock-permission", "You don't have permission to restock this mechanic.");
-        put("mech.not-enough-blocks","Not enough blocks to trigger mechanic!");
-        put("mech.group","You are not in the required group!");
-        put("mech.restock","Mechanism Restocked!");
-
-        put("mech.anchor.create","Chunk Anchor Created!");
-        put("mech.anchor.already-anchored","This chunk is already anchored!");
-
-        put("mech.cook.create","Cooking Pot Created!");
-        put("mech.cook.ouch","Ouch! That was hot!");
-        put("mech.cook.add-fuel","You put fuel into the cooking pot, and watch as the fire roars!");
-
-        put("mech.ic.create","You've created");
 
         put("mech.lift.target-sign-created","Elevator target sign created.");
         put("mech.lift.down-sign-created","Elevator down sign created.");
@@ -116,14 +102,6 @@ public class LanguageManager {
         put("mech.lift.no-depart", "Cannot depart from this lift (can only arrive).");
         put("mech.lift.busy", "Elevator Busy!");
 
-        put("mech.map.create","Map Changer Created!");
-        put("mech.map.invalid","Invalid Map ID!");
-
-        put("mech.pistons.crush.created","Piston Crush Mechanic Created!");
-        put("mech.pistons.supersticky.created","Piston Super-Sticky Mechanic Created!");
-        put("mech.pistons.bounce.created","Piston Bounce Mechanic Created!");
-        put("mech.pistons.superpush.created","Piston Super-Push Mechanic Created!");
-
         put("mech.teleport.create","Teleporter Created!");
         put("mech.teleport.alert","You Teleported!");
         put("mech.teleport.range","Out of Range!");
@@ -132,11 +110,6 @@ public class LanguageManager {
         put("mech.teleport.invalidcoords", "The entered coordinates are invalid!");
         put("mech.teleport.obstruct","Your destination is obstructed!");
 
-        put("mech.xp-storer.create", "XP Storer Created!");
-        put("mech.xp-storer.bottle", "You need a bottle to perform this mechanic!");
-        put("mech.xp-storer.success", "You package your experience into a bottle!");
-        put("mech.xp-storer.not-enough-xp", "You do not have enough experience to fill a bottle!");
-
         put("circuits.pipes.create","Pipe created!");
         put("circuits.pipes.pipe-not-found", "Failed to find pipe!");
         put("circuits.pipes.warmup-notification", "[Pipe] Warming up... {tubes}T {pistons}P");
@@ -144,7 +117,5 @@ public class LanguageManager {
         put("circuits.pipes.exceeded-piston-count-notification", "[Pipe] Exceeded the piston-block limit of {limit} at {coordinates}; dropping item at input!");
         put("circuits.pipes.no-sign-encountered", "[Pipe] Could not locate a valid sign anywhere on the pipe at {coordinates}; dropping item at input!");
         put("circuits.pipes.malformed-sign-token", "[Pipe] The token \"{token}\" on line {line} on the sign at {sign_coordinates} on the pipe at {coordinates} is invalid!");
-
-        put("vehicles.create-permission","You don't have permissions to create this vehicle mechanic!");
     }};
 }

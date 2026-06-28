@@ -82,26 +82,6 @@ public final class ProtectionUtil {
     }
 
     /**
-     * Checks to see if a player can use at a location. This will return
-     * true if region protection is disabled or WorldGuard is not found.
-     *
-     * @param player The player to check.
-     * @param block    The location to check at.
-     *
-     * @return whether {@code player} can build at {@code loc}
-     */
-    public static boolean canAccessInventory(Player player, Block block) {
-
-        if (!shouldUseProtection()) return true;
-        if (CraftBookPlugin.inst().getConfiguration().advancedBlockChecks) {
-
-            if (!canUse(player, block.getLocation(), null, Action.RIGHT_CLICK_BLOCK))
-                return false;
-        }
-        return !CraftBookPlugin.inst().getConfiguration().obeyWorldguard || CraftBookPlugin.plugins.getWorldGuard() == null || CraftBookPlugin.plugins.getWorldGuard().createProtectionQuery().testBlockInteract(player, block);
-    }
-
-    /**
      * Checks whether or not protection related code should even be tested.
      * 
      * @return should check or not.

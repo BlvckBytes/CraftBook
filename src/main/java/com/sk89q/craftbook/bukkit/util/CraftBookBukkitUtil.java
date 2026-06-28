@@ -3,14 +3,11 @@ package com.sk89q.craftbook.bukkit.util;
 import com.sk89q.craftbook.ChangedSign;
 import com.sk89q.craftbook.bukkit.CraftBookPlugin;
 import com.sk89q.worldedit.bukkit.BukkitWorld;
-import com.sk89q.worldedit.math.BlockVector3;
 import com.sk89q.worldedit.util.Location;
 import org.bukkit.Material;
 import org.bukkit.Tag;
 import org.bukkit.World;
 import org.bukkit.block.Block;
-import org.bukkit.block.Sign;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -43,17 +40,6 @@ public final class CraftBookBukkitUtil {
 
     public static ChangedSign toChangedSign(Block block, String[] lines) {
         return new ChangedSign(block, lines);
-    }
-
-    public static @Nullable Sign toSign(ChangedSign sign) {
-        if (sign.hasChanged())
-            sign.update(false);
-
-        return sign.getOrAccessSign();
-    }
-
-    public static BlockVector3 toVector(Block block) {
-        return BlockVector3.at(block.getX(), block.getY(), block.getZ());
     }
 
     /**

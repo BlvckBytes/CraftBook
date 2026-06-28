@@ -6,8 +6,6 @@ mechanics:
         allow-looping: false
         smooth-movement: false
         smooth-movement-speed: 0.5
-    ICs:
-        max-radius: 10.0
     Pipes:
         stack-per-move: true
         require-sign: false

@@ -4,11 +4,8 @@ import com.google.common.collect.Sets;
 import com.sk89q.craftbook.CraftBookMechanic;
 import com.sk89q.craftbook.CraftBookPlayer;
 import com.sk89q.craftbook.core.LanguageManager;
-import com.sk89q.craftbook.mechanics.ic.SelfTriggeringManager;
 import com.sk89q.craftbook.mechanics.Elevator;
 import com.sk89q.craftbook.mechanics.Teleporter;
-import com.sk89q.craftbook.mechanics.ic.ICMechanic;
-import com.sk89q.craftbook.mechanics.ic.gates.world.items.crafter.RecipeCache;
 import com.sk89q.craftbook.mechanics.pipe.Pipes;
 import com.sk89q.craftbook.util.compat.companion.CompanionPlugins;
 import com.sk89q.util.yaml.YAMLFormat;
@@ -16,9 +13,6 @@ import com.sk89q.util.yaml.YAMLProcessor;
 import com.sk89q.wepif.PermissionsResolverManager;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
-import org.bukkit.Chunk;
-import org.bukkit.Server;
-import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -79,11 +73,6 @@ public class CraftBookPlugin extends JavaPlugin {
      */
     private List<CraftBookMechanic> mechanics;
 
-    /**
-     * The manager for SelfTriggering components.
-     */
-    private SelfTriggeringManager selfTriggerManager;
-
     public static final Map<String, Class<? extends CraftBookMechanic>> availableMechanics;
 
     static {
@@ -92,7 +81,6 @@ public class CraftBookPlugin extends JavaPlugin {
         availableMechanics.put("Elevator", Elevator.class);
         availableMechanics.put("Teleporter", Teleporter.class);
         availableMechanics.put("Pipes", Pipes.class);
-        availableMechanics.put("ICs", ICMechanic.class);
     }
 
     /**
@@ -185,8 +173,6 @@ public class CraftBookPlugin extends JavaPlugin {
             Bukkit.getScheduler().runTaskTimer(this,
                     () -> getLogger().warning(ChatColor.RED + "Warning! You have no mechanics enabled, the plugin will appear to do nothing until a feature is enabled!"), 20L, 20*60*5);
         }
-
-        Bukkit.getScheduler().runTaskLater(this, RecipeCache::update, 20L);
     }
 
   /**
@@ -252,8 +238,6 @@ public class CraftBookPlugin extends JavaPlugin {
                 getLogger().log(Level.WARNING, "Failed to enable mechanic: " + mech.getClass().getSimpleName(), t);
             }
         }
-
-        setupSelfTriggered();
     }
 
     public void registerGlobalEvents() {
@@ -300,49 +284,6 @@ public class CraftBookPlugin extends JavaPlugin {
     public static Logger logger() {
 
         return inst().getLogger();
-    }
-
-    /**
-     * This retrieves the CraftBookPlugin server.
-     *
-     * @return Returns the CraftBookPlugin {@link Server}
-     */
-    public static Server server() {
-
-        return inst().getServer();
-    }
-
-    /**
-     * Setup the required components of self-triggered Mechanics.
-     */
-    private void setupSelfTriggered() {
-        selfTriggerManager = new SelfTriggeringManager();
-
-        getLogger().info("Enumerating chunks for self-triggered components...");
-
-        long start = System.currentTimeMillis();
-        int numWorlds = 0;
-        int numChunks = 0;
-
-        for (World world : getServer().getWorlds()) {
-            for (Chunk chunk : world.getLoadedChunks()) {
-
-                selfTriggerManager.registerSelfTrigger(chunk);
-                numChunks++;
-            }
-
-            numWorlds++;
-        }
-
-        long time = System.currentTimeMillis() - start;
-
-        getLogger().info(numChunks + " chunk(s) for " + numWorlds + " world(s) processed " + "(" + time + "ms elapsed)");
-
-        // Set up the clock for self-triggered ICs.
-
-        getServer().getScheduler().runTaskTimer(this, selfTriggerManager::think, 0, config.stThinkRate);
-
-        getServer().getPluginManager().registerEvents(selfTriggerManager, this);
     }
 
     /**
@@ -395,14 +336,6 @@ public class CraftBookPlugin extends JavaPlugin {
     public CraftBookPlayer wrapPlayer(Player player) {
 
         return new BukkitCraftBookPlayer(this, player);
-    }
-
-    /**
-     * Grabs the manager for self triggered components.
-     */
-    public SelfTriggeringManager getSelfTriggerManager() {
-
-        return selfTriggerManager;
     }
 
     /**

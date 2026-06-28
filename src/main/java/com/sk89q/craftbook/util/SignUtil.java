@@ -100,11 +100,6 @@ public final class SignUtil {
         }
     }
 
-    public static Block getFrontBlock(Block sign) {
-
-        return sign.getRelative(getFront(sign));
-    }
-
     /**
      * @param sign treated as sign post if it is such, or else assumed to be a wall sign (i.e.,
      *             if you ask about a stone block, it's considered a wall
@@ -135,11 +130,6 @@ public final class SignUtil {
      */
     public static BlockFace getRight(Block sign) {
         return getCounterClockWise(getFront(sign));
-    }
-
-    public static Block getLeftBlock(Block sign) {
-
-        return sign.getRelative(getLeft(sign));
     }
 
     /**
