@@ -2,6 +2,7 @@ package com.sk89q.craftbook.util;
 
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
+import org.jetbrains.annotations.Nullable;
 
 public abstract class AddOnlyInventory {
 
@@ -54,6 +55,10 @@ public abstract class AddOnlyInventory {
   }
 
   public int addItemToSlotAndGetAddedAmount(int slot, ItemStack itemToAdd, int amountToAdd) {
+    return addItemToSlotAndGetAddedAmount(slot, itemToAdd, amountToAdd, 0);
+  }
+
+  public int addItemToSlotAndGetAddedAmount(int slot, ItemStack itemToAdd, int amountToAdd, int stackSizeOverride) {
     var currentItem = inventory.getItem(slot);
 
     if (!ItemUtil.isStackValid(currentItem)) {
@@ -69,7 +74,12 @@ public abstract class AddOnlyInventory {
     if (!currentItem.isSimilar(itemToAdd))
       return 0;
 
-    var remainingSpace = currentItem.getMaxStackSize() - currentItem.getAmount();
+    var stackSize = currentItem.getMaxStackSize();
+
+    if (stackSizeOverride > 0)
+      stackSize = stackSizeOverride;
+
+    var remainingSpace = stackSize - currentItem.getAmount();
 
     if (remainingSpace <= 0)
       return 0;
@@ -82,15 +92,15 @@ public abstract class AddOnlyInventory {
     return addedAmount;
   }
 
-  public int getSpaceFor(int slot, ItemStack item) {
+  public @Nullable Integer getAmountIfIsSimilarOrVacant(int slot, ItemStack item) {
     var currentItem = inventory.getItem(slot);
 
     if (!ItemUtil.isStackValid(currentItem))
-      return item.getMaxStackSize();
-
-    if (!currentItem.isSimilar(item))
       return 0;
 
-    return Math.max(0, currentItem.getMaxStackSize() - currentItem.getAmount());
+    if (!currentItem.isSimilar(item))
+      return null;
+
+    return currentItem.getAmount();
   }
 }

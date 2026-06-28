@@ -4,11 +4,14 @@ import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.Tag;
 import org.bukkit.inventory.*;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
 public class InventoryUtil {
+
+    // We want to have bottles, buckets, etc. stack as efficiently as possible, such that
+    // the crafter can operate at its full speed without having to await another pipe-refill.
+    private static final int CRAFTER_MAX_STACK_SIZE = 64;
 
     private static final int FURNACE_SMELTING_INDEX = 0;
     private static final int FURNACE_FUEL_INDEX = 1;
@@ -78,7 +81,7 @@ public class InventoryUtil {
             return addItemsToBrewingStand(inventory, itemsToAdd);
 
         if (blockMaterial == Material.CRAFTER)
-            return distributeItemsToMakeEvenAndGetRemainders(itemsToAdd, inventory, (slot, vacant) -> !inventory.isSlotDisabled(slot));
+            return distributeItemsIntoCrafter(itemsToAdd, inventory);
 
         // Basic inventories like chests, dispensers, storage carts, etc.
 
@@ -203,24 +206,28 @@ public class InventoryUtil {
         };
     }
 
-    public static int distributeToMakeEvenAndGetRemainder(
+    private static int distributeIntoCrafterToMakeEvenAndGetRemainder(
       AddOnlyInventory inventory,
-      @Nullable SlotPredicate slotPredicate,
       ItemStack itemToAdd
     ) {
-        var stackSize = itemToAdd.getMaxStackSize();
         var spaceByIndex = new int[inventory.getSize()];
         var addedAmountByIndex = new int[inventory.getSize()];
 
         for (var index = 0; index < spaceByIndex.length; ++index) {
-            // TODO: We only use this for the Crafter, which should have a max stack-size of 64
-            //       as to also stack bottles etc. efficiently.
-            var availableSpace = inventory.getSpaceFor(index, itemToAdd);
-
-            if (slotPredicate != null && !slotPredicate.test(index, availableSpace >= stackSize))
+            if (inventory.isSlotDisabled(index))
                 continue;
 
-            spaceByIndex[index] = availableSpace;
+            var currentAmount = inventory.getAmountIfIsSimilarOrVacant(index, itemToAdd);
+
+            if (currentAmount == null)
+                continue;
+
+            var currentSpace = CRAFTER_MAX_STACK_SIZE - currentAmount;
+
+            if (currentSpace <= 0)
+                continue;
+
+            spaceByIndex[index] = currentSpace;
         }
 
         var simulatedRemainingAmount = itemToAdd.getAmount();
@@ -257,7 +264,7 @@ public class InventoryUtil {
             if (simulatedAddedAmount <= 0)
                 continue;
 
-            actualRemainingAmount -= inventory.addItemToSlotAndGetAddedAmount(index, itemToAdd, simulatedAddedAmount);
+            actualRemainingAmount -= inventory.addItemToSlotAndGetAddedAmount(index, itemToAdd, simulatedAddedAmount, CRAFTER_MAX_STACK_SIZE);
 
             if (actualRemainingAmount <= 0)
                 break;
@@ -266,10 +273,9 @@ public class InventoryUtil {
         return Math.max(0, actualRemainingAmount);
     }
 
-    public static List<ItemStack> distributeItemsToMakeEvenAndGetRemainders(
+    private static List<ItemStack> distributeItemsIntoCrafter(
       List<ItemStack> itemsToAdd,
-      AddOnlyInventory inventory,
-      @Nullable SlotPredicate slotPredicate
+      AddOnlyInventory inventory
     ) {
         var leftovers = new ArrayList<ItemStack>();
 
@@ -277,7 +283,7 @@ public class InventoryUtil {
             if (!ItemUtil.isStackValid(itemToAdd))
                 continue;
 
-            var remainingAmount = distributeToMakeEvenAndGetRemainder(inventory, slotPredicate, itemToAdd);
+            var remainingAmount = distributeIntoCrafterToMakeEvenAndGetRemainder(inventory, itemToAdd);
 
             itemToAdd.setAmount(remainingAmount);
 
