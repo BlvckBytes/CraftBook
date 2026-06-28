@@ -49,11 +49,15 @@ public class ChangedSign {
     }
 
     public String getLine(int index) throws IndexOutOfBoundsException {
+        if (this.lines == null)
+            return "";
+
         return lines[index];
     }
 
     public void setLine(int index, String line) throws IndexOutOfBoundsException {
-        lines[index] = line;
+        if (this.lines != null)
+            lines[index] = line;
     }
 
     public void update(boolean force) {
