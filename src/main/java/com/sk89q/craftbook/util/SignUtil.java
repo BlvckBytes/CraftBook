@@ -73,19 +73,6 @@ public final class SignUtil {
      *             if you ask about a stone block, it's considered a wall
      *             sign).
      *
-     * @return the direction a player would be facing when reading the sign; i.e. the face that is actually the back
-     *         side of the sign.
-     */
-    public static BlockFace getFacing(Block sign) {
-
-        return getBack(sign);
-    }
-
-    /**
-     * @param sign treated as sign post if it is such, or else assumed to be a wall sign (i.e.,
-     *             if you ask about a stone block, it's considered a wall
-     *             sign).
-     *
      * @return the side of the sign containing the text (in other words, when a player places a new sign,
      *         while facing north, this will return south).
      */
@@ -100,16 +87,6 @@ public final class SignUtil {
         }
     }
 
-    /**
-     * @param sign treated as sign post if it is such, or else assumed to be a wall sign (i.e.,
-     *             if you ask about a stone block, it's considered a wall
-     *             sign).
-     *
-     * @return the blank side of the sign opposite the text. In the case of a wall sign,
-     *         the block in this direction is the block to which the sign is
-     *         attached. This is also the direction a player would be facing when reading the sign; see {@link
-     *         #getFacing(Block)}.
-     */
     public static BlockFace getBack(Block sign) {
         return getFront(sign).getOppositeFace();
     }
@@ -117,81 +94,6 @@ public final class SignUtil {
     public static Block getBackBlock(Block sign) {
 
         return sign.getRelative(getBack(sign));
-    }
-
-    /**
-     * @param sign treated as sign post if it is such, or else assumed to be a wall sign (i.e.,
-     *             if you ask about a stone block, it's considered a wall
-     *             sign).
-     *
-     * @return the cardinal or ordinal direction to a player's left as they face the sign to read it; if the sign is
-     *         oriented in a further direction,
-     *         the result is rounded to the nearest ordinal direction.
-     */
-    public static BlockFace getRight(Block sign) {
-        return getCounterClockWise(getFront(sign));
-    }
-
-    /**
-     * @param sign treated as sign post if it is such, or else assumed to be a wall sign (i.e.,
-     *             if you ask about a stone block, it's considered a wall
-     *             sign).
-     *
-     * @return the cardinal or ordinal direction to a player's right they face the sign to read it; if the sign is
-     *         oriented in a further direction, the
-     *         result is rounded to the nearest ordinal direction.
-     */
-    public static BlockFace getLeft(Block sign) {
-        return getClockWise(getFront(sign));
-    }
-
-    public static Block getRightBlock(Block sign) {
-
-        return sign.getRelative(getRight(sign));
-    }
-
-    /**
-     * @param face Start from direction
-     *
-     * @return clockwise direction
-     */
-    public static BlockFace getClockWise(BlockFace face) {
-
-        switch (face) {
-            case NORTH:
-                return BlockFace.EAST;
-            case EAST:
-                return BlockFace.SOUTH;
-            case SOUTH:
-                return BlockFace.WEST;
-            case WEST:
-                return BlockFace.NORTH;
-
-            default:
-                return BlockFace.SELF;
-        }
-    }
-
-    /**
-     * @param face Start from direction
-     *
-     * @return clockwise direction
-     */
-    public static BlockFace getCounterClockWise(BlockFace face) {
-
-        switch (face) {
-            case NORTH:
-                return BlockFace.WEST;
-            case EAST:
-                return BlockFace.NORTH;
-            case SOUTH:
-                return BlockFace.EAST;
-            case WEST:
-                return BlockFace.SOUTH;
-
-            default:
-                return BlockFace.SELF;
-        }
     }
 
     /**
