@@ -13,7 +13,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.*;
-import org.bukkit.block.data.Levelled;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -375,8 +374,6 @@ public class Pipes implements CraftBookMechanic, PipesApi {
         if (otherChestBlock != null && currentBlockCache.isPipeOriginDisabled(otherChestBlock))
             return;
 
-        var itemsInPipe = new ArrayList<ItemStack>();
-
         LongSet visitedBlocks = new LongOpenHashSet();
         visitedBlocks.add(CompactId.computeWorldlessBlockId(containerBlock));
 
@@ -385,8 +382,9 @@ public class Pipes implements CraftBookMechanic, PipesApi {
 
         // Suck items from container-block
 
+        var itemsInPipe = new ArrayList<ItemStack>();
+
         InventoryHolder inventoryHolder = null;
-        Levelled levelled = null;
 
         if (
             CachedBlock.hasHandledInputInventory(cachedContainerBlock)
@@ -430,21 +428,9 @@ public class Pipes implements CraftBookMechanic, PipesApi {
                         break;
                 }
             }
-        } else if (CachedBlock.isMaterial(cachedContainerBlock, Material.COMPOSTER)) {
-            levelled = (Levelled) containerBlock.getBlockData();
-
-            if (levelled.getLevel() == levelled.getMaximumLevel()) {
-                var boneMealItem = new ItemStack(Material.BONE_MEAL, 1);
-
-                if (predicateEvent.testItem(boneMealItem)) {
-                    itemsInPipe.add(boneMealItem);
-                    levelled.setLevel(0);
-                    containerBlock.setBlockData(levelled);
-                }
-            }
         }
 
-        if (itemsInPipe.isEmpty())
+        if (inventoryHolder == null || itemsInPipe.isEmpty())
             return;
 
         // Walk pipe to store as many items as possible
@@ -478,26 +464,9 @@ public class Pipes implements CraftBookMechanic, PipesApi {
             // Drop leftovers for "malformed" pipes, if configured.
             if ((dropNoSign && missedSign) || (dropExceededLimits && exceededLimits) || threwError) {
                 leftovers.addAll(itemsInPipe);
-            } else if (inventoryHolder != null) {
+            } else {
                 // Allow to put items that have been sucked from the result-slot back into the furnace.
                 leftovers.addAll(InventoryUtil.addItemsToInventory(new LiveAddOnlyInventory(inventoryHolder), CachedBlock.getMaterial(cachedContainerBlock), itemsInPipe, EnumSet.of(InventoryAddFlag.ADD_TO_FURNACE_RESULT)));
-            } else if (levelled != null) {
-                for (ItemStack item : itemsInPipe) {
-                    if (levelled.getLevel() == levelled.getMaximumLevel() || item.getType() != Material.BONE_MEAL) {
-                        leftovers.add(item);
-                        continue;
-                    }
-
-                    levelled.setLevel(levelled.getMaximumLevel());
-                    containerBlock.setBlockData(levelled);
-
-                    if (item.getAmount() > 1) {
-                        item.setAmount(item.getAmount() - 1);
-                        leftovers.add(item);
-                    }
-                }
-            } else {
-                leftovers.addAll(itemsInPipe);
             }
         }
 
@@ -670,6 +639,22 @@ public class Pipes implements CraftBookMechanic, PipesApi {
             return;
 
         var sourceBlock = sourceLocation.getBlock();
+
+        int cachedSourceBlock;
+
+        try {
+            cachedSourceBlock = worldBlockCache.getCachedBlock(sourceBlock);
+        } catch (LoadingChunkException e) {
+            event.setCancelled(true);
+            return;
+        }
+
+        // Do not cancel and override behavior if we do not handle the block to be sucked from.
+        // This allows, for example, the hopper to funnel bone-meal out of the composter block to then,
+        // some time later, initiate a pipe-process from its very own inventory, thereby saving
+        // us the hassle to directly integrate with a non-container-block directly.
+        if (!CachedBlock.hasHandledInputInventory(cachedSourceBlock))
+            return;
 
         // If all constraints of the above hold, there is no reason to move into the hopper, seeing
         // how the intention of the setup is rather unambiguous. This hopper is but a mediator.
