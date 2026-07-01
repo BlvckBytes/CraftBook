@@ -363,13 +363,18 @@ public class Pipes implements CraftBookMechanic, PipesApi {
             return;
         }
 
+        var visitedBlocks = new LongOpenHashSet();
+
+        visitedBlocks.add(CompactId.computeWorldlessBlockId(containerBlock));
+
         var otherChestBlock = CachedBlock.getOtherChestBlock(containerBlock, CachedBlock.getChestType(cachedContainerBlock), CachedBlock.getFacing(cachedContainerBlock));
 
-        if (otherChestBlock != null && currentBlockCache.isPipeOriginDisabled(otherChestBlock))
-            return;
+        if (otherChestBlock != null) {
+            if (currentBlockCache.isPipeOriginDisabled(otherChestBlock))
+                return;
 
-        LongSet visitedBlocks = new LongOpenHashSet();
-        visitedBlocks.add(CompactId.computeWorldlessBlockId(containerBlock));
+            visitedBlocks.add(CompactId.computeWorldlessBlockId(otherChestBlock));
+        }
 
         PipePredicateEvent predicateEvent = new PipePredicateEvent(inputPistonBlock, sign.includeFilters, sign.excludeFilters);
         Bukkit.getPluginManager().callEvent(predicateEvent);
