@@ -25,8 +25,8 @@ public class PipeSign {
     }
 
     public static PipeSign fromSign(Sign sign, String[] lines, @Nullable List<PipeNotification> notificationOutput) {
-        List<ItemStack> includeFilters = new ArrayList<>();
-        List<ItemStack> excludeFilters = new ArrayList<>();
+        var includeFilters = new ArrayList<ItemStack>();
+        var excludeFilters = new ArrayList<ItemStack>();
 
         parseLineItems(sign, lines, 2, includeFilters, notificationOutput);
         parseLineItems(sign, lines, 3, excludeFilters, notificationOutput);
@@ -35,7 +35,7 @@ public class PipeSign {
     }
 
     private static void parseLineItems(Sign sign, String[] lines, int lineId, List<ItemStack> output, @Nullable List<PipeNotification> notificationOutput) {
-        for (String token : RegexUtil.COMMA_PATTERN.split(lines[lineId])) {
+        for (var token : RegexUtil.COMMA_PATTERN.split(lines[lineId])) {
             token = token.trim();
 
             if (token.isEmpty())

@@ -36,10 +36,6 @@ public class CachedBlock {
         return (cachedBlock & (1 << 3)) != 0;
     }
 
-    public static boolean isSign(int cachedBlock) {
-        return isStandingSign(cachedBlock) || isWallSign(cachedBlock);
-    }
-
     public static boolean isStandingSign(int cachedBlock) {
         return (cachedBlock & (1 << 4)) != 0;
     }
@@ -54,7 +50,7 @@ public class CachedBlock {
     }
 
     public static boolean doTubeColorsMismatch(int cachedBlockA, int cachedBlockB) {
-        int ordinalA = getTubeColorOrdinal(cachedBlockA);
+        var ordinalA = getTubeColorOrdinal(cachedBlockA);
 
         // Important note: transparent tubes are allowed to link with any color, so if
         // either side of the connection is transparent, there cannot be a mismatch.
@@ -62,7 +58,7 @@ public class CachedBlock {
         if (ordinalA == TubeColor.NONE.ordinal() || ordinalA == TubeColor.TRANSPARENT.ordinal())
             return false;
 
-        int ordinalB = getTubeColorOrdinal(cachedBlockB);
+        var ordinalB = getTubeColorOrdinal(cachedBlockB);
 
         if (ordinalB == TubeColor.NONE.ordinal() || ordinalB == TubeColor.TRANSPARENT.ordinal())
             return false;
@@ -79,7 +75,7 @@ public class CachedBlock {
     }
 
     public static BlockFace getFacing(int cachedBlock) {
-        int index = (cachedBlock >> 11) & (32 - 1);
+        var index = (cachedBlock >> 11) & (32 - 1);
 
         if (index >= BLOCK_FACE_VALUES.length)
             return BlockFace.SELF;
@@ -140,7 +136,7 @@ public class CachedBlock {
         var blockData = block.getBlockData();
         var material = blockData.getMaterial();
 
-        int preset = getPreset(material);
+        var preset = getPreset(material);
 
         var facing = BlockFace.SELF;
         var chestType = Chest.Type.SINGLE;
@@ -190,14 +186,14 @@ public class CachedBlock {
     }
 
     public static void setupPresetTable() {
-        int lowestIndex = -1;
-        int highestIndex = -1;
+        var lowestIndex = -1;
+        var highestIndex = -1;
 
-        Material[] materials = Material.values();
-        int[] presets = new int[materials.length];
+        var materials = Material.values();
+        var presets = new int[materials.length];
 
-        for (int index = 0; index < materials.length; ++index) {
-            int value = presets[index] = makePreset(materials[index]);
+        for (var index = 0; index < materials.length; ++index) {
+            var value = presets[index] = makePreset(materials[index]);
 
             if (value == 0)
                 continue;
@@ -218,18 +214,18 @@ public class CachedBlock {
     }
 
     private static int makePreset(Material material) {
-        TubeColor.TypeAwareTubeColor tubeColor = TubeColor.fromMaterial(material);
+        var tubeColor = TubeColor.fromMaterial(material);
 
-        boolean isValidPipeBlock = (
+        var isValidPipeBlock = (
             tubeColor.color() != TubeColor.NONE
                 || material == Material.PISTON
                 || material == Material.STICKY_PISTON
         );
 
-        boolean isInputInventory = hasHandledInputInventory(material);
-        boolean isOutputInventory = hasHandledOutputInventory(material);
-        boolean isStandingSign = Tag.STANDING_SIGNS.isTagged(material);
-        boolean isWallSign = Tag.WALL_SIGNS.isTagged(material);
+        var isInputInventory = hasHandledInputInventory(material);
+        var isOutputInventory = hasHandledOutputInventory(material);
+        var isStandingSign = Tag.STANDING_SIGNS.isTagged(material);
+        var isWallSign = Tag.WALL_SIGNS.isTagged(material);
 
         return (
             ((tubeColor.color().ordinal() & (32 - 1)) << 6)

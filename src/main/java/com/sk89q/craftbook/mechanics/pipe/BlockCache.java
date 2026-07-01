@@ -233,21 +233,21 @@ public class BlockCache implements CachedBlockResolver {
     }
 
     public PipeSign getSignOnPiston(Block pistonBlock, int cachedPistonBlock, @Nullable List<PipeNotification> notificationOutput) throws LoadingChunkException {
-        long pistonCompactId = CompactId.computeWorldlessBlockId(pistonBlock);
+        var pistonCompactId = CompactId.computeWorldlessBlockId(pistonBlock);
 
-        PipeSign cachedSign = pipeSignByPistonCompactId.get(pistonCompactId);
+        var cachedSign = pipeSignByPistonCompactId.get(pistonCompactId);
 
         if (cachedSign != null)
             return cachedSign;
 
-        BlockFace facing = CachedBlock.getFacing(cachedPistonBlock);
+        var facing = CachedBlock.getFacing(cachedPistonBlock);
 
-        for (BlockFace face : DIRECT_FACES) {
+        for (var face : DIRECT_FACES) {
             if (face == facing)
                 continue;
 
-            Block faceBlock = pistonBlock.getRelative(face);
-            int cachedFaceBlock = getCachedBlock(faceBlock);
+            var faceBlock = pistonBlock.getRelative(face);
+            var cachedFaceBlock = getCachedBlock(faceBlock);
 
             if (CachedBlock.isStandingSign(cachedFaceBlock)) {
                 // Standing-signs may only be on or under the piston
@@ -269,7 +269,7 @@ public class BlockCache implements CachedBlockResolver {
             if (!(faceBlock.getState(false) instanceof Sign sign))
                 continue;
 
-            String[] lines = sign.getLines();
+            var lines = sign.getLines();
 
             if (!lines[1].equalsIgnoreCase("[Pipe]"))
                 continue;

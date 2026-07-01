@@ -1,7 +1,6 @@
 package com.sk89q.craftbook.mechanics.pipe;
 
 import com.sk89q.craftbook.CraftBookMechanic;
-import com.sk89q.craftbook.CraftBookPlayer;
 import com.sk89q.craftbook.bukkit.CraftBookPlugin;
 import com.sk89q.craftbook.mechanics.pipe.notification.*;
 import com.sk89q.craftbook.util.*;
@@ -13,7 +12,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.*;
-import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.SignChangeEvent;
@@ -74,7 +72,7 @@ public class Pipes implements CraftBookMechanic, PipesApi {
         if (!EventUtil.passesFilter(event)) return;
         if (!event.getLine(1).equalsIgnoreCase("[pipe]")) return;
 
-        CraftBookPlayer player = CraftBookPlugin.inst().wrapPlayer(event.getPlayer());
+        var player = CraftBookPlugin.inst().wrapPlayer(event.getPlayer());
 
         if (!player.hasPermission("craftbook.circuits.pipes")) {
             if (CraftBookPlugin.inst().getConfiguration().showPermissionMessages)
@@ -106,7 +104,7 @@ public class Pipes implements CraftBookMechanic, PipesApi {
     }
 
     private static boolean isPiston(Block block) {
-        Material type = block.getType();
+        var type = block.getType();
         return type == Material.PISTON || type == Material.STICKY_PISTON;
     }
 
@@ -125,23 +123,23 @@ public class Pipes implements CraftBookMechanic, PipesApi {
             if (!CachedBlock.isMaterial(cachedPipeBlock, Material.PISTON))
                 return EnumerationDecision.CONTINUE;
 
-            Block putBlock = pipeBlock.getRelative(CachedBlock.getFacing(cachedPipeBlock));
+            var putBlock = pipeBlock.getRelative(CachedBlock.getFacing(cachedPipeBlock));
             var putBlockId = CompactId.computeWorldlessBlockId(putBlock);
-            int cachedPutBlock = currentBlockCache.getCachedBlock(putBlock);
+            var cachedPutBlock = currentBlockCache.getCachedBlock(putBlock);
 
             // Skip if the put-block is either part of the input-container, whose IDs we added when starting the pipe,
             // or any other glass-blocks that we may have walked across in the past already.
             if (visitedBlocks.contains(putBlockId))
                 return EnumerationDecision.CONTINUE;
 
-            boolean isSubPipe = CachedBlock.isTube(cachedPutBlock) && !CachedBlock.isPane(cachedPutBlock);
+            var isSubPipe = CachedBlock.isTube(cachedPutBlock) && !CachedBlock.isPane(cachedPutBlock);
 
             // Add the sub-pipe tube-block to the visited-set as to avoid it being walked into again
             // by the current enumerator on the next iteration, which would render filters useless.
             if (isSubPipe)
                 visitedBlocks.add(putBlockId);
 
-            PipeSign sign = currentBlockCache.getSignOnPiston(pipeBlock, cachedPipeBlock, notificationOutput);
+            var sign = currentBlockCache.getSignOnPiston(pipeBlock, cachedPipeBlock, notificationOutput);
 
             if (pipeRequireSign) {
                 if (sign != PipeSign.NO_SIGN)
@@ -155,7 +153,7 @@ public class Pipes implements CraftBookMechanic, PipesApi {
             if (CachedBlock.isMaterial(cachedPutBlock, Material.AIR) || CachedBlock.isMaterial(cachedPutBlock, Material.VOID_AIR))
                 return EnumerationDecision.CONTINUE;
 
-            PipePredicateEvent predicateEvent = new PipePredicateEvent(pipeBlock, sign.includeFilters, sign.excludeFilters);
+            var predicateEvent = new PipePredicateEvent(pipeBlock, sign.includeFilters, sign.excludeFilters);
             Bukkit.getPluginManager().callEvent(predicateEvent);
 
             var filteredPipeItems = pipeItems.filterAndMakeSub(predicateEvent::testItem);
@@ -208,16 +206,16 @@ public class Pipes implements CraftBookMechanic, PipesApi {
                 currentBlockCache.resetCacheLoadCounter();
             }
 
-            Deque<Block> searchQueue = new ArrayDeque<>();
+            var searchQueue = new ArrayDeque<Block>();
             searchQueue.addFirst(firstBlock);
             visitedBlocks.add(CompactId.computeWorldlessBlockId(firstBlock));
 
-            Deque<Block> pistonQueue = new ArrayDeque<>();
+            var pistonQueue = new ArrayDeque<Block>();
             boolean hasPistons;
 
             while ((hasPistons = !pistonQueue.isEmpty()) || !searchQueue.isEmpty()) {
-                Block pipeBlock = hasPistons ? pistonQueue.poll() : searchQueue.poll();
-                int cachedPipeBlock = currentBlockCache.getCachedBlock(pipeBlock);
+                var pipeBlock = hasPistons ? pistonQueue.poll() : searchQueue.poll();
+                var cachedPipeBlock = currentBlockCache.getCachedBlock(pipeBlock);
 
                 if (CachedBlock.isTube(cachedPipeBlock)) {
                     ++currentTubeBlockCounter;
@@ -236,7 +234,7 @@ public class Pipes implements CraftBookMechanic, PipesApi {
                         currentBlockCache.getSignOnPiston(pipeBlock, cachedPipeBlock, null);
                 }
 
-                EnumerationDecision handleResult = enumerationHandler.handle(pipeBlock, cachedPipeBlock, currentBlockCache);
+                var handleResult = enumerationHandler.handle(pipeBlock, cachedPipeBlock, currentBlockCache);
 
                 if (handleResult != EnumerationDecision.CONTINUE)
                     return EnumerationResult.COMPLETED;
@@ -247,8 +245,8 @@ public class Pipes implements CraftBookMechanic, PipesApi {
                     return EnumerationResult.EXCEEDED_CACHE_LOAD_LIMIT;
 
                 for (var neighborFace : PIPE_NEIGHBOR_FACES) {
-                    Block enumeratedBlock = pipeBlock.getRelative(neighborFace);
-                    int cachedEnumeratedBlock = currentBlockCache.getCachedBlock(enumeratedBlock);
+                    var enumeratedBlock = pipeBlock.getRelative(neighborFace);
+                    var cachedEnumeratedBlock = currentBlockCache.getCachedBlock(enumeratedBlock);
 
                     if (!CachedBlock.isValidPipeBlock(cachedEnumeratedBlock))
                         continue;
@@ -290,8 +288,8 @@ public class Pipes implements CraftBookMechanic, PipesApi {
                         continue;
                     }
 
-                    Block nextEnumeratedBlock = enumeratedBlock.getRelative(neighborFace);
-                    int cachedNextEnumeratedBlock = currentBlockCache.getCachedBlock(nextEnumeratedBlock);
+                    var nextEnumeratedBlock = enumeratedBlock.getRelative(neighborFace);
+                    var cachedNextEnumeratedBlock = currentBlockCache.getCachedBlock(nextEnumeratedBlock);
 
                     if (!CachedBlock.isValidPipeBlock(cachedNextEnumeratedBlock))
                         continue;
@@ -382,7 +380,7 @@ public class Pipes implements CraftBookMechanic, PipesApi {
             visitedBlocks.add(CompactId.computeWorldlessBlockId(otherChestBlock));
         }
 
-        PipePredicateEvent predicateEvent = new PipePredicateEvent(inputPistonBlock, sign.includeFilters, sign.excludeFilters);
+        var predicateEvent = new PipePredicateEvent(inputPistonBlock, sign.includeFilters, sign.excludeFilters);
         Bukkit.getPluginManager().callEvent(predicateEvent);
 
         // Suck items from container-block
@@ -396,7 +394,7 @@ public class Pipes implements CraftBookMechanic, PipesApi {
         // Locate exit-nodes for items
 
         EnumerationResult enumerationResult = null;
-        EnumSet<LocateFlag> locateFlags = EnumSet.of(LocateFlag.RESET_COUNTERS);
+        var locateFlags = EnumSet.of(LocateFlag.RESET_COUNTERS);
 
         if (sign != PipeSign.NO_SIGN)
             locateFlags.add(LocateFlag.ENCOUNTERED_SIGN);
@@ -414,7 +412,7 @@ public class Pipes implements CraftBookMechanic, PipesApi {
 
         // Do not cause leftovers to be dropped when not having encountered a sign yet during the
         // warmup process; signs are only missed if the pipe completed fully.
-        boolean missedSign = pipeRequireSign && enumerationResult == EnumerationResult.COMPLETED && !locateFlags.contains(LocateFlag.ENCOUNTERED_SIGN);
+        var missedSign = pipeRequireSign && enumerationResult == EnumerationResult.COMPLETED && !locateFlags.contains(LocateFlag.ENCOUNTERED_SIGN);
 
         if (missedSign)
             notificationOutput.add(new NoSignNotification());
@@ -468,7 +466,7 @@ public class Pipes implements CraftBookMechanic, PipesApi {
         }
 
         if (suckedInventory instanceof BrewerInventory) {
-            for (int bottleSlot = 0; bottleSlot < 3; ++bottleSlot) {
+            for (var bottleSlot = 0; bottleSlot < 3; ++bottleSlot) {
                 var bottleItem = suckedInventory.getItem(bottleSlot);
 
                 if (bottleItem != null && predicateEvent.testItem(bottleItem)) {
@@ -482,7 +480,7 @@ public class Pipes implements CraftBookMechanic, PipesApi {
 
         var inventorySize = suckedInventory.getSize();
 
-        for (int slot = 0; slot < inventorySize; ++slot) {
+        for (var slot = 0; slot < inventorySize; ++slot) {
             var item = suckedInventory.getItem(slot);
 
             if (item == null || !predicateEvent.testItem(item))
@@ -546,7 +544,7 @@ public class Pipes implements CraftBookMechanic, PipesApi {
         if (notificationRadiusSquared > 0) {
             Location inputLocation = inputPistonBlock.getLocation();
 
-            for (Player player : inputPistonBlock.getWorld().getPlayers()) {
+            for (var player : inputPistonBlock.getWorld().getPlayers()) {
                 if (player.getLocation().distanceSquared(inputLocation) > notificationRadiusSquared)
                     continue;
 
