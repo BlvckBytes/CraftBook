@@ -165,7 +165,7 @@ public class Pipes implements CraftBookMechanic, PipesApi {
             }
 
             if (CachedBlock.isPowerable(cachedPutBlock)) {
-                currentBlockCache.temporarilyPowerBlock(putBlock, 5);
+                currentBlockCache.temporarilyPowerBlock(putBlock, 10);
                 return EnumerationDecision.CONTINUE;
             }
 
