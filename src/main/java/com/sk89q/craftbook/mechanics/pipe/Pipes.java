@@ -126,14 +126,20 @@ public class Pipes implements CraftBookMechanic, PipesApi {
                 return EnumerationDecision.CONTINUE;
 
             Block putBlock = pipeBlock.getRelative(CachedBlock.getFacing(cachedPipeBlock));
+            var putBlockId = CompactId.computeWorldlessBlockId(putBlock);
             int cachedPutBlock = currentBlockCache.getCachedBlock(putBlock);
+
+            // Skip if the put-block is either part of the input-container, whose IDs we added when starting the pipe,
+            // or any other glass-blocks that we may have walked across in the past already.
+            if (visitedBlocks.contains(putBlockId))
+                return EnumerationDecision.CONTINUE;
 
             boolean isSubPipe = CachedBlock.isTube(cachedPutBlock) && !CachedBlock.isPane(cachedPutBlock);
 
             // Add the sub-pipe tube-block to the visited-set as to avoid it being walked into again
             // by the current enumerator on the next iteration, which would render filters useless.
             if (isSubPipe)
-                visitedBlocks.add(CompactId.computeWorldlessBlockId(putBlock));
+                visitedBlocks.add(putBlockId);
 
             PipeSign sign = currentBlockCache.getSignOnPiston(pipeBlock, cachedPipeBlock, notificationOutput);
 
