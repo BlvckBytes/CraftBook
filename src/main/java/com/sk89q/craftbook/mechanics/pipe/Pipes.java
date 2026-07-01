@@ -110,7 +110,7 @@ public class Pipes implements CraftBookMechanic, PipesApi {
         return type == Material.PISTON || type == Material.STICKY_PISTON;
     }
 
-    private EnumerationResult locateExitNodesForItems(Block inputPistonBlock, LongSet visitedBlocks, EnumSet<LocateFlag> flags, List<ItemAndOriginSlot> itemsInPipe, List<PipeNotification> notificationOutput) {
+    private EnumerationResult locateExitNodesForItems(Block inputPistonBlock, LongSet visitedBlocks, EnumSet<LocateFlag> flags, PipeItems pipeItems, List<PipeNotification> notificationOutput) {
         var enumerationFlags = EnumSet.of(EnumerationBehavior.DO_NOT_RESET_CACHE_AND_MAX_COUNTERS);
 
         // Only reset the limit-counters once, at the very top of the call-stack, seeing
@@ -119,7 +119,7 @@ public class Pipes implements CraftBookMechanic, PipesApi {
             enumerationFlags.remove(EnumerationBehavior.DO_NOT_RESET_CACHE_AND_MAX_COUNTERS);
 
         return enumeratePipeBlocks(inputPistonBlock, visitedBlocks, enumerationFlags, (pipeBlock, cachedPipeBlock, cache) -> {
-            if (itemsInPipe.isEmpty())
+            if (pipeItems.isEmpty())
                 return EnumerationDecision.STOP;
 
             if (!CachedBlock.isMaterial(cachedPipeBlock, Material.PISTON))
@@ -152,12 +152,7 @@ public class Pipes implements CraftBookMechanic, PipesApi {
             PipePredicateEvent predicateEvent = new PipePredicateEvent(pipeBlock, sign.includeFilters, sign.excludeFilters);
             Bukkit.getPluginManager().callEvent(predicateEvent);
 
-            List<ItemAndOriginSlot> filteredPipeItems = new ArrayList<>(itemsInPipe.size());
-
-            for (var itemInPipe : itemsInPipe) {
-                if (predicateEvent.testItem(itemInPipe.item))
-                    filteredPipeItems.add(itemInPipe);
-            }
+            var filteredPipeItems = pipeItems.filterAndMakeSub(predicateEvent::testItem);
 
             if (filteredPipeItems.isEmpty())
                 return EnumerationDecision.CONTINUE;
@@ -181,23 +176,9 @@ public class Pipes implements CraftBookMechanic, PipesApi {
 
             var blockType = CachedBlock.getMaterial(cachedPutBlock);
 
-            for (var itemInPipe : itemsInPipe) {
-                if (!ItemUtil.isStackValid(itemInPipe.item))
-                    continue;
-
-                var priorAmount = itemInPipe.item.getAmount();
-                var remainingAmount = InventoryUtil.addItemToInventoryAndGetRemainingAmount(blockInventory, blockType, itemInPipe.item);
-
-                if (priorAmount == remainingAmount)
-                    continue;
-
-                if (remainingAmount <= 0) {
-                    itemInPipe.item = null;
-                    continue;
-                }
-
-                itemInPipe.item.setAmount(remainingAmount);
-            }
+            filteredPipeItems.forEachActiveItemAndBreakAfterReduce((slot, item) -> {
+                return InventoryUtil.addItemToInventoryAndGetRemainingAmount(blockInventory, blockType, item);
+            });
 
             return EnumerationDecision.CONTINUE;
         });
@@ -395,10 +376,10 @@ public class Pipes implements CraftBookMechanic, PipesApi {
 
         // Suck items from container-block
 
-        var itemsInPipe = new ArrayList<ItemAndOriginSlot>();
-        var suckedInventory = suckFromContainerBlockAndGetInventory(containerBlock, cachedContainerBlock, predicateEvent, itemsInPipe);
+        var pipeItems = new PipeItems();
+        var suckedInventory = suckFromContainerBlockAndGetInventory(containerBlock, cachedContainerBlock, predicateEvent, pipeItems);
 
-        if (suckedInventory == null || itemsInPipe.isEmpty())
+        if (suckedInventory == null || pipeItems.isEmpty())
             return;
 
         // Locate exit-nodes for items
@@ -412,7 +393,7 @@ public class Pipes implements CraftBookMechanic, PipesApi {
         var threwError = false;
 
         try {
-            enumerationResult = locateExitNodesForItems(inputPistonBlock, visitedBlocks, locateFlags, itemsInPipe, notificationOutput);
+            enumerationResult = locateExitNodesForItems(inputPistonBlock, visitedBlocks, locateFlags, pipeItems, notificationOutput);
         } catch (Throwable e) {
             threwError = true;
             CraftBookPlugin.logger().log(Level.SEVERE, "An error occurred while trying to locate exit-nodes for an item in a pipe", e);
@@ -439,36 +420,27 @@ public class Pipes implements CraftBookMechanic, PipesApi {
         var shouldDropItems = (dropNoSign && missedSign) || (dropExceededLimits && exceededLimits) || threwError;
 
         if (shouldDropItems) {
-            for (var itemInPipe : itemsInPipe) {
-                if (!ItemUtil.isStackValid(itemInPipe.item))
-                    continue;
-
-                dropItemAtBlock(itemInPipe.item, containerBlock);
-            }
-
+            pipeItems.forEachRemainingItem((slot, item) -> dropItemAtBlock(item, containerBlock));
             return;
         }
 
-        putItemsBackIntoContainerBlockOrDrop(itemsInPipe, suckedInventory, containerBlock);
+        putItemsBackIntoContainerBlockOrDrop(pipeItems, suckedInventory, containerBlock);
     }
 
-    private void putItemsBackIntoContainerBlockOrDrop(List<ItemAndOriginSlot> itemsInPipe, Inventory suckedInventory, Block containerBlock) {
-        for (var itemInPipe : itemsInPipe) {
-            if (!ItemUtil.isStackValid(itemInPipe.item))
-                continue;
-
+    private void putItemsBackIntoContainerBlockOrDrop(PipeItems pipeItems, Inventory suckedInventory, Block containerBlock) {
+        pipeItems.forEachRemainingItem((slot, item) -> {
             // This should be unreachable, seeing how nobody was able to access the
             // container while we were processing the pipe, but better safe than sorry.
-            if (suckedInventory.getItem(itemInPipe.originSlot) != null) {
-                dropItemAtBlock(itemInPipe.item, containerBlock);
-                continue;
+            if (suckedInventory.getItem(slot) != null) {
+                dropItemAtBlock(item, containerBlock);
+                return;
             }
 
-            suckedInventory.setItem(itemInPipe.originSlot, itemInPipe.item);
-        }
+            suckedInventory.setItem(slot, item);
+        });
     }
 
-    private @Nullable Inventory suckFromContainerBlockAndGetInventory(Block containerBlock, int cachedContainerBlock, PipePredicateEvent predicateEvent, List<ItemAndOriginSlot> itemsInPipe) {
+    private @Nullable Inventory suckFromContainerBlockAndGetInventory(Block containerBlock, int cachedContainerBlock, PipePredicateEvent predicateEvent, PipeItems pipeItems) {
         if (!CachedBlock.hasHandledInputInventory(cachedContainerBlock))
             return null;
 
@@ -481,8 +453,8 @@ public class Pipes implements CraftBookMechanic, PipesApi {
             var result = suckedInventory.getItem(FURNACE_RESULT_INDEX);
 
             if (result != null && predicateEvent.testItem(result)) {
-                itemsInPipe.add(new ItemAndOriginSlot(FURNACE_RESULT_INDEX, result));
-                suckedInventory.setItem(FURNACE_RESULT_INDEX, null);
+                if (pipeItems.addIfNonDuplicate(FURNACE_RESULT_INDEX, result))
+                    suckedInventory.setItem(FURNACE_RESULT_INDEX, null);
             }
 
             return suckedInventory;
@@ -493,11 +465,8 @@ public class Pipes implements CraftBookMechanic, PipesApi {
                 var bottleItem = suckedInventory.getItem(bottleSlot);
 
                 if (bottleItem != null && predicateEvent.testItem(bottleItem)) {
-                    itemsInPipe.add(new ItemAndOriginSlot(bottleSlot, bottleItem));
-                    suckedInventory.setItem(bottleSlot, null);
-
-                    if (pipeStackPerPull)
-                        break;
+                    if (pipeItems.addIfNonDuplicate(bottleSlot, bottleItem))
+                        suckedInventory.setItem(bottleSlot, null);
                 }
             }
 
@@ -512,11 +481,8 @@ public class Pipes implements CraftBookMechanic, PipesApi {
             if (item == null || !predicateEvent.testItem(item))
                 continue;
 
-            itemsInPipe.add(new ItemAndOriginSlot(slot, item));
-            suckedInventory.setItem(slot, null);
-
-            if (pipeStackPerPull)
-                break;
+            if (pipeItems.addIfNonDuplicate(slot, item))
+                suckedInventory.setItem(slot, null);
         }
 
         return suckedInventory;
@@ -715,7 +681,6 @@ public class Pipes implements CraftBookMechanic, PipesApi {
         notificationDebouncer.removePlayer(event.getPlayer());
     }
 
-    private boolean pipeStackPerPull;
     private boolean pipeRequireSign;
     private boolean dropExceededLimits;
     private boolean dropNoSign;
@@ -729,9 +694,6 @@ public class Pipes implements CraftBookMechanic, PipesApi {
 
     @Override
     public void loadConfiguration(YAMLProcessor config, String path) {
-        config.setComment(path + "stack-per-move", "This option stops the pipes taking the entire chest on power, and makes it just take a single stack.");
-        pipeStackPerPull = config.getBoolean(path + "stack-per-move", true);
-
         config.setComment(path + "require-sign", "Requires pipes to have a [Pipe] sign connected to them. This is the only way to require permissions to make pipes.");
         pipeRequireSign = config.getBoolean(path + "require-sign", false);
 
