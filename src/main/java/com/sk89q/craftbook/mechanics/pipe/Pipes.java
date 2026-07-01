@@ -126,9 +126,6 @@ public class Pipes implements CraftBookMechanic, PipesApi {
             Block putBlock = pipeBlock.getRelative(CachedBlock.getFacing(cachedPipeBlock));
             int cachedPutBlock = currentBlockCache.getCachedBlock(putBlock);
 
-            if (CachedBlock.isMaterial(cachedPutBlock, Material.AIR) || CachedBlock.isMaterial(cachedPutBlock, Material.VOID_AIR))
-                return EnumerationDecision.CONTINUE;
-
             boolean isSubPipe = CachedBlock.isTube(cachedPutBlock) && !CachedBlock.isPane(cachedPutBlock);
 
             // Add the sub-pipe tube-block to the visited-set as to avoid it being walked into again
@@ -146,6 +143,9 @@ public class Pipes implements CraftBookMechanic, PipesApi {
                 if (!isSubPipe && !flags.contains(LocateFlag.ENCOUNTERED_SIGN))
                     return EnumerationDecision.CONTINUE;
             }
+
+            if (CachedBlock.isMaterial(cachedPutBlock, Material.AIR) || CachedBlock.isMaterial(cachedPutBlock, Material.VOID_AIR))
+                return EnumerationDecision.CONTINUE;
 
             PipePredicateEvent predicateEvent = new PipePredicateEvent(pipeBlock, sign.includeFilters, sign.excludeFilters);
             Bukkit.getPluginManager().callEvent(predicateEvent);
