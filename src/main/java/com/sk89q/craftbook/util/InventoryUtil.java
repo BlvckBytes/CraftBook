@@ -15,7 +15,6 @@ public class InventoryUtil {
 
     private static final int FURNACE_SMELTING_INDEX = 0;
     private static final int FURNACE_FUEL_INDEX = 1;
-    private static final int FURNACE_RESULT_INDEX = 2;
 
     private static final int BREWER_INGREDIENT_INDEX = 3;
     private static final int BREWER_FUEL_INDEX = 4;
@@ -61,12 +60,14 @@ public class InventoryUtil {
       };
     }
 
-    public static List<ItemStack> addItemsToInventory(
+    public static int addItemToInventoryAndGetRemainingAmount(
       AddOnlyInventory inventory,
       Material blockMaterial,
-      List<ItemStack> itemsToAdd,
-      EnumSet<InventoryAddFlag> flags
+      ItemStack itemToAdd
     ) {
+        if (!ItemUtil.isStackValid(itemToAdd))
+            return 0;
+
         var furnaceIgredientSet = switch (blockMaterial) {
             case FURNACE -> furnaceIngredients;
             case SMOKER -> smokerIngredients;
@@ -75,128 +76,86 @@ public class InventoryUtil {
         };
 
         if (furnaceIgredientSet != null)
-            return addItemsToFurnace(inventory, furnaceIgredientSet, itemsToAdd, flags.contains(InventoryAddFlag.ADD_TO_FURNACE_RESULT));
+            return addItemToFurnaceAndGetRemainingAmount(inventory, furnaceIgredientSet, itemToAdd);
 
         if (blockMaterial == Material.BREWING_STAND)
-            return addItemsToBrewingStand(inventory, itemsToAdd);
+            return addItemToBrewingStandAndGetRemainingAmount(inventory, itemToAdd);
 
         if (blockMaterial == Material.CRAFTER)
-            return distributeItemsIntoCrafter(itemsToAdd, inventory);
+            return distributeIntoCrafterToMakeEvenAndGetRemainingAmount(inventory, itemToAdd);
 
         // Basic inventories like chests, dispensers, storage carts, etc.
 
-        var leftovers = new ArrayList<ItemStack>();
         var isAddingToShulkerBox = Tag.SHULKER_BOXES.isTagged(blockMaterial);
 
-        for (var itemToAdd : itemsToAdd) {
-            if (!ItemUtil.isStackValid(itemToAdd))
-                continue;
+        var amountToAdd = itemToAdd.getAmount();
 
-            // Shulker-boxes do not nest
-            if (isAddingToShulkerBox && Tag.SHULKER_BOXES.isTagged(itemToAdd.getType())) {
-                leftovers.add(itemToAdd);
-                continue;
-            }
+        // Shulker-boxes do not nest
+        if (isAddingToShulkerBox && Tag.SHULKER_BOXES.isTagged(itemToAdd.getType()))
+            return amountToAdd;
 
-            var amountToAdd = itemToAdd.getAmount();
-            var addedAmount = inventory.addItemAndGetAddedAmount(itemToAdd, amountToAdd);
+        var addedAmount = inventory.addItemAndGetAddedAmount(itemToAdd, amountToAdd);
 
-            if (addedAmount >= itemToAdd.getAmount())
-                continue;
+        if (addedAmount >= amountToAdd)
+            return 0;
 
-            itemToAdd.setAmount(amountToAdd - addedAmount);
-
-            leftovers.add(itemToAdd);
-        }
-
-        return leftovers;
+        return amountToAdd - addedAmount;
     }
 
-    private static List<ItemStack> addItemsToFurnace(
+    private static int addItemToFurnaceAndGetRemainingAmount(
       AddOnlyInventory inventory,
       Set<Material> ingredientSet,
-      List<ItemStack> itemsToAdd,
-      boolean addToResult
+      ItemStack itemToAdd
     ) {
-        var leftovers = new ArrayList<ItemStack>();
+        var remainingAmount = itemToAdd.getAmount();
 
-        for (var itemToAdd : itemsToAdd) {
-            if (!ItemUtil.isStackValid(itemToAdd))
-                continue;
+        if (itemToAdd.getType().isFuel()) {
+            remainingAmount -= inventory.addItemToSlotAndGetAddedAmount(FURNACE_FUEL_INDEX, itemToAdd, remainingAmount);
 
-            var remainingAmount = itemToAdd.getAmount();
-
-            if (itemToAdd.getType().isFuel()) {
-                remainingAmount -= inventory.addItemToSlotAndGetAddedAmount(FURNACE_FUEL_INDEX, itemToAdd, remainingAmount);
-
-                if (remainingAmount <= 0)
-                    continue;
-            }
-
-            if (ingredientSet.contains(itemToAdd.getType())) {
-                remainingAmount -= inventory.addItemToSlotAndGetAddedAmount(FURNACE_SMELTING_INDEX, itemToAdd, remainingAmount);
-
-                if (remainingAmount <= 0)
-                    continue;
-            }
-
-            if (addToResult) {
-                remainingAmount -= inventory.addItemToSlotAndGetAddedAmount(FURNACE_RESULT_INDEX, itemToAdd, remainingAmount);
-
-                if (remainingAmount <= 0)
-                    continue;
-            }
-
-            itemToAdd.setAmount(remainingAmount);
-
-            leftovers.add(itemToAdd);
+            if (remainingAmount <= 0)
+                return 0;
         }
 
-        return leftovers;
+        if (ingredientSet.contains(itemToAdd.getType())) {
+            remainingAmount -= inventory.addItemToSlotAndGetAddedAmount(FURNACE_SMELTING_INDEX, itemToAdd, remainingAmount);
+
+            if (remainingAmount <= 0)
+                return 0;
+        }
+
+        return remainingAmount;
     }
 
-    private static List<ItemStack> addItemsToBrewingStand(
+    private static int addItemToBrewingStandAndGetRemainingAmount(
       AddOnlyInventory inventory,
-      List<ItemStack> itemsToAdd
+      ItemStack itemToAdd
     ) {
-        var leftovers = new ArrayList<ItemStack>();
+        var remainingAmount = itemToAdd.getAmount();
 
-        addLoop:
-        for (ItemStack itemToAdd : itemsToAdd) {
-            if (!ItemUtil.isStackValid(itemToAdd))
-                continue;
+        if (itemToAdd.getType() == Material.BLAZE_POWDER) {
+            remainingAmount -= inventory.addItemToSlotAndGetAddedAmount(BREWER_FUEL_INDEX, itemToAdd, remainingAmount);
 
-            var remainingAmount = itemToAdd.getAmount();
-
-            if (itemToAdd.getType() == Material.BLAZE_POWDER) {
-                remainingAmount -= inventory.addItemToSlotAndGetAddedAmount(BREWER_FUEL_INDEX, itemToAdd, remainingAmount);
-
-                if (remainingAmount <= 0)
-                    continue;
-            }
-
-            if (isAPotionIngredient(itemToAdd)) {
-                remainingAmount -= inventory.addItemToSlotAndGetAddedAmount(BREWER_INGREDIENT_INDEX, itemToAdd, remainingAmount);
-
-                if (remainingAmount <= 0)
-                    continue;
-            }
-
-            if (isABottleItem(itemToAdd)) {
-                for (int bottleSlot = 0; bottleSlot < 3; bottleSlot++) {
-                    remainingAmount -= inventory.addItemToSlotAndGetAddedAmount(bottleSlot, itemToAdd, remainingAmount);
-
-                    if (remainingAmount <= 0)
-                        continue addLoop;
-                }
-            }
-
-            itemToAdd.setAmount(remainingAmount);
-
-            leftovers.add(itemToAdd);
+            if (remainingAmount <= 0)
+                return 0;
         }
 
-        return leftovers;
+        if (isAPotionIngredient(itemToAdd)) {
+            remainingAmount -= inventory.addItemToSlotAndGetAddedAmount(BREWER_INGREDIENT_INDEX, itemToAdd, remainingAmount);
+
+            if (remainingAmount <= 0)
+                return 0;
+        }
+
+        if (isABottleItem(itemToAdd)) {
+            for (int bottleSlot = 0; bottleSlot < 3; bottleSlot++) {
+                remainingAmount -= inventory.addItemToSlotAndGetAddedAmount(bottleSlot, itemToAdd, remainingAmount);
+
+                if (remainingAmount <= 0)
+                    return 0;
+            }
+        }
+
+        return remainingAmount;
     }
 
     private static boolean isABottleItem(ItemStack item) {
@@ -206,7 +165,7 @@ public class InventoryUtil {
         };
     }
 
-    private static int distributeIntoCrafterToMakeEvenAndGetRemainder(
+    private static int distributeIntoCrafterToMakeEvenAndGetRemainingAmount(
       AddOnlyInventory inventory,
       ItemStack itemToAdd
     ) {
@@ -271,28 +230,5 @@ public class InventoryUtil {
         }
 
         return Math.max(0, actualRemainingAmount);
-    }
-
-    private static List<ItemStack> distributeItemsIntoCrafter(
-      List<ItemStack> itemsToAdd,
-      AddOnlyInventory inventory
-    ) {
-        var leftovers = new ArrayList<ItemStack>();
-
-        for (var itemToAdd : itemsToAdd) {
-            if (!ItemUtil.isStackValid(itemToAdd))
-                continue;
-
-            var remainingAmount = distributeIntoCrafterToMakeEvenAndGetRemainder(inventory, itemToAdd);
-
-            itemToAdd.setAmount(remainingAmount);
-
-            if (remainingAmount <= 0)
-                continue;
-
-            leftovers.add(itemToAdd);
-        }
-
-        return leftovers;
     }
 }

@@ -39,6 +39,8 @@ public class Pipes implements CraftBookMechanic, PipesApi {
       BlockFace.NORTH, BlockFace.EAST, BlockFace.SOUTH, BlockFace.WEST
     };
 
+    private static final int FURNACE_RESULT_INDEX = 2;
+
     private int currentTubeBlockCounter;
     private int currentPistonBlockCounter;
 
@@ -108,7 +110,7 @@ public class Pipes implements CraftBookMechanic, PipesApi {
         return type == Material.PISTON || type == Material.STICKY_PISTON;
     }
 
-    private EnumerationResult locateExitNodesForItems(Block inputPistonBlock, LongSet visitedBlocks, EnumSet<LocateFlag> flags, List<ItemStack> itemsInPipe, List<PipeNotification> notificationOutput) {
+    private EnumerationResult locateExitNodesForItems(Block inputPistonBlock, LongSet visitedBlocks, EnumSet<LocateFlag> flags, List<ItemAndOriginSlot> itemsInPipe, List<PipeNotification> notificationOutput) {
         var enumerationFlags = EnumSet.of(EnumerationBehavior.DO_NOT_RESET_CACHE_AND_MAX_COUNTERS);
 
         // Only reset the limit-counters once, at the very top of the call-stack, seeing
@@ -150,41 +152,52 @@ public class Pipes implements CraftBookMechanic, PipesApi {
             PipePredicateEvent predicateEvent = new PipePredicateEvent(pipeBlock, sign.includeFilters, sign.excludeFilters);
             Bukkit.getPluginManager().callEvent(predicateEvent);
 
-            List<ItemStack> filteredPipeItems = new ArrayList<>(itemsInPipe.size());
+            List<ItemAndOriginSlot> filteredPipeItems = new ArrayList<>(itemsInPipe.size());
 
             for (var itemInPipe : itemsInPipe) {
-                if (predicateEvent.testItem(itemInPipe))
+                if (predicateEvent.testItem(itemInPipe.item))
                     filteredPipeItems.add(itemInPipe);
             }
 
             if (filteredPipeItems.isEmpty())
                 return EnumerationDecision.CONTINUE;
 
-            List<ItemStack> leftovers = new ArrayList<>();
+            if (isSubPipe) {
+                if (locateExitNodesForItems(putBlock, visitedBlocks, flags, filteredPipeItems, notificationOutput) != EnumerationResult.COMPLETED)
+                    return EnumerationDecision.STOP;
 
-            EnumerationResult subWalkResult = EnumerationResult.COMPLETED;
+                return EnumerationDecision.CONTINUE;
+            }
+
+            if (CachedBlock.isPowerable(cachedPutBlock)) {
+                currentBlockCache.temporarilyPowerBlock(putBlock, 5);
+                return EnumerationDecision.CONTINUE;
+            }
 
             var blockInventory = currentBlockCache.tryAccessPossiblyUnloadedBlockInventory(putBlock, cachedPutBlock);
 
-            if (blockInventory != null) {
-                leftovers.addAll(InventoryUtil.addItemsToInventory(blockInventory, CachedBlock.getMaterial(cachedPutBlock), filteredPipeItems, EnumSet.noneOf(InventoryAddFlag.class)));
-            } else if (isSubPipe) {
-                // Handle sub-pipes which continue the walk from here on forwards with a (possibly) limited set of items.
-                List<ItemStack> subPipeItems = new ArrayList<>(filteredPipeItems);
-                subWalkResult = locateExitNodesForItems(putBlock, visitedBlocks, flags, subPipeItems, notificationOutput);
-                leftovers.addAll(subPipeItems);
-            } else {
-                if (CachedBlock.isPowerable(cachedPutBlock))
-                    currentBlockCache.temporarilyPowerBlock(putBlock, 5);
+            if (blockInventory == null)
+                return EnumerationDecision.CONTINUE;
 
-                leftovers.addAll(filteredPipeItems);
+            var blockType = CachedBlock.getMaterial(cachedPutBlock);
+
+            for (var itemInPipe : itemsInPipe) {
+                if (!ItemUtil.isStackValid(itemInPipe.item))
+                    continue;
+
+                var priorAmount = itemInPipe.item.getAmount();
+                var remainingAmount = InventoryUtil.addItemToInventoryAndGetRemainingAmount(blockInventory, blockType, itemInPipe.item);
+
+                if (priorAmount == remainingAmount)
+                    continue;
+
+                if (remainingAmount <= 0) {
+                    itemInPipe.item = null;
+                    continue;
+                }
+
+                itemInPipe.item.setAmount(remainingAmount);
             }
-
-            itemsInPipe.removeAll(filteredPipeItems);
-            itemsInPipe.addAll(leftovers);
-
-            if (itemsInPipe.isEmpty() || subWalkResult != EnumerationResult.COMPLETED)
-                return EnumerationDecision.STOP;
 
             return EnumerationDecision.CONTINUE;
         });
@@ -382,10 +395,10 @@ public class Pipes implements CraftBookMechanic, PipesApi {
 
         // Suck items from container-block
 
-        var itemsInPipe = new ArrayList<ItemStack>();
-        var inventoryHolder = suckFromContainerBlockAndGetHolder(containerBlock, cachedContainerBlock, predicateEvent, itemsInPipe);
+        var itemsInPipe = new ArrayList<ItemAndOriginSlot>();
+        var suckedInventory = suckFromContainerBlockAndGetInventory(containerBlock, cachedContainerBlock, predicateEvent, itemsInPipe);
 
-        if (inventoryHolder == null || itemsInPipe.isEmpty())
+        if (suckedInventory == null || itemsInPipe.isEmpty())
             return;
 
         // Locate exit-nodes for items
@@ -426,26 +439,36 @@ public class Pipes implements CraftBookMechanic, PipesApi {
         var shouldDropItems = (dropNoSign && missedSign) || (dropExceededLimits && exceededLimits) || threwError;
 
         if (shouldDropItems) {
-            dropItemsAtBlock(itemsInPipe, containerBlock);
+            for (var itemInPipe : itemsInPipe) {
+                if (!ItemUtil.isStackValid(itemInPipe.item))
+                    continue;
+
+                dropItemAtBlock(itemInPipe.item, containerBlock);
+            }
+
             return;
         }
 
-        if (itemsInPipe.isEmpty())
-            return;
-
-        // Try to put remaining items back into the block
-
-        // Allow to put items that have been sucked from the result-slot back into the furnace.
-        var leftovers = InventoryUtil.addItemsToInventory(new LiveAddOnlyInventory(inventoryHolder), CachedBlock.getMaterial(cachedContainerBlock), itemsInPipe, EnumSet.of(InventoryAddFlag.ADD_TO_FURNACE_RESULT));
-
-        itemsInPipe.clear();
-
-        // Drop leftovers at input-container
-
-        dropItemsAtBlock(leftovers, containerBlock);
+        putItemsBackIntoContainerBlockOrDrop(itemsInPipe, suckedInventory, containerBlock);
     }
 
-    private @Nullable InventoryHolder suckFromContainerBlockAndGetHolder(Block containerBlock, int cachedContainerBlock, PipePredicateEvent predicateEvent, List<ItemStack> itemsInPipe) {
+    private void putItemsBackIntoContainerBlockOrDrop(List<ItemAndOriginSlot> itemsInPipe, Inventory suckedInventory, Block containerBlock) {
+        for (var itemInPipe : itemsInPipe) {
+            if (!ItemUtil.isStackValid(itemInPipe.item))
+                continue;
+
+            // This should be unreachable, seeing how nobody was able to access the
+            // container while we were processing the pipe, but better safe than sorry.
+            if (suckedInventory.getItem(itemInPipe.originSlot) != null) {
+                dropItemAtBlock(itemInPipe.item, containerBlock);
+                continue;
+            }
+
+            suckedInventory.setItem(itemInPipe.originSlot, itemInPipe.item);
+        }
+    }
+
+    private @Nullable Inventory suckFromContainerBlockAndGetInventory(Block containerBlock, int cachedContainerBlock, PipePredicateEvent predicateEvent, List<ItemAndOriginSlot> itemsInPipe) {
         if (!CachedBlock.hasHandledInputInventory(cachedContainerBlock))
             return null;
 
@@ -454,23 +477,23 @@ public class Pipes implements CraftBookMechanic, PipesApi {
 
         var suckedInventory = holder.getInventory();
 
-        if (suckedInventory instanceof FurnaceInventory furnaceInventory) {
-            var result = furnaceInventory.getResult();
+        if (suckedInventory instanceof FurnaceInventory) {
+            var result = suckedInventory.getItem(FURNACE_RESULT_INDEX);
 
-            if (predicateEvent.testItem(result)) {
-                itemsInPipe.add(result);
-                furnaceInventory.setResult(null);
+            if (result != null && predicateEvent.testItem(result)) {
+                itemsInPipe.add(new ItemAndOriginSlot(FURNACE_RESULT_INDEX, result));
+                suckedInventory.setItem(FURNACE_RESULT_INDEX, null);
             }
 
-            return holder;
+            return suckedInventory;
         }
 
         if (suckedInventory instanceof BrewerInventory) {
             for (int bottleSlot = 0; bottleSlot < 3; ++bottleSlot) {
                 var bottleItem = suckedInventory.getItem(bottleSlot);
 
-                if (predicateEvent.testItem(bottleItem)) {
-                    itemsInPipe.add(bottleItem);
+                if (bottleItem != null && predicateEvent.testItem(bottleItem)) {
+                    itemsInPipe.add(new ItemAndOriginSlot(bottleSlot, bottleItem));
                     suckedInventory.setItem(bottleSlot, null);
 
                     if (pipeStackPerPull)
@@ -478,7 +501,7 @@ public class Pipes implements CraftBookMechanic, PipesApi {
                 }
             }
 
-            return holder;
+            return suckedInventory;
         }
 
         var inventorySize = suckedInventory.getSize();
@@ -486,23 +509,20 @@ public class Pipes implements CraftBookMechanic, PipesApi {
         for (int slot = 0; slot < inventorySize; ++slot) {
             var item = suckedInventory.getItem(slot);
 
-            if (!predicateEvent.testItem(item))
+            if (item == null || !predicateEvent.testItem(item))
                 continue;
 
-            itemsInPipe.add(item);
+            itemsInPipe.add(new ItemAndOriginSlot(slot, item));
             suckedInventory.setItem(slot, null);
 
             if (pipeStackPerPull)
                 break;
         }
 
-        return holder;
+        return suckedInventory;
     }
 
-    private void dropItemsAtBlock(List<ItemStack> itemsToDrop, Block dropBlock) {
-        if (itemsToDrop.isEmpty())
-            return;
-
+    private void dropItemAtBlock(ItemStack itemToDrop, Block dropBlock) {
         var actualDropBlock = dropBlock;
         var nextFaceIndex = 0;
 
@@ -513,8 +533,7 @@ public class Pipes implements CraftBookMechanic, PipesApi {
         var dropLocation = actualDropBlock.getLocation().add(.5, .5, .5);
         var dropWorld = actualDropBlock.getWorld();
 
-        for (var itemToDrop : itemsToDrop)
-            dropWorld.dropItemNaturally(dropLocation, itemToDrop);
+        dropWorld.dropItemNaturally(dropLocation, itemToDrop);
     }
 
     private void startPipeAndHandleNotifications(Block inputPistonBlock, @Nullable Block overrideContainerBlock) {
