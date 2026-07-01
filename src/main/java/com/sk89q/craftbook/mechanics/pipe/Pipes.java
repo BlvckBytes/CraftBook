@@ -424,10 +424,6 @@ public class Pipes implements CraftBookMechanic, PipesApi {
             return;
         }
 
-        putItemsBackIntoContainerBlockOrDrop(pipeItems, suckedInventory, containerBlock);
-    }
-
-    private void putItemsBackIntoContainerBlockOrDrop(PipeItems pipeItems, Inventory suckedInventory, Block containerBlock) {
         pipeItems.forEachRemainingItem((slot, item) -> {
             // This should be unreachable, seeing how nobody was able to access the
             // container while we were processing the pipe, but better safe than sorry.
