@@ -383,59 +383,14 @@ public class Pipes implements CraftBookMechanic, PipesApi {
         // Suck items from container-block
 
         var itemsInPipe = new ArrayList<ItemStack>();
-
-        InventoryHolder inventoryHolder = null;
-
-        if (
-            CachedBlock.hasHandledInputInventory(cachedContainerBlock)
-                && containerBlock.getState(false) instanceof InventoryHolder holder
-        ) {
-            inventoryHolder = holder;
-            Inventory blockInventory = inventoryHolder.getInventory();
-
-            if (blockInventory instanceof FurnaceInventory furnaceInventory) {
-                ItemStack result = furnaceInventory.getResult();
-
-                if (predicateEvent.testItem(result)) {
-                    itemsInPipe.add(result);
-                    furnaceInventory.setResult(null);
-                }
-            } else if (inventoryHolder instanceof BrewingStand brewingStand) {
-                BrewerInventory inventory = brewingStand.getInventory();
-
-                for (int i = 0; i < 3; ++i) {
-                    ItemStack item = inventory.getItem(i);
-
-                    if (predicateEvent.testItem(item)) {
-                        itemsInPipe.add(item);
-                        inventory.setItem(i, null);
-
-                        if (pipeStackPerPull)
-                            break;
-                    }
-                }
-            } else {
-                for (int slot = 0; slot < blockInventory.getSize(); ++slot) {
-                    ItemStack stack = blockInventory.getItem(slot);
-
-                    if (!predicateEvent.testItem(stack))
-                        continue;
-
-                    itemsInPipe.add(stack);
-                    blockInventory.setItem(slot, null);
-
-                    if (pipeStackPerPull)
-                        break;
-                }
-            }
-        }
+        var inventoryHolder = suckFromContainerBlockAndGetHolder(containerBlock, cachedContainerBlock, predicateEvent, itemsInPipe);
 
         if (inventoryHolder == null || itemsInPipe.isEmpty())
             return;
 
-        // Walk pipe to store as many items as possible
+        // Locate exit-nodes for items
 
-        EnumerationResult enumerationResult = EnumerationResult.COMPLETED;
+        EnumerationResult enumerationResult = null;
         EnumSet<LocateFlag> locateFlags = EnumSet.of(LocateFlag.RESET_COUNTERS);
 
         if (sign != PipeSign.NO_SIGN)
@@ -450,59 +405,116 @@ public class Pipes implements CraftBookMechanic, PipesApi {
             CraftBookPlugin.logger().log(Level.SEVERE, "An error occurred while trying to locate exit-nodes for an item in a pipe", e);
         }
 
-        // Try to put leftovers back into the block and drop the rest at the input-piston.
-
-        List<ItemStack> leftovers = new ArrayList<>();
+        // Handle enumeration result
 
         // Do not cause leftovers to be dropped when not having encountered a sign yet during the
         // warmup process; signs are only missed if the pipe completed fully.
         boolean missedSign = pipeRequireSign && enumerationResult == EnumerationResult.COMPLETED && !locateFlags.contains(LocateFlag.ENCOUNTERED_SIGN);
 
-        if (!itemsInPipe.isEmpty()) {
-            boolean exceededLimits = enumerationResult == EnumerationResult.EXCEEDED_TUBE_COUNT_LIMIT || enumerationResult == EnumerationResult.EXCEEDED_PISTON_COUNT_LIMIT;
-
-            // Drop leftovers for "malformed" pipes, if configured.
-            if ((dropNoSign && missedSign) || (dropExceededLimits && exceededLimits) || threwError) {
-                leftovers.addAll(itemsInPipe);
-            } else {
-                // Allow to put items that have been sucked from the result-slot back into the furnace.
-                leftovers.addAll(InventoryUtil.addItemsToInventory(new LiveAddOnlyInventory(inventoryHolder), CachedBlock.getMaterial(cachedContainerBlock), itemsInPipe, EnumSet.of(InventoryAddFlag.ADD_TO_FURNACE_RESULT)));
-            }
-        }
-
-        // Finish up the pipe and possibly drop leftovers
-
-        itemsInPipe.clear();
-
-        if (!leftovers.isEmpty()) {
-            var dropBlock = containerBlock;
-            var nextFaceIndex = 0;
-
-            // Try to drop the item at a block that is not going to make it shoot out due to collision
-            while (nextFaceIndex < DROP_ITEM_FACES.length && !dropBlock.isPassable())
-                dropBlock = containerBlock.getRelative(DROP_ITEM_FACES[nextFaceIndex++]);
-
-            var dropLocation = dropBlock.getLocation().add(.5, .5, .5);
-            var dropWorld = containerBlock.getWorld();
-
-            for (ItemStack item : leftovers) {
-                if (!ItemUtil.isStackValid(item))
-                    continue;
-
-                dropWorld.dropItemNaturally(dropLocation, item);
-            }
-        }
-
-        if (missedSign) {
+        if (missedSign)
             notificationOutput.add(new NoSignNotification());
-            return;
-        }
 
         switch (enumerationResult) {
+            case COMPLETED -> {}
             case NEEDS_CHUNK_LOADING, EXCEEDED_CACHE_LOAD_LIMIT -> notificationOutput.add(new WarmupNotification(currentPistonBlockCounter, currentTubeBlockCounter));
             case EXCEEDED_PISTON_COUNT_LIMIT -> notificationOutput.add(new PistonLimitNotification(maxPistonBlockCount));
             case EXCEEDED_TUBE_COUNT_LIMIT -> notificationOutput.add(new TubeLimitNotification(maxTubeBlockCount));
+            case null -> {}
         }
+
+        var exceededLimits = enumerationResult == EnumerationResult.EXCEEDED_TUBE_COUNT_LIMIT || enumerationResult == EnumerationResult.EXCEEDED_PISTON_COUNT_LIMIT;
+        var shouldDropItems = (dropNoSign && missedSign) || (dropExceededLimits && exceededLimits) || threwError;
+
+        if (shouldDropItems) {
+            dropItemsAtBlock(itemsInPipe, containerBlock);
+            return;
+        }
+
+        if (itemsInPipe.isEmpty())
+            return;
+
+        // Try to put remaining items back into the block
+
+        // Allow to put items that have been sucked from the result-slot back into the furnace.
+        var leftovers = InventoryUtil.addItemsToInventory(new LiveAddOnlyInventory(inventoryHolder), CachedBlock.getMaterial(cachedContainerBlock), itemsInPipe, EnumSet.of(InventoryAddFlag.ADD_TO_FURNACE_RESULT));
+
+        itemsInPipe.clear();
+
+        // Drop leftovers at input-container
+
+        dropItemsAtBlock(leftovers, containerBlock);
+    }
+
+    private @Nullable InventoryHolder suckFromContainerBlockAndGetHolder(Block containerBlock, int cachedContainerBlock, PipePredicateEvent predicateEvent, List<ItemStack> itemsInPipe) {
+        if (!CachedBlock.hasHandledInputInventory(cachedContainerBlock))
+            return null;
+
+        if (!(containerBlock.getState(false) instanceof InventoryHolder holder))
+            return null;
+
+        var suckedInventory = holder.getInventory();
+
+        if (suckedInventory instanceof FurnaceInventory furnaceInventory) {
+            var result = furnaceInventory.getResult();
+
+            if (predicateEvent.testItem(result)) {
+                itemsInPipe.add(result);
+                furnaceInventory.setResult(null);
+            }
+
+            return holder;
+        }
+
+        if (suckedInventory instanceof BrewerInventory) {
+            for (int bottleSlot = 0; bottleSlot < 3; ++bottleSlot) {
+                var bottleItem = suckedInventory.getItem(bottleSlot);
+
+                if (predicateEvent.testItem(bottleItem)) {
+                    itemsInPipe.add(bottleItem);
+                    suckedInventory.setItem(bottleSlot, null);
+
+                    if (pipeStackPerPull)
+                        break;
+                }
+            }
+
+            return holder;
+        }
+
+        var inventorySize = suckedInventory.getSize();
+
+        for (int slot = 0; slot < inventorySize; ++slot) {
+            var item = suckedInventory.getItem(slot);
+
+            if (!predicateEvent.testItem(item))
+                continue;
+
+            itemsInPipe.add(item);
+            suckedInventory.setItem(slot, null);
+
+            if (pipeStackPerPull)
+                break;
+        }
+
+        return holder;
+    }
+
+    private void dropItemsAtBlock(List<ItemStack> itemsToDrop, Block dropBlock) {
+        if (itemsToDrop.isEmpty())
+            return;
+
+        var actualDropBlock = dropBlock;
+        var nextFaceIndex = 0;
+
+        // Try to drop the item at a block that is not going to make it shoot out due to collision
+        while (nextFaceIndex < DROP_ITEM_FACES.length && !actualDropBlock.isPassable())
+            actualDropBlock = dropBlock.getRelative(DROP_ITEM_FACES[nextFaceIndex++]);
+
+        var dropLocation = actualDropBlock.getLocation().add(.5, .5, .5);
+        var dropWorld = actualDropBlock.getWorld();
+
+        for (var itemToDrop : itemsToDrop)
+            dropWorld.dropItemNaturally(dropLocation, itemToDrop);
     }
 
     private void startPipeAndHandleNotifications(Block inputPistonBlock, @Nullable Block overrideContainerBlock) {
