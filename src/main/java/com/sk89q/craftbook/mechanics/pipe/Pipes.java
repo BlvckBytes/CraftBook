@@ -117,7 +117,7 @@ public class Pipes implements CraftBookMechanic, PipesApi {
             enumerationFlags.remove(EnumerationBehavior.DO_NOT_RESET_CACHE_AND_MAX_COUNTERS);
 
         return enumeratePipeBlocks(inputPistonBlock, visitedBlocks, enumerationFlags, (pipeBlock, cachedPipeBlock, cache) -> {
-            if (pipeItems.isEmpty())
+            if (pipeItems.isEmptyOrNoneActive())
                 return EnumerationDecision.STOP;
 
             if (!CachedBlock.isMaterial(cachedPipeBlock, Material.PISTON))
@@ -158,7 +158,7 @@ public class Pipes implements CraftBookMechanic, PipesApi {
 
             var filteredPipeItems = pipeItems.filterAndMakeSub(predicateEvent::testItem);
 
-            if (filteredPipeItems.isEmpty())
+            if (filteredPipeItems.isEmptyOrNoneActive())
                 return EnumerationDecision.CONTINUE;
 
             if (isSubPipe) {
@@ -388,7 +388,7 @@ public class Pipes implements CraftBookMechanic, PipesApi {
         var pipeItems = new PipeItems();
         var suckedInventory = suckFromContainerBlockAndGetInventory(containerBlock, cachedContainerBlock, predicateEvent, pipeItems);
 
-        if (suckedInventory == null || pipeItems.isEmpty())
+        if (suckedInventory == null || pipeItems.isEmptyOrNoneActive())
             return;
 
         // Locate exit-nodes for items

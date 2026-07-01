@@ -48,7 +48,7 @@ public class PipeItems {
     return true;
   }
 
-  public boolean isEmpty() {
+  public boolean isEmptyOrNoneActive() {
     return contents.stream().noneMatch(this::isActive);
   }
 
