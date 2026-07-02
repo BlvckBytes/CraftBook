@@ -2,9 +2,3 @@ mechanics:
     Elevator:
         enable-buttons: true
         enable-pressure-plates: true
-        allow-looping: false
-        smooth-movement: false
-        smooth-movement-speed: 0.5
-    Teleporter:
-        require-sign: false
-        max-range: 0

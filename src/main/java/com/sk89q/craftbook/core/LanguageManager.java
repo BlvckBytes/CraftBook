@@ -97,16 +97,11 @@ public class LanguageManager {
         put("mech.lift.floor","Floor");
         put("mech.lift.up","You went up a floor!");
         put("mech.lift.down","You went down a floor!");
-        put("mech.lift.leave", "You have left the elevator!");
         put("mech.lift.no-destination", "This lift has no destination.");
         put("mech.lift.no-depart", "Cannot depart from this lift (can only arrive).");
-        put("mech.lift.busy", "Elevator Busy!");
 
         put("mech.teleport.create","Teleporter Created!");
         put("mech.teleport.alert","You Teleported!");
-        put("mech.teleport.range","Out of Range!");
-        put("mech.teleport.sign","There is no Sign at your Destination!");
-        put("mech.teleport.arriveonly","You can only arrive at this teleporter!");
         put("mech.teleport.invalidcoords", "The entered coordinates are invalid!");
         put("mech.teleport.obstruct","Your destination is obstructed!");
     }};

@@ -218,43 +218,11 @@ public class Teleporter implements CraftBookMechanic {
                     toY = Double.parseDouble(pos[1]);
                     toZ = Double.parseDouble(pos[2]);
                 } catch (Exception e) {
-                    player.printError("mech.teleport.arriveonly");
+                    player.printError("mech.teleport.invalidcoords");
                     return;
                 }
             } else {
-                player.printError("mech.teleport.arriveonly");
-                return;
-            }
-        }
-
-        if (requireSign) {
-            Block location = trigger.getWorld().getBlockAt((int) toX, (int) toY, (int) toZ);
-            if (SignUtil.isSign(location)) {
-                if (!checkTeleportSign(player, location)) {
-                    return;
-                }
-            } else if (Tag.BUTTONS.isTagged(location.getType())) {
-                Directional b = (Directional) location.getBlockData();
-                Block sign = location.getRelative(b.getFacing(), 2);
-                if (!checkTeleportSign(player, sign)) {
-                    return;
-                }
-            } else if (Tag.PRESSURE_PLATES.isTagged(location.getType())) {
-                var hadValidSign = false;
-
-                for (var offset : PRESSURE_PLATE_SIGN_OFFSETS) {
-                    Block sign = offset.getRelative(location);
-
-                    if (checkTeleportSign(player, sign)) {
-                        hadValidSign = true;
-                        break;
-                    }
-                }
-
-                if (!hadValidSign)
-                    return;
-            } else {
-                player.printError("mech.teleport.sign");
+                player.printError("mech.teleport.invalidcoords");
                 return;
             }
         }
@@ -289,13 +257,6 @@ public class Teleporter implements CraftBookMechanic {
             .setY(floor.getY() + 1.0)
             .setZ(floor.getZ() + 0.5);
 
-        if (maxRange > 0) {
-            if (subspaceRift.toVector().distanceSq(player.getLocation().toVector()) > maxRange * maxRange) {
-                player.print("mech.teleport.range");
-                return;
-            }
-        }
-
         lastTeleportByPlayerId.put(player.getUniqueId(), System.currentTimeMillis());
 
         if (player.isInsideVehicle()) {
@@ -312,25 +273,6 @@ public class Teleporter implements CraftBookMechanic {
         player.print("mech.teleport.alert");
     }
 
-    private static boolean checkTeleportSign(CraftBookPlayer player, Block sign) {
-        if (!SignUtil.isSign(sign)) {
-            player.printError("mech.teleport.sign");
-            return false;
-        }
-
-        var signLines = SignUtil.getFrontLinesOrEmpty(sign);
-
-        if (!signLines[1].equalsIgnoreCase("[Teleporter]")) {
-            player.printError("mech.teleport.sign");
-            return false;
-        }
-
-        return true;
-    }
-
-    private boolean requireSign;
-    private int maxRange;
-
     @Override
     public boolean enable() {
         return true;
@@ -340,12 +282,5 @@ public class Teleporter implements CraftBookMechanic {
     public void disable() {}
 
     @Override
-    public void loadConfiguration (YAMLProcessor config, String path) {
-
-        config.setComment(path + "require-sign", "Require a sign to be at the destination of the teleportation.");
-        requireSign = config.getBoolean(path + "require-sign", false);
-
-        config.setComment(path + "max-range", "The maximum distance between the start and end of a teleporter. Set to 0 for infinite.");
-        maxRange = config.getInt(path + "max-range", 0);
-    }
+    public void loadConfiguration (YAMLProcessor config, String path) {}
 }
