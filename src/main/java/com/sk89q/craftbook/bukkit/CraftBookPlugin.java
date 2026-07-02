@@ -6,7 +6,6 @@ import com.sk89q.craftbook.CraftBookPlayer;
 import com.sk89q.craftbook.core.LanguageManager;
 import com.sk89q.craftbook.mechanics.Elevator;
 import com.sk89q.craftbook.mechanics.Teleporter;
-import com.sk89q.craftbook.mechanics.pipe.Pipes;
 import com.sk89q.craftbook.util.compat.companion.CompanionPlugins;
 import com.sk89q.util.yaml.YAMLFormat;
 import com.sk89q.util.yaml.YAMLProcessor;
@@ -80,7 +79,6 @@ public class CraftBookPlugin extends JavaPlugin {
 
         availableMechanics.put("Elevator", Elevator.class);
         availableMechanics.put("Teleporter", Teleporter.class);
-        availableMechanics.put("Pipes", Pipes.class);
     }
 
     /**
@@ -264,16 +262,6 @@ public class CraftBookPlugin extends JavaPlugin {
     public static CraftBookPlugin inst() {
 
         return instance;
-    }
-
-    public CraftBookMechanic getMechanic(Class<? extends CraftBookMechanic> clazz) {
-
-        for(CraftBookMechanic mech : mechanics) {
-            if(mech.getClass().equals(clazz))
-                return mech;
-        }
-
-        return null;
     }
 
     /**

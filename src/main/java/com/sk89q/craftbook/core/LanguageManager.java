@@ -109,13 +109,5 @@ public class LanguageManager {
         put("mech.teleport.arriveonly","You can only arrive at this teleporter!");
         put("mech.teleport.invalidcoords", "The entered coordinates are invalid!");
         put("mech.teleport.obstruct","Your destination is obstructed!");
-
-        put("circuits.pipes.create","Pipe created!");
-        put("circuits.pipes.pipe-not-found", "Failed to find pipe!");
-        put("circuits.pipes.warmup-notification", "[Pipe] Warming up... {tubes}T {pistons}P");
-        put("circuits.pipes.exceeded-tube-count-notification", "[Pipe] Exceeded the tube-block limit of {limit} at {coordinates}; dropping item at input!");
-        put("circuits.pipes.exceeded-piston-count-notification", "[Pipe] Exceeded the piston-block limit of {limit} at {coordinates}; dropping item at input!");
-        put("circuits.pipes.no-sign-encountered", "[Pipe] Could not locate a valid sign anywhere on the pipe at {coordinates}; dropping item at input!");
-        put("circuits.pipes.malformed-sign-token", "[Pipe] The token \"{token}\" on line {line} on the sign at {sign_coordinates} on the pipe at {coordinates} is invalid!");
     }};
 }

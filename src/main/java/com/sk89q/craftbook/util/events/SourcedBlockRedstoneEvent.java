@@ -25,18 +25,10 @@ import org.bukkit.event.block.BlockRedstoneEvent;
  */
 public class SourcedBlockRedstoneEvent extends BlockRedstoneEvent {
 
-    protected final Block source;
     private static final HandlerList handlers = new HandlerList();
 
     public SourcedBlockRedstoneEvent(Block source, Block block, int old, int n) {
-
         super(block, old, n);
-        this.source = source;
-    }
-
-    public Block getSource() {
-
-        return source;
     }
 
     public boolean hasChanged() {

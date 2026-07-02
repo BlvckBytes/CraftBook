@@ -18,13 +18,8 @@ package com.sk89q.craftbook.util;
 
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TextComponent;
-import org.bukkit.Material;
 import org.bukkit.Tag;
 import org.bukkit.block.Block;
-import org.bukkit.block.BlockFace;
-import org.bukkit.block.data.BlockData;
-import org.bukkit.block.data.type.Sign;
-import org.bukkit.block.data.type.WallSign;
 import org.bukkit.block.sign.Side;
 import org.bukkit.event.block.SignChangeEvent;
 
@@ -59,46 +54,6 @@ public final class SignUtil {
 
     public static boolean isSign(Block block) {
         return Tag.ALL_SIGNS.isTagged(block.getType());
-    }
-
-    public static boolean isStandingSign(Block block) {
-        return Tag.STANDING_SIGNS.isTagged(block.getType());
-    }
-
-    public static boolean isWallSign(Block block) {
-        return isWallSign(block.getType());
-    }
-
-    public static boolean isWallSign(Material type) {
-        return Tag.WALL_SIGNS.isTagged(type);
-    }
-
-    /**
-     * @param sign treated as sign post if it is such, or else assumed to be a wall sign (i.e.,
-     *             if you ask about a stone block, it's considered a wall
-     *             sign).
-     *
-     * @return the side of the sign containing the text (in other words, when a player places a new sign,
-     *         while facing north, this will return south).
-     */
-    public static BlockFace getFront(Block sign) {
-        BlockData blockData = sign.getBlockData();
-        if (blockData instanceof Sign) {
-            return ((Sign) blockData).getRotation();
-        } else if (blockData instanceof WallSign) {
-            return ((WallSign) blockData).getFacing();
-        } else {
-            return BlockFace.SELF;
-        }
-    }
-
-    public static BlockFace getBack(Block sign) {
-        return getFront(sign).getOppositeFace();
-    }
-
-    public static Block getBackBlock(Block sign) {
-
-        return sign.getRelative(getBack(sign));
     }
 
     /**

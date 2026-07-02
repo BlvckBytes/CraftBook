@@ -11,7 +11,6 @@
 enabled-mechanics:
   - Elevator
   - ICs
-  - Pipes
   - Teleporter
 
 # A list of CraftBook mechanics that are disabled, for easy copy/pastability to the enabled list.
