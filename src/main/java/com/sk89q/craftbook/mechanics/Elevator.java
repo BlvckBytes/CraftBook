@@ -26,7 +26,6 @@ import com.sk89q.craftbook.util.LocationUtil;
 import com.sk89q.craftbook.util.ProtectionUtil;
 import com.sk89q.craftbook.util.SignUtil;
 import com.sk89q.craftbook.util.events.SignClickEvent;
-import com.sk89q.craftbook.util.events.SourcedBlockRedstoneEvent;
 import com.sk89q.util.yaml.YAMLProcessor;
 import com.sk89q.worldedit.bukkit.BukkitAdapter;
 import org.bukkit.Bukkit;
@@ -172,51 +171,6 @@ public class Elevator implements CraftBookMechanic {
 
     private enum Direction {
         NONE, UP, DOWN, RECV
-    }
-
-    @EventHandler(priority = EventPriority.HIGH)
-    public void onBlockRedstoneChange(SourcedBlockRedstoneEvent event) {
-
-        if(!elevatorAllowRedstone || event.isMinor() || !event.isOn())
-            return;
-
-        if (!EventUtil.passesFilter(event))
-            return;
-
-        LiftData liftData = getLiftData(event.getBlock());
-
-        Direction dir = liftData.direction;
-        switch (dir) {
-            case UP:
-            case DOWN:
-                break;
-            case RECV:
-                return;
-            default:
-                return;
-        }
-
-        BlockFace shift = dir == Direction.UP ? BlockFace.UP : BlockFace.DOWN;
-        Block destination = findDestination(dir, shift, event.getBlock());
-
-        if(destination == null) return;
-
-        for(Player player : LocationUtil.getNearbyPlayers(event.getBlock().getLocation(), elevatorRedstoneRadius)) {
-
-            CraftBookPlayer localPlayer = CraftBookPlugin.inst().wrapPlayer(player);
-            if(flyingPlayers != null && flyingPlayers.contains(localPlayer.getUniqueId())) {
-                localPlayer.printError("mech.lift.busy");
-                continue;
-            }
-
-            if (!localPlayer.hasPermission("craftbook.mech.elevator.use")) {
-                if(CraftBookPlugin.inst().getConfiguration().showPermissionMessages)
-                    localPlayer.printError("mech.use-permission");
-                continue;
-            }
-
-            makeItSo(localPlayer, destination, shift, liftData.noBack);
-        }
     }
 
     @EventHandler(priority = EventPriority.HIGH)
@@ -614,8 +568,6 @@ public class Elevator implements CraftBookMechanic {
         return new LiftData(Direction.NONE, false, signLines);
     }
 
-    private boolean elevatorAllowRedstone;
-    private int elevatorRedstoneRadius;
     private boolean elevatorButtonEnabled;
     private boolean elevatorPressurePlateEnabled;
     private boolean elevatorLoop;
@@ -625,12 +577,6 @@ public class Elevator implements CraftBookMechanic {
 
     @Override
     public void loadConfiguration (YAMLProcessor config, String path) {
-
-        config.setComment(path + "allow-redstone", "Allows elevators to be triggered by redstone, which will move all players in a radius.");
-        elevatorAllowRedstone = config.getBoolean(path + "allow-redstone", false);
-
-        config.setComment(path + "redstone-player-search-radius", "The radius that elevators will look for players in when triggered by redstone.");
-        elevatorRedstoneRadius = config.getInt(path + "redstone-player-search-radius", 3);
 
         config.setComment(path + "enable-buttons", "Allow elevators to be used by a button on the other side of the block.");
         elevatorButtonEnabled = config.getBoolean(path + "enable-buttons", true);

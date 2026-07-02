@@ -17,13 +17,9 @@ public class BukkitConfiguration {
     public List<String> enabledMechanics;
 
     public boolean noOpPermissions;
-    public boolean indirectRedstone;
-    public boolean useBlockDistance;
-    public boolean safeDestruction;
     public int stThinkRate;
     public boolean obeyWorldguard;
     public boolean advancedBlockChecks;
-    public boolean pedanticBlockChecks;
     public boolean showPermissionMessages;
     public long signClickTimeout;
 
@@ -87,26 +83,14 @@ public class BukkitConfiguration {
         config.setComment("st-think-ticks", "WARNING! Changing this can result in all ST mechanics acting very weirdly, only change this if you know what you are doing!");
         stThinkRate = config.getInt("st-think-ticks", 2);
 
-        config.setComment("safe-destruction", "Causes many mechanics to require sufficient blocks to function, for example gates, bridges and doors.");
-        safeDestruction = config.getBoolean("safe-destruction", true);
-
         config.setComment("no-op-permissions", "If on, OP's will not default to have access to everything.");
         noOpPermissions = config.getBoolean("no-op-permissions", false);
-
-        config.setComment("indirect-redstone", "Allows redstone not directly facing a mechanism to trigger said mechanism.");
-        indirectRedstone = config.getBoolean("indirect-redstone", false);
-
-        config.setComment("use-block-distance", "Rounds all distance equations to the block grid.");
-        useBlockDistance = config.getBoolean("use-block-distance", false);
 
         config.setComment("check-worldguard-flags", "Checks to see if WorldGuard allows building/using in the area when activating mechanics.");
         obeyWorldguard = config.getBoolean("check-worldguard-flags", true);
 
         config.setComment("advanced-block-checks", "Use advanced methods to detect if a player can build or not. Use this if you use region protections other than WorldGuard, or experience issues with WorldGuard protection. This can add extra entries to Block Logging plugins when a mechanic is broken/placed.");
         advancedBlockChecks = config.getBoolean("advanced-block-checks", true);
-
-        config.setComment("pedantic-block-checks", "In conjunction with advanced-block-checks, this option adds a few extra checks if you are experiencing compatibility issues with certain plugins that stop breaks/places/interacts.");
-        pedanticBlockChecks = config.getBoolean("pedantic-block-checks", false);
 
         config.setComment("sign-click-timeout", "Make sure a player can only press signs so often.");
         signClickTimeout = config.getInt("sign-click-timeout", 10);

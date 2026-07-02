@@ -10,26 +10,13 @@
 # List of mechanics to enable! If they aren't in this list, the server won't load them!
 enabled-mechanics:
   - Elevator
-  - ICs
   - Teleporter
 
 # A list of CraftBook mechanics that are disabled, for easy copy/pastability to the enabled list.
 disabled-mechanics: []
 
-# WARNING! Changing this can result in all ST mechanics acting very weirdly, only change this if you know what you are doing!
-st-think-ticks: 2
-
-# Causes many mechanics to require sufficient blocks to function, for example gates, bridges and doors.
-safe-destruction: true
-
 # If on, OP's will not default to have access to everything.
 no-op-permissions: false
-
-# Allows redstone not directly facing a mechanism to trigger said mechanism.
-indirect-redstone: false
-
-# Rounds all distance equations to the block grid.
-use-block-distance: false
 
 # Checks to see if WorldGuard allows building/using in the area when activating mechanics.
 check-worldguard-flags: true

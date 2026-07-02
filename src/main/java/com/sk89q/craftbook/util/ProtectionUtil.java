@@ -16,48 +16,6 @@ import org.bukkit.inventory.EquipmentSlot;
 public final class ProtectionUtil {
 
     /**
-     * Checks to see if a player can build at a location. This will return
-     * true if region protection is disabled.
-     *
-     * @param player The player to check.
-     * @param loc    The location to check at.
-     * @param build True for build, false for break
-     *
-     * @return whether {@code player} can build at {@code loc}
-     */
-    public static boolean canBuild(Player player, Location loc, boolean build) {
-
-        return canBuild(player,loc.getBlock(), build);
-    }
-
-    /**
-     * Checks to see if a player can build at a location. This will return
-     * true if region protection is disabled or WorldGuard is not found.
-     *
-     * @param player The player to check
-     * @param block  The block to check at.
-     * @param build True for build, false for break
-     *
-     * @return whether {@code player} can build at {@code block}'s location
-     */
-    public static boolean canBuild(Player player, Block block, boolean build) {
-
-        if (!shouldUseProtection()) return true;
-        if (CraftBookPlugin.inst().getConfiguration().advancedBlockChecks) {
-            BlockEvent event;
-            if (build)
-                event = new BlockPlaceEvent(block, block.getState(), block.getRelative(0, -1, 0), player.getInventory().getItemInMainHand(), player, true, EquipmentSlot.HAND);
-            else
-                event = new BlockBreakEvent(block, player);
-            EventUtil.ignoreEvent(event);
-            CraftBookPlugin.inst().getServer().getPluginManager().callEvent(event);
-            return !(((Cancellable) event).isCancelled() || event instanceof BlockPlaceEvent && !((BlockPlaceEvent) event).canBuild());
-        }
-        return !CraftBookPlugin.inst().getConfiguration().obeyWorldguard || (CraftBookPlugin.plugins.getWorldGuard() == null || build ? CraftBookPlugin.plugins.getWorldGuard().createProtectionQuery().testBlockPlace(player, block.getLocation(), block.getType()) : CraftBookPlugin.plugins.getWorldGuard().createProtectionQuery().testBlockBreak(player, block));
-
-    }
-
-    /**
      * Checks to see if a player can use at a location. This will return
      * true if region protection is disabled or WorldGuard is not found.
      *

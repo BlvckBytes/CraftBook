@@ -3,12 +3,7 @@ package com.sk89q.craftbook.bukkit.util;
 import com.sk89q.craftbook.bukkit.CraftBookPlugin;
 import com.sk89q.worldedit.bukkit.BukkitWorld;
 import com.sk89q.worldedit.util.Location;
-import org.bukkit.Material;
-import org.bukkit.Tag;
 import org.bukkit.World;
-
-import java.util.HashSet;
-import java.util.Set;
 
 // $Id$
 /*
@@ -32,17 +27,6 @@ public final class CraftBookBukkitUtil {
         CraftBookPlugin.inst().getLogger().severe(CraftBookPlugin.getStackTrace(e));
     }
 
-    /**
-     * Bukkit's Location class has serious problems with floating point precision.
-     */
-    public static boolean equals(org.bukkit.Location a, org.bukkit.Location b) {
-
-        return Math.abs(a.getX() - b.getX()) <= EQUALS_PRECISION && Math.abs(a.getY() - b.getY()) <= EQUALS_PRECISION
-                && Math.abs(a.getZ() - b.getZ()) <= EQUALS_PRECISION;
-    }
-
-    public static final double EQUALS_PRECISION = 0.0001;
-
     public static org.bukkit.Location toLocation(Location teleportLocation) {
         return new org.bukkit.Location(
                 toWorld((com.sk89q.worldedit.world.World) teleportLocation.getExtent()),
@@ -56,47 +40,5 @@ public final class CraftBookBukkitUtil {
 
     public static World toWorld(final com.sk89q.worldedit.world.World world) {
         return ((BukkitWorld) world).getWorld();
-    }
-
-    private static final Set<Material> isRedstoneBlock = new HashSet<>();
-
-    static {
-        isRedstoneBlock.add(Material.POWERED_RAIL);
-        isRedstoneBlock.add(Material.DETECTOR_RAIL);
-        isRedstoneBlock.add(Material.STICKY_PISTON);
-        isRedstoneBlock.add(Material.PISTON);
-        isRedstoneBlock.add(Material.LEVER);
-        isRedstoneBlock.add(Material.STONE_PRESSURE_PLATE);
-        isRedstoneBlock.addAll(Tag.WOODEN_PRESSURE_PLATES.getValues());
-        isRedstoneBlock.add(Material.REDSTONE_TORCH);
-        isRedstoneBlock.add(Material.REDSTONE_WALL_TORCH);
-        isRedstoneBlock.add(Material.REDSTONE_WIRE);
-        isRedstoneBlock.addAll(Tag.DOORS.getValues());
-        isRedstoneBlock.add(Material.TNT);
-        isRedstoneBlock.add(Material.DISPENSER);
-        isRedstoneBlock.add(Material.NOTE_BLOCK);
-        isRedstoneBlock.add(Material.REPEATER);
-        isRedstoneBlock.add(Material.TRIPWIRE_HOOK);
-        isRedstoneBlock.add(Material.COMMAND_BLOCK);
-        isRedstoneBlock.addAll(Tag.BUTTONS.getValues());
-        isRedstoneBlock.add(Material.TRAPPED_CHEST);
-        isRedstoneBlock.add(Material.HEAVY_WEIGHTED_PRESSURE_PLATE);
-        isRedstoneBlock.add(Material.LIGHT_WEIGHTED_PRESSURE_PLATE);
-        isRedstoneBlock.add(Material.COMPARATOR);
-        isRedstoneBlock.add(Material.REDSTONE_BLOCK);
-        isRedstoneBlock.add(Material.HOPPER);
-        isRedstoneBlock.add(Material.ACTIVATOR_RAIL);
-        isRedstoneBlock.add(Material.DROPPER);
-        isRedstoneBlock.add(Material.DAYLIGHT_DETECTOR);
-    }
-
-    /**
-     * Returns true if a block uses Redstone in some way.
-     *
-     * @param id the type ID of the block
-     * @return true if the block uses Redstone
-     */
-    public static boolean isRedstoneBlock(Material id) {
-        return isRedstoneBlock.contains(id);
     }
 }

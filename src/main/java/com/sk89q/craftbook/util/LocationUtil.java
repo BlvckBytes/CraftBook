@@ -8,62 +8,10 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 
-import java.util.HashSet;
-
 /**
  * @author Silthus, Me4502
  */
 public final class LocationUtil {
-
-    public static double getDistanceSquared(Location l1, Location l2) {
-
-        if(!l1.getWorld().equals(l2.getWorld())) return Integer.MAX_VALUE;
-
-        if (CraftBookPlugin.inst().getConfiguration().useBlockDistance)
-            return getBlockDistance(l1, l2) * getBlockDistance(l1, l2);
-        else return l1.distanceSquared(l2);
-    }
-
-    /**
-     * Gets the greatest distance between two locations. Only takes int locations and does not check a round radius.
-     *
-     * @param l1 to compare
-     * @param l2 to compare
-     *
-     * @return greatest distance
-     */
-    public static int getBlockDistance(Location l1, Location l2) {
-
-        if(!l1.getWorld().equals(l2.getWorld())) return Integer.MAX_VALUE;
-
-        int x = Math.abs(l1.getBlockX() - l2.getBlockX());
-        int y = Math.abs(l1.getBlockY() - l2.getBlockY());
-        int z = Math.abs(l1.getBlockZ() - l2.getBlockZ());
-        if (x >= y && x >= z) return x;
-        else if (y >= z) // Since x is not the largest, either y or z must be
-            return y;
-        else return z;
-    }
-
-    public static Player[] getNearbyPlayers(Location l, int radius) {
-
-        int chunkRadius = radius < 16 ? 1 : radius / 16;
-        HashSet<Player> radiusEntities = new HashSet<>();
-        for (int chX = 0 - chunkRadius; chX <= chunkRadius; chX++) {
-            for (int chZ = 0 - chunkRadius; chZ <= chunkRadius; chZ++) {
-                int x = (int) l.getX(), y = (int) l.getY(), z = (int) l.getZ();
-                for (Entity e : new Location(l.getWorld(), x + chX * 16, y, z + chZ * 16).getChunk().getEntities()) {
-                    if(!(e instanceof Player))
-                        continue;
-                    if (getDistanceSquared(e.getLocation(), l) <= radius * radius && e.getLocation().getBlock() != l
-                            .getBlock()) {
-                        radiusEntities.add((Player) e);
-                    }
-                }
-            }
-        }
-        return radiusEntities.toArray(new Player[radiusEntities.size()]);
-    }
 
     /**
      * Teleports the vehicle the player is in to the given destination.

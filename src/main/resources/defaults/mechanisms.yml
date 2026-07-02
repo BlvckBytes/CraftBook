@@ -1,8 +1,7 @@
 mechanics:
     Elevator:
-        allow-redstone: false
-        redstone-player-search-radius: 3
         enable-buttons: true
+        enable-pressure-plates: true
         allow-looping: false
         smooth-movement: false
         smooth-movement-speed: 0.5
