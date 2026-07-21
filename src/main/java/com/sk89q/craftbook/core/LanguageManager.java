@@ -99,10 +99,5 @@ public class LanguageManager {
         put("mech.lift.down","You went down a floor!");
         put("mech.lift.no-destination", "This lift has no destination.");
         put("mech.lift.no-depart", "Cannot depart from this lift (can only arrive).");
-
-        put("mech.teleport.create","Teleporter Created!");
-        put("mech.teleport.alert","You Teleported!");
-        put("mech.teleport.invalidcoords", "The entered coordinates are invalid!");
-        put("mech.teleport.obstruct","Your destination is obstructed!");
     }};
 }
