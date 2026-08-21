@@ -20,7 +20,6 @@ import com.sk89q.craftbook.CraftBookMechanic;
 import com.sk89q.craftbook.CraftBookPlayer;
 import com.sk89q.craftbook.bukkit.CraftBookPlugin;
 import com.sk89q.craftbook.bukkit.util.CraftBookBukkitUtil;
-import com.sk89q.craftbook.util.EventUtil;
 import com.sk89q.craftbook.util.LocationUtil;
 import com.sk89q.craftbook.util.ProtectionUtil;
 import com.sk89q.craftbook.util.SignUtil;
@@ -75,9 +74,6 @@ public class Elevator implements CraftBookMechanic {
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onSignChange(SignChangeEvent event) {
-
-        if(!EventUtil.passesFilter(event)) return;
-
         Direction dir = Direction.NONE;
         if(event.getLine(1).equalsIgnoreCase("[lift down]")) dir = Direction.DOWN;
         if(event.getLine(1).equalsIgnoreCase("[lift up]")) dir = Direction.UP;
@@ -151,9 +147,6 @@ public class Elevator implements CraftBookMechanic {
             if (lastTeleport != null && System.currentTimeMillis() - lastTeleport < 1000)
                 return;
         }
-
-        if (!EventUtil.passesFilter(event))
-            return;
 
         CraftBookPlayer localPlayer = CraftBookPlugin.inst().wrapPlayer(event.getPlayer());
 

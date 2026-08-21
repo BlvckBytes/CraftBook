@@ -4,8 +4,11 @@ import com.sk89q.craftbook.bukkit.CraftBookPlugin;
 import org.bukkit.Location;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
+import org.bukkit.event.Event;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
+
+import java.util.logging.Level;
 
 public final class ProtectionUtil {
 
@@ -23,8 +26,7 @@ public final class ProtectionUtil {
         if (!shouldUseProtection()) return true;
         if (CraftBookPlugin.inst().getConfiguration().advancedBlockChecks) {
             PlayerInteractEvent event = new PlayerInteractEvent(player, action == null ? Action.RIGHT_CLICK_BLOCK : action, player.getItemInHand(), loc.getBlock(), face == null ? BlockFace.SELF : face);
-            EventUtil.ignoreEvent(event);
-            CraftBookPlugin.inst().getServer().getPluginManager().callEvent(event);
+            callFakeEvent(event);
             if (!event.isCancelled() && CraftBookPlugin.inst().getConfiguration().obeyWorldguard && CraftBookPlugin.plugins.getWorldGuard() != null) {
                 return CraftBookPlugin.plugins.getWorldGuard().createProtectionQuery().testBlockInteract(player, loc.getBlock());
             }
@@ -41,5 +43,25 @@ public final class ProtectionUtil {
     public static boolean shouldUseProtection() {
 
         return CraftBookPlugin.inst().getConfiguration().advancedBlockChecks || CraftBookPlugin.inst().getConfiguration().obeyWorldguard;
+    }
+
+    private static void callFakeEvent(Event event) {
+        for (var listener : event.getHandlers().getRegisteredListeners()) {
+            var plugin = listener.getPlugin();
+
+            if (!plugin.isEnabled())
+                continue;
+
+            var pluginName = plugin.getName();
+
+            if (pluginName.equals("CraftBook") || pluginName.equals("CraftBook5"))
+                continue;
+
+            try {
+                listener.callEvent(event);
+            } catch (Exception e) {
+                CraftBookPlugin.logger().log(Level.SEVERE, "Could not pass event " + event.getEventName() + " to " + listener.getPlugin().getPluginMeta().getName(), e);
+            }
+        }
     }
 }

@@ -16,7 +16,6 @@
 
 package com.sk89q.craftbook.bukkit;
 
-import com.sk89q.craftbook.util.EventUtil;
 import com.sk89q.craftbook.util.SignUtil;
 import com.sk89q.craftbook.util.events.SignClickEvent;
 import org.bukkit.Bukkit;
@@ -43,10 +42,6 @@ final class MechanicListenerAdapter implements Listener {
 
     @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerInteract(final PlayerInteractEvent event) {
-
-        if (!EventUtil.passesFilter(event))
-            return;
-
         Block block = null;
         Action action = null;
         if(event.getAction() == Action.RIGHT_CLICK_AIR) {
